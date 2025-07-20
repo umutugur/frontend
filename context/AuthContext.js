@@ -32,13 +32,16 @@ export const AuthProvider = ({ children }) => {
   });
 
   useEffect(() => {
+    console.log("Google login response:", response);
     if (response?.type === 'success') {
       const { authentication } = response;
+      console.log("Authentication objesi:", authentication);
       handleGoogleAuth(authentication.accessToken);
     }
   }, [response]);
 
   const handleGoogleAuth = async (accessToken,idToken) => {
+     console.log("Google login başlıyor, accessToken:", accessToken, "idToken:", idToken);
     try {
       // Backend'e access token gönder
       const res = await axios.post('https://imame-backend.onrender.com/api/auth/social-login', {
@@ -46,6 +49,7 @@ export const AuthProvider = ({ children }) => {
         accessToken,
         idToken,
       });
+      console.log("Backend yanıtı:", res.data);
 
       const userData = res.data.user;
       setUser(userData);
