@@ -19,10 +19,10 @@ export const AuthProvider = ({ children }) => {
   // ✅ Google Auth Request - Yaklaşım B
   const [request, response, promptAsync] = Google.useAuthRequest({
     // Firebase'den aldığınız Web Client ID'niz
-    clientId: '10042514664-hd90v340a3tltvqte7pho0dttfuplio0.apps.googleusercontent.com',
+    // clientId: '10042514664-hd90v340a3tltvqte7pho0dttfuplio0.apps.googleusercontent.com',
 
     // redirectUri'yi tamamen kaldırıyoruz. Expo'nun ve Google'ın Firebase ile otomatik yönetmesine izin vereceğiz.
-    redirectUri: makeRedirectUri({ scheme: 'imame', useProxy: false }), // Bu satırı silin veya yorum satırı yapın
+    // redirectUri: makeRedirectUri({ scheme: 'imame', useProxy: false }), // Bu satırı silin veya yorum satırı yapın
 
     // Firebase'den alınan Android Client ID'niz
     androidClientId: '10042514664-2ogtkaoj8ja49650g17gu6rd084ggejp.apps.googleusercontent.com',
