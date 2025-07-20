@@ -1,4 +1,4 @@
-package com.imame
+package com.umutugur.imame
 
 import android.app.Application
 import android.content.res.Configuration
