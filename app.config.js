@@ -3,7 +3,7 @@ export default {
     owner:"umutugur",
     name: "İmame",
     slug: "imame",
-    scheme: "imame",
+    scheme: "com.umutugur.imame",
     icon: "./assets/logo.png",
     splash: {
       image: "./assets/logo.png",
@@ -29,8 +29,7 @@ export default {
           action: "VIEW",
           data: [
             {
-              scheme: "imame",
-              host: "oauthredirect"
+              scheme: "com.umutugur.imame"
             }
           ],
           category: ["BROWSABLE", "DEFAULT"]
