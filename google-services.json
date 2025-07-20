@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "10042514664",
+    "project_id": "imameapp-7e73f",
+    "storage_bucket": "imameapp-7e73f.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:10042514664:android:7d75241d01341c538b3d5d",
+        "android_client_info": {
+          "package_name": "com.umutugur.imame"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "10042514664-2ogtkaoj8ja49650g17gu6rd084ggejp.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.umutugur.imame",
+            "certificate_hash": "bd78999b6d20fdfedce06648d5c2a1de372cbfda"
+          }
+        },
+        {
+          "client_id": "10042514664-hd90v340a3tltvqte7pho0dttfuplio0.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAOj0nXCYgsL7HOxqPkliRa57W_cR_G1WA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "10042514664-82a4r3s63i3g99g0744cfk5rssb8ivdp.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
