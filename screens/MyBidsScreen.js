@@ -18,102 +18,61 @@ export default function MyBidsScreen({ navigation }) {
 
   const fetchBids = async () => {
     try {
+      setLoading(true);
       const res = await axios.get(`https://imame-backend.onrender.com/api/bids/user/${user._id}`);
-      const allBids = res.data;
-
-      // Mezata göre grupla, her mezat için hem kendi son teklifini hem de en son teklifi bulalım
-      const grouped = {};
-
-      allBids.forEach((bid) => {
-        const auctionId = bid.auction._id.toString();
-        if (!grouped[auctionId]) {
-          grouped[auctionId] = { myBid: null, lastBid: null, all: [] };
-        }
-        grouped[auctionId].all.push(bid);
-        // Kendi verdiği en son teklifi
-        if (bid.user._id === user._id) {
-          if (
-            !grouped[auctionId].myBid ||
-            new Date(bid.createdAt) > new Date(grouped[auctionId].myBid.createdAt)
-          ) {
-            grouped[auctionId].myBid = bid;
-          }
-        }
-        // O mezattaki en son teklifi
-        if (
-          !grouped[auctionId].lastBid ||
-          new Date(bid.createdAt) > new Date(grouped[auctionId].lastBid.createdAt)
-        ) {
-          grouped[auctionId].lastBid = bid;
-        }
-      });
-
-      const list = Object.values(grouped).map((grp) => {
-        const isMyBidLast = grp.lastBid.user._id === user._id;
-        const statusText = isMyBidLast
-          ? 'Teklif Verildi'
-          : 'Sizden sonra teklif verildi';
-        return {
-          ...grp.myBid,
-          auctionCurrentPrice: grp.lastBid.amount,
-          statusText,
-        };
-      });
-
-      setBids(list);
+      setBids(res.data || []);
     } catch (err) {
-      Alert.alert('Teklifler alınamadı:', err.message);
+      Alert.alert('Teklifler alınamadı:', err?.response?.data?.message || err.message);
     } finally {
       setLoading(false);
     }
   };
 
   const renderItem = ({ item }) => {
-  if (!item || !item.auction) return null; // NULL CHECK!
+    if (!item || !item.auction) return null; // NULL CHECK!
+    const auctionImage =
+      item.auction.images && item.auction.images.length > 0
+        ? item.auction.images[0]
+        : null;
+    const showRed = item.statusText === 'Sizden sonra teklif verildi';
 
-  const auctionImage =
-    item.auction.images && item.auction.images.length > 0
-      ? item.auction.images[0]
-      : null;
-  const showRed = item.statusText === 'Sizden sonra teklif verildi';
-
-  return (
-    <TouchableOpacity
-      style={styles.bidItem}
-      onPress={() =>
-        navigation.navigate('AuctionDetail', { auctionId: item.auction._id })
-      }
-    >
-      {auctionImage && (
-        <Image source={{ uri: auctionImage }} style={styles.auctionImage} />
-      )}
-      <View style={styles.rightContainer}>
-        <Text style={[styles.title, { marginTop: 6 }]}>
-          {item.auction.title}
-        </Text>
-        <Text style={[styles.amount, { marginTop: 6 }]}>
-          {showRed ? item.auctionCurrentPrice : item.amount} TL
-        </Text>
-        <Text
-          style={[
-            styles.status,
-            showRed
-              ? { color: '#d32f2f', fontWeight: 'bold' }
-              : { color: '#00796b' },
-          ]}
-        >
-          {item.statusText}
-        </Text>
-        {showRed && (
-          <Text style={styles.redWarning}>
-            Dikkat: Sizden sonra teklif verildi!
-          </Text>
+    return (
+      <TouchableOpacity
+        style={styles.bidItem}
+        onPress={() =>
+          navigation.navigate('AuctionDetail', { auctionId: item.auction._id })
+        }
+      >
+        {auctionImage && (
+          <Image source={{ uri: auctionImage }} style={styles.auctionImage} />
         )}
-      </View>
-    </TouchableOpacity>
-  );
-};
-gi
+        <View style={styles.rightContainer}>
+          <Text style={[styles.title, { marginTop: 6 }]}>
+            {item.auction.title}
+          </Text>
+          <Text style={[styles.amount, { marginTop: 6 }]}>
+            {showRed ? item.auctionCurrentPrice : item.amount} TL
+          </Text>
+          <Text
+            style={[
+              styles.status,
+              showRed
+                ? { color: '#d32f2f', fontWeight: 'bold' }
+                : { color: '#00796b' },
+            ]}
+          >
+            {item.statusText}
+          </Text>
+          {showRed && (
+            <Text style={styles.redWarning}>
+              Dikkat: Sizden sonra teklif verildi!
+            </Text>
+          )}
+        </View>
+      </TouchableOpacity>
+    );
+  };
+
   if (loading) {
     return (
       <View style={styles.loading}>
@@ -142,6 +101,9 @@ gi
     </View>
   );
 }
+
+// ...styles burada olacak, kısaltıyorum...
+
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#fff8e1', padding: 16 },
