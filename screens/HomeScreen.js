@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, FlatList, StyleSheet, Image, TouchableOpacity } from 'react-native';
+import { View, Text, FlatList, StyleSheet, Image, TouchableOpacity, SafeAreaView, StatusBar, Platform, Dimensions } from 'react-native';
 import { useNavigation, useIsFocused } from '@react-navigation/native';
 import axios from 'axios';
 
 // ✅ AdMob bileşenleri eklendi
 import { BannerAd, BannerAdSize, TestIds } from 'react-native-google-mobile-ads';
+
+const TAB_BAR_HEIGHT = 56; // Eğer daha yüksekse artırabilirsin
+const BANNER_HEIGHT = 60; // BannerAdSize.FULL_BANNER yüksekliği
 
 export default function HomeScreen() {
   const navigation = useNavigation();
@@ -56,31 +59,41 @@ export default function HomeScreen() {
     : 'ca-app-pub-4306778139267554/1985701713';
 
   return (
-    <View style={styles.container}>
-      <FlatList
-        data={auctions}
-        renderItem={renderItem}
-        keyExtractor={(item) => item._id}
-        numColumns={2}
-        columnWrapperStyle={{ justifyContent: 'space-between' }}
-        contentContainerStyle={styles.list}
-      />
-
-      {/* ✅ Reklam en alta */}
-      <View style={styles.adContainer}>
-        <BannerAd
-          unitId={adUnitId}
-          size={BannerAdSize.FULL_BANNER}
-          requestOptions={{ requestNonPersonalizedAdsOnly: true }}
+    <SafeAreaView style={styles.safe} edges={['top', 'left', 'right']}>
+      <StatusBar barStyle="dark-content" backgroundColor="#fff8e1" />
+      <View style={{ flex: 1 }}>
+        <FlatList
+          data={auctions}
+          renderItem={renderItem}
+          keyExtractor={(item) => item._id}
+          numColumns={2}
+          columnWrapperStyle={{ justifyContent: 'space-between' }}
+          contentContainerStyle={{
+            ...styles.list,
+            paddingBottom: BANNER_HEIGHT + TAB_BAR_HEIGHT + 16, // +16 ekstra boşluk için
+          }}
         />
+
+        {/* BannerAd tab bar'ın hemen üstüne sabit */}
+        <View style={styles.bannerWrapper}>
+          <BannerAd
+            unitId={adUnitId}
+            size={BannerAdSize.FULL_BANNER}
+            requestOptions={{ requestNonPersonalizedAdsOnly: true }}
+          />
+        </View>
       </View>
-    </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fff8e1' },
-  list: { padding: 12, paddingBottom: 80 },
+  safe: {
+    flex: 1,
+    backgroundColor: '#fff8e1',
+    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
+  },
+  list: { padding: 12 },
   card: {
     backgroundColor: '#fff',
     width: '48%',
@@ -132,9 +145,15 @@ const styles = StyleSheet.create({
     color: '#6d4c41',
     marginTop: 2,
   },
-  adContainer: {
-    alignItems: 'center',
+  bannerWrapper: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: TAB_BAR_HEIGHT,
     backgroundColor: '#fff',
-    paddingBottom: 8,
+    alignItems: 'center',
+    zIndex: 99,
+    paddingVertical: 0,
   },
 });
+
