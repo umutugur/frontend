@@ -115,38 +115,43 @@ export default function AuctionDetailScreen({ route }) {
   };
 
   // Chat başlatma
-const handleStartChat = async () => {
-  try {
-    const res = await fetch('https://imame-backend.onrender.com/api/chats/start', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        auctionId,
-        buyerId: user._id,
-      }),
-    });
-
-    // Response'u text olarak da logla:
-    const responseText = await res.text();
-    console.log("CHAT BAŞLAT RESPONSE:", responseText);
-
-    // JSON parse etmeye çalış:
-    let data;
+  const handleStartChat = async () => {
     try {
-      data = JSON.parse(responseText);
-    } catch (e) {
-      console.error("JSON PARSE HATASI:", e);
-      throw new Error('Yanıttan JSON okunamadı: ' + responseText);
+      const res = await fetch('https://imame-backend.onrender.com/api/chats/start', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          auctionId,
+          buyerId: user._id,
+        }),
+      });
+
+      // Response'u text olarak da logla:
+      const responseText = await res.text();
+      console.log("CHAT BAŞLAT RESPONSE:", responseText);
+
+      // JSON parse etmeye çalış:
+      let data;
+      try {
+        data = JSON.parse(responseText);
+      } catch (e) {
+        console.error("JSON PARSE HATASI:", e);
+        throw new Error('Yanıttan JSON okunamadı: ' + responseText);
+      }
+
+      if (!res.ok) throw new Error(data.message);
+
+      navigation.navigate('Chat', { chatId: data.chat._id });
+    } catch (err) {
+      Alert.alert('Hata', err.message);
     }
+  };
 
-    if (!res.ok) throw new Error(data.message);
-
-    navigation.navigate('Chat', { chatId: data.chat._id });
-  } catch (err) {
-    Alert.alert('Hata', err.message);
-  }
-};
-
+  // Satıcı profiline git
+  const handleSellerPress = () => {
+    if (!auction?.seller?._id) return;
+    navigation.navigate('Profile', { userId: auction.seller._id });
+  };
 
   if (loading || !auction) {
     return (
@@ -158,16 +163,15 @@ const handleStartChat = async () => {
 
   // Mesajlaşma butonu kontrol
   const isBuyerWinner =
-  user && user.role === 'buyer' && auction.isEnded &&
-  ((auction.winner && auction.winner._id === user._id) || auction.winner === user._id);
+    user && user.role === 'buyer' && auction.isEnded &&
+    ((auction.winner && auction.winner._id === user._id) || auction.winner === user._id);
 
-const isSellerOfEnded =
-  user &&
-  user.role === 'seller' &&
-  auction.isEnded &&
-  ((auction.seller && auction.seller._id === user._id) || auction.seller === user._id) &&
-  auction.winner;
-
+  const isSellerOfEnded =
+    user &&
+    user.role === 'seller' &&
+    auction.isEnded &&
+    ((auction.seller && auction.seller._id === user._id) || auction.seller === user._id) &&
+    auction.winner;
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
@@ -193,6 +197,17 @@ const isSellerOfEnded =
         style={styles.sliderContainer}
       />
 
+      {/* --- MODERN BİLGİ KARTI --- */}
+      <View style={styles.infoCard}>
+        <Text style={styles.title}>{auction.title}</Text>
+        <TouchableOpacity onPress={handleSellerPress}>
+          <Text style={styles.sellerBtn}>
+            Satıcı: {auction.seller?.companyName || 'Bilinmiyor'}
+          </Text>
+        </TouchableOpacity>
+        <Text style={styles.description}>{auction.description}</Text>
+      </View>
+
       {/* Usta İmzalı */}
       {auction.isSigned && (
         <View style={styles.badge}>
@@ -200,11 +215,11 @@ const isSellerOfEnded =
         </View>
       )}
 
-      {/* Bilgiler */}
-      <Text style={styles.title}>{auction.title}</Text>
-      <Text style={styles.seller}>Satıcı: {auction.seller?.companyName || 'Bilinmiyor'}</Text>
-      <Text style={styles.description}>{auction.description}</Text>
-      <Text style={styles.price}>Güncel Fiyat: {String(currentPrice)}₺</Text>
+      {/* Fiyat kartı */}
+      <View style={styles.priceBox}>
+        <Text style={styles.priceLabel}>Güncel Fiyat</Text>
+        <Text style={styles.price}>{String(currentPrice)}₺</Text>
+      </View>
 
       {/* Teklif artışı */}
       {user && user.role === 'buyer' && !auction.isEnded && (
@@ -291,19 +306,55 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     marginRight: 12,
   },
+  infoCard: {
+    backgroundColor: '#ffe0b2',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
+    shadowColor: '#000',
+    shadowOpacity: 0.07,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  title: { fontSize: 22, fontWeight: 'bold', color: '#4e342e', marginBottom: 4 },
+  sellerBtn: {
+    fontSize: 16,
+    color: '#1565c0',
+    fontWeight: 'bold',
+    marginBottom: 6,
+    textDecorationLine: 'underline',
+  },
+  description: {
+    fontSize: 15,
+    color: '#4e342e',
+    marginBottom: 4,
+    marginTop: 4,
+    lineHeight: 22,
+  },
   badge: {
     backgroundColor: '#4e342e',
     alignSelf: 'flex-start',
     paddingVertical: 4,
     paddingHorizontal: 10,
     borderRadius: 8,
-    marginBottom: 8,
+    marginBottom: 10,
   },
   badgeText: { color: '#fff', fontSize: 12, fontWeight: 'bold' },
-  title: { fontSize: 22, fontWeight: 'bold', color: '#4e342e', marginBottom: 4 },
-  seller: { fontSize: 16, color: '#6d4c41', marginBottom: 4 },
-  description: { fontSize: 15, color: '#4e342e', marginBottom: 8 },
-  price: { fontSize: 18, fontWeight: 'bold', color: '#2e7d32', marginBottom: 12 },
+  priceBox: {
+    backgroundColor: '#f5eee6',
+    borderRadius: 10,
+    alignItems: 'center',
+    paddingVertical: 16,
+    marginBottom: 10,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOpacity: 0.04,
+    shadowOffset: { width: 0, height: 1 },
+    shadowRadius: 2,
+  },
+  priceLabel: { color: '#6d4c41', fontSize: 14, fontWeight: '500', marginBottom: 3 },
+  price: { fontSize: 22, fontWeight: 'bold', color: '#2e7d32' },
   incrementContainer: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12 },
   incrementButton: { paddingVertical: 10, paddingHorizontal: 14, backgroundColor: '#d7ccc8', borderRadius: 8 },
   selectedIncrement: { backgroundColor: '#6d4c41' },
@@ -322,7 +373,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     fontSize: 16,
   },
-  bidsTitle: { fontSize: 18, fontWeight: 'bold', color: '#4e342e', marginBottom: 8 },
+  bidsTitle: { fontSize: 18, fontWeight: 'bold', color: '#4e342e', marginBottom: 8, marginTop: 8 },
   modernBidItem: {
     flexDirection: 'row',
     alignItems: 'center',
