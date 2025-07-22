@@ -36,7 +36,7 @@ export default function CustomHeader() {
 const styles = StyleSheet.create({
   container: {
   width: screenWidth,
-  height: 45 + statusBarH,
+  height: 40 + statusBarH,
   paddingTop: statusBarH,
   backgroundColor: '#fff',
   flexDirection: 'row',
