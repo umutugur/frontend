@@ -174,8 +174,9 @@ export default function AuctionDetailScreen({ route }) {
 
   // Satıcı profiline git
   const handleSellerPress = () => {
-    if (!auction?.seller?._id) return;
-    navigation.navigate('Profile', { userId: auction.seller._id });
+    const id = auction?.seller?._id || auction?.seller; // string dönmüş olabilir
+    if (!id) return;
+    navigation.navigate('ProfileDetail', { userId: id });
   };
 
   if (loading || !auction) {

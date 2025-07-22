@@ -77,6 +77,7 @@ function MainNavigator() {
           <Stack.Screen name="EditProfile" component={EditProfileScreen} />
           <Stack.Screen name="Terms" component={TermsAndConditionsScreen} />
           <Stack.Screen name="Profile" component={ProfileScreen}/>
+          <Stack.Screen name="ProfileDetail" component={ProfileScreen}/>
         </>
       )}
     </Stack.Navigator>

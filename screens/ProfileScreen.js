@@ -22,8 +22,9 @@ export default function ProfileScreen() {
   const [avgRating, setAvgRating] = useState(null);
   const [totalRatings, setTotalRatings] = useState(0);
   const [hasWonAuction, setHasWonAuction] = useState(false);
+  
 
-  const userIdFromParams = route.params?.userId;
+  const userIdFromParams = route.params?.userId ?? null;
   const isOwnProfile = !userIdFromParams || userIdFromParams === currentUser?._id;
 
   // Profili çek
