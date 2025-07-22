@@ -341,7 +341,7 @@ const styles = StyleSheet.create({
   },
   container: { padding: 16, backgroundColor: '#fff8e1' },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  logoContainer: { alignItems: 'center', marginBottom: 16 },
+  logoContainer: { marginTop:-20, alignItems: 'center', marginBottom: 16 },
   logo: { width: 360, height: 120 },
   sliderContainer: { marginBottom: 12, marginTop: -50 },
   sliderImage: {
