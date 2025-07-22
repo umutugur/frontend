@@ -320,7 +320,7 @@ export default function AuctionDetailScreen({ route }) {
       <View style={styles.adContainer}>
         <BannerAd
           unitId={adUnitId}
-          size={BannerAdSize.FULL_BANNER}
+          size={BannerAdSize.ANCHORED_ADAPTIVE_BANNER}
           requestOptions={{ requestNonPersonalizedAdsOnly: true }}
         />
       </View>
@@ -341,7 +341,7 @@ const styles = StyleSheet.create({
   },
   container: { padding: 16, backgroundColor: '#fff8e1' },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  logoContainer: { marginTop:-20, alignItems: 'center', marginBottom: 16 },
+  logoContainer: { marginTop:-30, alignItems: 'center', marginBottom: 16 },
   logo: { width: 360, height: 120 },
   sliderContainer: { marginBottom: 12, marginTop: -50 },
   sliderImage: {
