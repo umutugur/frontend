@@ -17,7 +17,7 @@ export default function CustomHeader() {
 
       {/* Logo */}
       <Image
-        source={require('../assets/logo.png')}
+        source={require('../assets/HeaderLogo.png')}
         style={styles.logo}
       />
 
