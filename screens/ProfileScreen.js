@@ -69,7 +69,7 @@ export default function ProfileScreen() {
     try {
       setLoading(true);
       const res = await axios.get(`https://imame-backend.onrender.com/api/users/${userId}`);
-      setProfileData(res.data.user);
+     setProfileData(res.data);
     } catch (err) {
       Alert.alert('Kullanıcı profili alınamadı', err.message);
     } finally {

@@ -35,26 +35,26 @@ export default function CustomHeader() {
 
 const styles = StyleSheet.create({
   container: {
-    width: screenWidth,
-    // yükseklik daha makul:
-    height: 60 + statusBarH,
-    paddingTop: statusBarH,        // StatusBar kadar boşluk, ekstra yok
-    backgroundColor: '#fff',
-    flexDirection: 'row',
-    alignItems: 'center',          // dikey merkez
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.15,
-    shadowRadius: 2,
-  },
-  logo: {
-    width: screenWidth * 0.38,     // senin verdiğin
-    height: 45,
-    resizeMode: 'contain',
-  },
+  width: screenWidth,
+  height: 60 + statusBarH,
+  paddingTop: statusBarH,
+  backgroundColor: '#fff',
+  flexDirection: 'row',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  paddingHorizontal: 16,
+  elevation: 3,
+  shadowColor: '#000',
+  shadowOffset: { width: 0, height: 1 },
+  shadowOpacity: 0.1,
+  shadowRadius: 2,
+},
+
+ logo: {
+  width: 150,         // sabit genişlik daha net durur
+  height: 45,
+  resizeMode: 'contain',
+},
   sideSpacer: {
     width: 26,
   },
