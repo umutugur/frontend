@@ -31,6 +31,7 @@ import AddAuctionScreen from './screens/AddAuctionScreen';
 import MyAuctionsScreen from './screens/MyAuctionsScreen';
 import EditProfileScreen from './screens/EditProfileScreen';
 import TermsAndConditionsScreen from './screens/TermsAndConditionsScreen';
+import ProfileScreen from './screens/ProfileScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -75,6 +76,7 @@ function MainNavigator() {
           <Stack.Screen name="MyAuctions" component={MyAuctionsScreen} />
           <Stack.Screen name="EditProfile" component={EditProfileScreen} />
           <Stack.Screen name="Terms" component={TermsAndConditionsScreen} />
+          <Stack.Screen name="Profile" component={ProfileScreen}/>
         </>
       )}
     </Stack.Navigator>
