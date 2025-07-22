@@ -11,13 +11,13 @@ export default function CustomHeader() {
 
   return (
     <View style={styles.container}>
-      <View style={styles.sideSpacer} /> {/* Sol boşluk */}
-      
-      <Image
-        source={require('../assets/logo.png')}
-        style={styles.logo}
-      />
-
+      <View style={styles.sideSpacer} /> 
+      <View style={styles.logoWrapper}>
+        <Image
+          source={require('../assets/logo.png')}
+          style={styles.logo}
+        />
+      </View>
       <TouchableOpacity
         style={styles.iconWrapper}
         onPress={() => navigation.navigate('Notifications')}
@@ -31,34 +31,33 @@ export default function CustomHeader() {
 const styles = StyleSheet.create({
   container: {
     width: screenWidth,
-    height: 120,
+    height: 70,
     backgroundColor: 'white',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 12,
-    paddingTop: 10,
     elevation: 3,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.2,
+    shadowOpacity: 0.15,
     shadowRadius: 2,
   },
+  logoWrapper: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   logo: {
-    marginTop:20,
-    width: 360,
-    height: 120,
+    width: screenWidth * 0.38, // Mesela 150px - 170px gibi (responsive)
+    height: 45,
     resizeMode: 'contain',
-    position: 'absolute',
-    left: screenWidth / 2 - 180, // 360/2 = 180, tam ortalamak için
-    top: 0,
   },
   sideSpacer: {
-    width: 26, // Sol boşluk, ikonun dengesi için
+    width: 26,
   },
   iconWrapper: {
-    marginTop:35,
-    width: 26,
+    width: 36,
     alignItems: 'flex-end',
   },
 });

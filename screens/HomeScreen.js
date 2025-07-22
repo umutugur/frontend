@@ -133,6 +133,7 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   adContainer: {
+    width:'100%',
     alignItems: 'center',
     backgroundColor: '#fff',
     paddingBottom: 8,

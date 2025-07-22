@@ -13,6 +13,8 @@ import {
 } from 'react-native';
 import { AuthContext } from '../context/AuthContext';
 import { useNavigation } from '@react-navigation/native';
+// ✅ AdMob bileşenleri eklendi
+import { BannerAd, BannerAdSize, TestIds } from 'react-native-google-mobile-ads';
 
 const screenWidth = Dimensions.get('window').width;
 
@@ -27,6 +29,10 @@ export default function AuctionDetailScreen({ route }) {
   const [bids, setBids] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isBidding, setIsBidding] = useState(false);
+  const adUnitId = __DEV__
+    ? TestIds.BANNER
+    : 'ca-app-pub-4306778139267554/1985701713';
+
 
   // Auction bilgisi yükle
   const fetchAuction = async () => {
@@ -71,13 +77,32 @@ export default function AuctionDetailScreen({ route }) {
     }
 
     // Adres kontrolü
-    if (!user.address || (typeof user.address === 'string' ? user.address.trim() === '' : false)) {
-      Alert.alert(
-        'Adres Gerekli',
-        'Teklif verebilmek için profilinize adres bilgisi eklemelisiniz.'
-      );
-      return;
-    }
+   if (
+  !user.address ||
+  !user.address.ilId ||
+  !user.address.ilceId ||
+  !user.address.mahalleId ||
+  !user.address.sokak ||
+  !user.address.apartmanNo ||
+  !user.address.daireNo
+) {
+  Alert.alert(
+    'Adres Gerekli',
+    'Teklif verebilmek için profilinize adres bilgisi eklemelisiniz.',
+    [
+      {
+        text: 'Profili Düzenle',
+        onPress: () => navigation.navigate('EditProfile'), // 👈 Yönlendirme
+        style: 'default'
+      },
+      {
+        text: 'İptal',
+        style: 'cancel'
+      }
+    ]
+  );
+  return;
+}
 
     // Son teklifi veren kontrolü
     if (bids.length > 0) {
@@ -290,11 +315,29 @@ export default function AuctionDetailScreen({ route }) {
           </Text>
         }
       />
+       {/* REKLAM */}
+      <View style={styles.adContainer}>
+        <BannerAd
+          unitId={adUnitId}
+          size={BannerAdSize.FULL_BANNER}
+          requestOptions={{ requestNonPersonalizedAdsOnly: true }}
+        />
+      </View>
     </ScrollView>
   );
+  
 }
 
 const styles = StyleSheet.create({
+  adContainer: {
+    marginTop: 16,
+    alignItems: 'center',
+    width: '100%',
+    backgroundColor: '#fff',
+    // Eğer hala kenarlardan taşıyorsa:
+    paddingHorizontal: 0,
+    paddingBottom: 12,
+  },
   container: { padding: 16, backgroundColor: '#fff8e1' },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   logoContainer: { alignItems: 'center', marginBottom: 16 },

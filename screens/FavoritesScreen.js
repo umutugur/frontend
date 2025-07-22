@@ -3,12 +3,17 @@ import { View, Text, FlatList, StyleSheet, Image, TouchableOpacity, ActivityIndi
 import { useNavigation } from '@react-navigation/native';
 import axios from 'axios';
 import { AuthContext } from '../context/AuthContext';
+// ✅ AdMob bileşenleri eklendi
+import { BannerAd, BannerAdSize, TestIds } from 'react-native-google-mobile-ads';
 
 export default function FavoritesScreen() {
   const navigation = useNavigation();
   const { user } = useContext(AuthContext);
   const [auctions, setAuctions] = useState([]);
   const [loading, setLoading] = useState(true);
+  const adUnitId = __DEV__
+    ? TestIds.BANNER
+    : 'ca-app-pub-4306778139267554/1985701713';
 
   useEffect(() => {
     if (user?._id) {
@@ -74,11 +79,29 @@ export default function FavoritesScreen() {
         contentContainerStyle={styles.list}
         ListEmptyComponent={<Text style={styles.empty}>Favori satıcıların aktif mezatı yok.</Text>}
       />
-    </View>
+      {/* REKLAM */}
+        <View style={styles.adContainer}>
+          <BannerAd
+            unitId={adUnitId}
+            size={BannerAdSize.FULL_BANNER}
+            requestOptions={{ requestNonPersonalizedAdsOnly: true }}
+          />
+        </View>
+    </View>   
   );
+  
 }
 
 const styles = StyleSheet.create({
+   adContainer: {
+    marginTop: 16,
+    alignItems: 'center',
+    width: '100%',
+    backgroundColor: '#fff',
+    // Eğer hala kenarlardan taşıyorsa:
+    paddingHorizontal: 0,
+    paddingBottom: 12,
+  },
   container: { flex: 1, backgroundColor: '#fff8e1' },
   list: { padding: 12, paddingBottom: 80 },
   title: { fontSize: 22, fontWeight: 'bold', color: '#4e342e', marginBottom: 10 },

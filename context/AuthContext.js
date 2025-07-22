@@ -26,7 +26,7 @@ export const AuthProvider = ({ children }) => {
 
     // Firebase'den alınan Android Client ID'niz
     androidClientId: '10042514664-2ogtkaoj8ja49650g17gu6rd084ggejp.apps.googleusercontent.com',
-
+    redirectUri: 'com.umutugur.imame://oauthredirect',
     // Eğer iOS için de bir Client ID'niz varsa (google-services.json veya Firebase Console'dan alın)
     // iosClientId: 'YOUR_IOS_CLIENT_ID_IF_AVAILABLE.apps.googleusercontent.com', 
   });

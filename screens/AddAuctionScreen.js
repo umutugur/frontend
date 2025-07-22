@@ -40,6 +40,11 @@ export default function AddAuctionScreen() {
     }
   };
 
+  // --- FOTOĞRAF SİLME FONKSİYONU ---
+  const handleRemoveImage = (idx) => {
+    setImages(prev => prev.filter((_, i) => i !== idx));
+  };
+
   const handleSubmit = async () => {
     if (!title || !startingPrice || !user || !user._id) {
       Alert.alert('Eksik bilgi', 'Lütfen gerekli tüm alanları doldurun.');
@@ -129,7 +134,15 @@ export default function AddAuctionScreen() {
 
         <View style={styles.imagePreviewContainer}>
           {images.map((img, idx) => (
-            <Image key={idx} source={{ uri: img.uri }} style={styles.previewImage} />
+            <View key={idx} style={styles.imageWrapper}>
+              <Image source={{ uri: img.uri }} style={styles.previewImage} />
+              <TouchableOpacity
+                style={styles.removeButton}
+                onPress={() => handleRemoveImage(idx)}
+              >
+                <Text style={styles.removeButtonText}>✖</Text>
+              </TouchableOpacity>
+            </View>
           ))}
         </View>
 
@@ -187,12 +200,34 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     marginBottom: 16,
   },
+  imageWrapper: {
+    position: 'relative',
+    marginRight: 8,
+    marginBottom: 8,
+  },
   previewImage: {
     width: 70,
     height: 70,
     borderRadius: 8,
-    marginRight: 8,
-    marginBottom: 8,
+  },
+  removeButton: {
+    position: 'absolute',
+    top: -6,
+    right: -6,
+    backgroundColor: '#d32f2f',
+    borderRadius: 12,
+    width: 24,
+    height: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 1,
+    elevation: 2,
+  },
+  removeButtonText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 15,
+    lineHeight: 20,
   },
   submitButton: {
     backgroundColor: '#6d4c41',
