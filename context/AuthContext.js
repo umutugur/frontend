@@ -5,10 +5,14 @@ import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
 import * as WebBrowser from 'expo-web-browser';
 import * as Google from 'expo-auth-session/providers/google';
-import { makeRedirectUri } from 'expo-auth-session'; 
+import { makeRedirectUri } from 'expo-auth-session';
+import { Alert } from 'react-native'; // <-- eklendi
 
 WebBrowser.maybeCompleteAuthSession();
 const redirectUri = makeRedirectUri();
+
+// 🔥 Uygulama açılır açılmaz redirect URI'yi göster!
+Alert.alert("KULLANILAN redirectUri:", redirectUri);
 
 export const AuthContext = createContext();
 
@@ -18,23 +22,25 @@ export const AuthProvider = ({ children }) => {
 
   // ✅ Google Auth Request - Yaklaşım B
   const [request, response, promptAsync] = Google.useAuthRequest({
- // androidClientId: '10042514664-2ogtkaoj8ja49650g17gu6rd084ggejp.apps.googleusercontent.com',
-   clientId: "10042514664-hd90v340a3tltvqte7pho0dttfuplio0.apps.googleusercontent.com", // Yedekli
-   redirectUri,
-});
-
+    // androidClientId: '10042514664-2ogtkaoj8ja49650g17gu6rd084ggejp.apps.googleusercontent.com',
+    clientId: "10042514664-hd90v340a3tltvqte7pho0dttfuplio0.apps.googleusercontent.com", // Yedekli
+    redirectUri,
+  });
 
   useEffect(() => {
-    console.log("Google login response:", response);
+    // Google login yanıtı geldiğinde ekrana yaz!
+    if (response) {
+      Alert.alert("Google login response:", JSON.stringify(response));
+    }
     if (response?.type === 'success') {
       const { authentication } = response;
-      console.log("Authentication objesi:", authentication);
+      Alert.alert("Authentication objesi:", JSON.stringify(authentication));
       handleGoogleAuth(authentication.accessToken, authentication.idToken);
     }
   }, [response]);
 
-  const handleGoogleAuth = async (accessToken,idToken) => {
-     console.log("Google login başlıyor, accessToken:", accessToken, "idToken:", idToken);
+  const handleGoogleAuth = async (accessToken, idToken) => {
+    Alert.alert("Google login başlıyor", "accessToken: " + accessToken + "\nidToken: " + idToken);
     try {
       // Backend'e access token gönder
       const res = await axios.post('https://imame-backend.onrender.com/api/auth/social-login', {
@@ -42,16 +48,15 @@ export const AuthProvider = ({ children }) => {
         accessToken,
         idToken,
       });
-      console.log("Backend yanıtı:", res.data);
-
+      Alert.alert("Backend yanıtı:", JSON.stringify(res.data));
       const userData = res.data.user;
       setUser(userData);
       await AsyncStorage.setItem('user', JSON.stringify(userData));
       await registerForPushNotificationsAsync(userData._id);
     } catch (err) {
-      console.error('❌ Google auth error:', err.response?.data || err.message);
+      Alert.alert('❌ Google auth error:', JSON.stringify(err.response?.data || err.message));
     }
-  }; 
+  };
 
   // ✅ Push token
   const registerForPushNotificationsAsync = async (userId) => {
@@ -75,7 +80,7 @@ export const AuthProvider = ({ children }) => {
         pushToken: expoPushToken,
       });
     } catch (err) {
-      console.error('❌ Push token kaydedilemedi:', err.message);
+      Alert.alert('❌ Push token kaydedilemedi:', err.message);
     }
   };
 
@@ -88,7 +93,7 @@ export const AuthProvider = ({ children }) => {
       await AsyncStorage.setItem('user', JSON.stringify(userData));
       await registerForPushNotificationsAsync(userData._id);
     } catch (err) {
-      console.error('❌ Giriş başarısız:', err.response?.data || err.message);
+      Alert.alert('❌ Giriş başarısız:', JSON.stringify(err.response?.data || err.message));
     }
   };
 
@@ -112,7 +117,7 @@ export const AuthProvider = ({ children }) => {
       setUser(updatedUser);
       await AsyncStorage.setItem('user', JSON.stringify(updatedUser));
     } catch (err) {
-      console.error('❌ Profil güncelleme hatası:', err.response?.data || err.message);
+      Alert.alert('❌ Profil güncelleme hatası:', JSON.stringify(err.response?.data || err.message));
     }
   };
 
