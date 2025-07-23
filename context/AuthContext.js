@@ -9,10 +9,6 @@ import { makeRedirectUri } from 'expo-auth-session';
 import { Alert } from 'react-native'; // <-- eklendi
 
 WebBrowser.maybeCompleteAuthSession();
-// const redirectUri = makeRedirectUri();
-const redirectUri = makeRedirectUri({
-  native: 'com.umutugur.imame://oauthredirect',
-});
 
 // 🔥 Uygulama açılır açılmaz redirect URI'yi göster!
 Alert.alert("KULLANILAN redirectUri:", redirectUri);
@@ -25,10 +21,9 @@ export const AuthProvider = ({ children }) => {
 
   // ✅ Google Auth Request - Yaklaşım B
   const [request, response, promptAsync] = Google.useAuthRequest({
-     androidClientId: '10042514664-2ogtkaoj8ja49650g17gu6rd084ggejp.apps.googleusercontent.com',
-    // clientId: "10042514664-hd90v340a3tltvqte7pho0dttfuplio0.apps.googleusercontent.com", // Yedekli
-    redirectUri,
-  });
+  androidClientId: '10042514664-2ogtkaoj8ja49650g17gu6rd084ggejp.apps.googleusercontent.com',
+  redirectUri: 'com.umutugur.imame://oauthredirect', // makeRedirectUri({ native: ... }) da olur
+});
 
   useEffect(() => {
     // Google login yanıtı geldiğinde ekrana yaz!
