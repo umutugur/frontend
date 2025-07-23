@@ -5,8 +5,7 @@ import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
 import * as WebBrowser from 'expo-web-browser';
 import * as Google from 'expo-auth-session/providers/google';
-// makeRedirectUri'ye artık ihtiyacımız yok
-import { makeRedirectUri } from 'expo-auth-session'; // Bu satırı yorum satırı yapın veya silin
+import { makeRedirectUri } from 'expo-auth-session'; 
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -19,6 +18,7 @@ export const AuthProvider = ({ children }) => {
   // ✅ Google Auth Request - Yaklaşım B
   const [request, response, promptAsync] = Google.useAuthRequest({
   androidClientId: '10042514664-2ogtkaoj8ja49650g17gu6rd084ggejp.apps.googleusercontent.com',
+   clientId: "10042514664-hd90v340a3tltvqte7pho0dttfuplio0.apps.googleusercontent.com", // Yedekli
   redirectUri: 'com.umutugur.imame://oauthredirect',
 });
 
@@ -28,7 +28,7 @@ export const AuthProvider = ({ children }) => {
     if (response?.type === 'success') {
       const { authentication } = response;
       console.log("Authentication objesi:", authentication);
-      handleGoogleAuth(authentication.accessToken);
+      handleGoogleAuth(authentication.accessToken, authentication.idToken);
     }
   }, [response]);
 
