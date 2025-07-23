@@ -9,7 +9,10 @@ import { makeRedirectUri } from 'expo-auth-session';
 import { Alert } from 'react-native'; // <-- eklendi
 
 WebBrowser.maybeCompleteAuthSession();
-const redirectUri = makeRedirectUri();
+// const redirectUri = makeRedirectUri();
+const redirectUri = makeRedirectUri({
+  native: 'com.umutugur.imame://oauthredirect',
+});
 
 // 🔥 Uygulama açılır açılmaz redirect URI'yi göster!
 Alert.alert("KULLANILAN redirectUri:", redirectUri);
