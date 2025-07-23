@@ -1,6 +1,6 @@
 export default {
   expo: {
-    owner:"umutugur",
+    owner: "umutugur",
     name: "İmame",
     slug: "imame",
     scheme: "com.umutugur.imame",
@@ -36,14 +36,18 @@ export default {
         }
       ],
       config: {
-        googleMobileAdsAppId: "ca-app-pub-4306778139267554~1925991963" // ✅ Android için uygulama kimliği
+        googleMobileAdsAppId: "ca-app-pub-4306778139267554~1925991963"
       }
     },
     ios: {
       supportsTablet: true,
       bundleIdentifier: "com.umutugur.imame",
       config: {
-        googleMobileAdsAppId: "ca-app-pub-4306778139267554~1925991963" // ✅ iOS için uygulama kimliği
+        googleMobileAdsAppId: "ca-app-pub-4306778139267554~1925991963"
+      },
+      infoPlist: {
+        NSUserTrackingUsageDescription:
+          "İmame uygulaması reklam ve analiz servisleri için takip izni ister. Bu izin verilmediği takdirde, size özel reklamlar gösterilemeyebilir."
       }
     },
     plugins: [
@@ -59,10 +63,9 @@ export default {
       ],
       [
         "react-native-google-mobile-ads",
-         {
-    androidAppId: "ca-app-pub-4306778139267554~1925991963"
-  }
-       
+        {
+          androidAppId: "ca-app-pub-4306778139267554~1925991963"
+        }
       ]
     ]
   }

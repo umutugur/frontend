@@ -1,6 +1,12 @@
 import React, { useState, useEffect, useContext } from 'react';
 import {
-  View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+  ScrollView,
+  Alert
 } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import { AuthContext } from '../context/AuthContext';
@@ -13,7 +19,12 @@ import mahalleler3 from '../assets/data/mahalleler-3.json';
 import mahalleler4 from '../assets/data/mahalleler-4.json';
 import { useNavigation } from '@react-navigation/native';
 
-const mahalleler = [...mahalleler1, ...mahalleler2, ...mahalleler3, ...mahalleler4];
+const mahalleler = [
+  ...mahalleler1,
+  ...mahalleler2,
+  ...mahalleler3,
+  ...mahalleler4,
+];
 
 const RegisterScreen = () => {
   const { login } = useContext(AuthContext);
@@ -50,54 +61,56 @@ const RegisterScreen = () => {
     }
   }, [selectedIlceId]);
   const navigation = useNavigation();
+
   const handleRegister = async () => {
-      console.log("İl ID:", selectedIlId);
-      console.log("İlçe ID:", selectedIlceId);
-      console.log("Mahalle ID:", selectedMahalleId);
-  if (!name || !email || !password || !selectedIlId || !selectedIlceId || !selectedMahalleId || !sokak) {
-    setError('Tüm zorunlu alanları doldurun.');
-    return;
-  }
+    if (
+      !name ||
+      !email ||
+      !password ||
+      !selectedIlId ||
+      !selectedIlceId ||
+      !selectedMahalleId ||
+      !sokak
+    ) {
+      setError('Tüm zorunlu alanları doldurun.');
+      return;
+    }
 
-  setLoading(true);
-  setError('');
+    setLoading(true);
+    setError('');
 
-  const address = {
-    ilId: selectedIlId,
-    ilceId: selectedIlceId,
-    mahalleId: selectedMahalleId,
-    sokak,
-    apartmanNo,
-    daireNo
-  };
+    const address = {
+      ilId: selectedIlId,
+      ilceId: selectedIlceId,
+      mahalleId: selectedMahalleId,
+      sokak,
+      apartmanNo,
+      daireNo,
+    };
 
-  try {
-    const res = await fetch('https://imame-backend.onrender.com/api/auth/register', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, email, password, address })
-    });
+    try {
+      const res = await fetch('https://imame-backend.onrender.com/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, email, password, address }),
+      });
 
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.message || 'Kayıt başarısız');
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'Kayıt başarısız');
 
-    // Otomatik login kaldırıldı
-    Alert.alert(
-      'Kayıt Başarılı',
-      'Hesabınız oluşturuldu. Giriş yapabilirsiniz.',
-      [
+      // Otomatik login kaldırıldı
+      Alert.alert('Kayıt Başarılı', 'Hesabınız oluşturuldu. Giriş yapabilirsiniz.', [
         {
           text: 'Tamam',
-          onPress: () => navigation.navigate('Login')
-        }
-      ]
-    );
-  } catch (err) {
-    setError(err.message);
-  } finally {
-    setLoading(false);
-  }
-};
+          onPress: () => navigation.navigate('Login'),
+        },
+      ]);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
@@ -106,6 +119,7 @@ const RegisterScreen = () => {
       <TextInput
         style={styles.input}
         placeholder="Ad Soyad"
+        placeholderTextColor="#B5A16B"
         value={name}
         onChangeText={setName}
       />
@@ -113,6 +127,7 @@ const RegisterScreen = () => {
       <TextInput
         style={styles.input}
         placeholder="E-posta"
+        placeholderTextColor="#B5A16B"
         value={email}
         onChangeText={setEmail}
         autoCapitalize="none"
@@ -122,6 +137,7 @@ const RegisterScreen = () => {
       <TextInput
         style={styles.input}
         placeholder="Şifre"
+        placeholderTextColor="#B5A16B"
         value={password}
         onChangeText={setPassword}
         secureTextEntry
@@ -168,18 +184,21 @@ const RegisterScreen = () => {
       <TextInput
         style={styles.input}
         placeholder="Sokak"
+        placeholderTextColor="#B5A16B"
         value={sokak}
         onChangeText={setSokak}
       />
       <TextInput
         style={styles.input}
         placeholder="Apartman No"
+        placeholderTextColor="#B5A16B"
         value={apartmanNo}
         onChangeText={setApartmanNo}
       />
       <TextInput
         style={styles.input}
         placeholder="Daire No"
+        placeholderTextColor="#B5A16B"
         value={daireNo}
         onChangeText={setDaireNo}
       />
@@ -194,33 +213,69 @@ const RegisterScreen = () => {
 };
 
 const styles = StyleSheet.create({
-  container: { padding: 24, backgroundColor: '#fff8e1', flexGrow: 1 },
-  title: { fontSize: 28, fontWeight: 'bold', color: '#4e342e', marginBottom: 32, textAlign: 'center' },
+  container: {
+    padding: 24,
+    backgroundColor: '#F9F6F2',
+    flexGrow: 1,
+    justifyContent: 'center'
+  },
+  title: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: '#7B1421',
+    marginBottom: 32,
+    textAlign: 'center',
+    letterSpacing: 0.5,
+  },
   input: {
     borderWidth: 1,
-    borderColor: '#CCC',
+    borderColor: '#B5A16B',
     borderRadius: 12,
     padding: 14,
     fontSize: 16,
     marginBottom: 16,
     backgroundColor: '#fff',
-    color: '#000'
+    color: '#7B1421',
   },
   picker: {
     backgroundColor: '#fff',
     marginBottom: 16,
     borderRadius: 12,
+    color: '#7B1421',
   },
-  label: { color: '#4e342e', fontWeight: 'bold', marginBottom: 6 },
+  label: {
+    color: '#B5A16B',
+    fontWeight: 'bold',
+    marginBottom: 6,
+    marginLeft: 2,
+    fontSize: 15,
+    letterSpacing: 0.2,
+  },
   button: {
-    backgroundColor: '#6d4c41',
+    backgroundColor: '#B5A16B',
     padding: 16,
     borderRadius: 12,
     alignItems: 'center',
-    marginTop: 8
+    marginTop: 8,
+    marginBottom: 32,
+    shadowColor: '#b5a16b',
+    shadowOpacity: 0.08,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 2,
+    elevation: 1,
   },
-  buttonText: { color: '#fff', fontSize: 16, fontWeight: '600' },
-  error: { color: 'red', textAlign: 'center', marginBottom: 10 }
+  buttonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '700',
+    letterSpacing: 0.2,
+  },
+  error: {
+    color: '#7B1421',
+    textAlign: 'center',
+    marginBottom: 10,
+    fontWeight: 'bold'
+  }
 });
 
 export default RegisterScreen;

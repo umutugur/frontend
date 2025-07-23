@@ -6,7 +6,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import Toast from 'react-native-toast-message';
 import { AuthProvider, AuthContext } from './context/AuthContext';
 import OfflineNotice from './components/OfflineNotice';
-
+import { SafeAreaView } from 'react-native-safe-area-context';
 // Screens
 import LoginScreen from './screens/LoginScreen';
 import RegisterScreen from './screens/RegisterScreen';
@@ -32,6 +32,8 @@ import MyAuctionsScreen from './screens/MyAuctionsScreen';
 import EditProfileScreen from './screens/EditProfileScreen';
 import TermsAndConditionsScreen from './screens/TermsAndConditionsScreen';
 import ProfileScreen from './screens/ProfileScreen';
+import PrivacyPolicyScreen from './screens/PrivacyPolicyScreen';
+import HelpAndSupportScreen from './screens/HelpAndSupportScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -78,6 +80,8 @@ function MainNavigator() {
           <Stack.Screen name="Terms" component={TermsAndConditionsScreen} />
           <Stack.Screen name="Profile" component={ProfileScreen}/>
           <Stack.Screen name="ProfileDetail" component={ProfileScreen}/>
+          <Stack.Screen name="PrivacyPolicy" component={PrivacyPolicyScreen}/>
+          <Stack.Screen name="HelpAndSupport" component={HelpAndSupportScreen}/>
         </>
       )}
     </Stack.Navigator>
@@ -104,6 +108,7 @@ export default function App() {
   }, []);
 
   return (
+    <SafeAreaView style={{ flex: 1, backgroundColor: '#F9F6F2' }}>
     <AuthProvider>
       <NavigationContainer>
         <OfflineNotice />
@@ -111,5 +116,6 @@ export default function App() {
         <Toast />
       </NavigationContainer>
     </AuthProvider>
+    </SafeAreaView>
   );
 }

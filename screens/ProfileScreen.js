@@ -139,6 +139,12 @@ export default function ProfileScreen() {
       <TouchableOpacity style={styles.card} onPress={() => navigation.navigate('Notifications')}>
         <Text style={styles.link}>🔔 Bildirimler</Text>
       </TouchableOpacity>
+      <TouchableOpacity style={styles.card} onPress={() => navigation.navigate('PrivacyPolicy')}>
+        <Text style={styles.link}>🔔 Gizlilik Politikası</Text>
+      </TouchableOpacity>
+      <TouchableOpacity style={styles.card} onPress={() => navigation.navigate('HelpAndSupport')}>
+        <Text style={styles.link}>🔔 Yardım & Destek</Text>
+      </TouchableOpacity>
     </>
   );
 
