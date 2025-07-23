@@ -22,8 +22,8 @@ export const AuthProvider = ({ children }) => {
 
   // ✅ Google Auth Request - Yaklaşım B
   const [request, response, promptAsync] = Google.useAuthRequest({
-    // androidClientId: '10042514664-2ogtkaoj8ja49650g17gu6rd084ggejp.apps.googleusercontent.com',
-    clientId: "10042514664-hd90v340a3tltvqte7pho0dttfuplio0.apps.googleusercontent.com", // Yedekli
+     androidClientId: '10042514664-2ogtkaoj8ja49650g17gu6rd084ggejp.apps.googleusercontent.com',
+    // clientId: "10042514664-hd90v340a3tltvqte7pho0dttfuplio0.apps.googleusercontent.com", // Yedekli
     redirectUri,
   });
 
