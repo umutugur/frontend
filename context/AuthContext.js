@@ -8,6 +8,7 @@ import * as Google from 'expo-auth-session/providers/google';
 import { makeRedirectUri } from 'expo-auth-session'; 
 
 WebBrowser.maybeCompleteAuthSession();
+const redirectUri = makeRedirectUri();
 
 export const AuthContext = createContext();
 
@@ -19,7 +20,7 @@ export const AuthProvider = ({ children }) => {
   const [request, response, promptAsync] = Google.useAuthRequest({
  // androidClientId: '10042514664-2ogtkaoj8ja49650g17gu6rd084ggejp.apps.googleusercontent.com',
    clientId: "10042514664-hd90v340a3tltvqte7pho0dttfuplio0.apps.googleusercontent.com", // Yedekli
- // redirectUri: 'com.umutugur.imame://oauthredirect',
+   redirectUri,
 });
 
 
