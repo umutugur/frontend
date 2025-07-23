@@ -6,12 +6,9 @@ import * as Device from 'expo-device';
 import * as WebBrowser from 'expo-web-browser';
 import * as Google from 'expo-auth-session/providers/google';
 import { makeRedirectUri } from 'expo-auth-session';
-import { Alert } from 'react-native'; // <-- eklendi
+import { Alert } from 'react-native';
 
 WebBrowser.maybeCompleteAuthSession();
-
-// 🔥 Uygulama açılır açılmaz redirect URI'yi göster!
-Alert.alert("KULLANILAN redirectUri:", redirectUri);
 
 export const AuthContext = createContext();
 
@@ -19,14 +16,21 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // ✅ Google Auth Request - Yaklaşım B
+  // 👇👇 Redirect URI üretimi
+  const redirectUri = makeRedirectUri({ native: 'com.umutugur.imame://oauthredirect' });
+
+  // Uygulama açılır açılmaz redirect URI'yi göster (Sadece bir kez)
+  useEffect(() => {
+    Alert.alert("KULLANILAN redirectUri:", redirectUri);
+  }, [redirectUri]);
+
+  // Google Auth
   const [request, response, promptAsync] = Google.useAuthRequest({
-  androidClientId: '10042514664-2ogtkaoj8ja49650g17gu6rd084ggejp.apps.googleusercontent.com',
-  redirectUri: 'com.umutugur.imame://oauthredirect', // makeRedirectUri({ native: ... }) da olur
-});
+    androidClientId: '10042514664-2ogtkaoj8ja49650g17gu6rd084ggejp.apps.googleusercontent.com',
+    redirectUri: redirectUri,
+  });
 
   useEffect(() => {
-    // Google login yanıtı geldiğinde ekrana yaz!
     if (response) {
       Alert.alert("Google login response:", JSON.stringify(response));
     }
@@ -40,7 +44,6 @@ export const AuthProvider = ({ children }) => {
   const handleGoogleAuth = async (accessToken, idToken) => {
     Alert.alert("Google login başlıyor", "accessToken: " + accessToken + "\nidToken: " + idToken);
     try {
-      // Backend'e access token gönder
       const res = await axios.post('https://imame-backend.onrender.com/api/auth/social-login', {
         provider: 'google',
         accessToken,
@@ -60,19 +63,15 @@ export const AuthProvider = ({ children }) => {
   const registerForPushNotificationsAsync = async (userId) => {
     try {
       if (!Device.isDevice) return;
-
       const { status: existingStatus } = await Notifications.getPermissionsAsync();
       let finalStatus = existingStatus;
-
       if (existingStatus !== 'granted') {
         const { status } = await Notifications.requestPermissionsAsync();
         finalStatus = status;
       }
       if (finalStatus !== 'granted') return;
-
       const tokenData = await Notifications.getExpoPushTokenAsync();
       const expoPushToken = tokenData.data;
-
       await axios.post('https://imame-backend.onrender.com/api/users/update-token', {
         userId,
         pushToken: expoPushToken,
@@ -110,7 +109,6 @@ export const AuthProvider = ({ children }) => {
           headers: { Authorization: `Bearer ${token}` },
         }
       );
-
       const updatedUser = res.data.user;
       setUser(updatedUser);
       await AsyncStorage.setItem('user', JSON.stringify(updatedUser));
