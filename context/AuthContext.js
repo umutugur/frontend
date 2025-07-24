@@ -6,7 +6,6 @@ import * as Device from 'expo-device';
 import * as WebBrowser from 'expo-web-browser';
 import * as Google from 'expo-auth-session/providers/google';
 import { makeRedirectUri } from 'expo-auth-session';
-import { Alert } from 'react-native';
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -16,44 +15,39 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // 👇👇 Redirect URI üretimi
+  // Redirect URI
   const redirectUri = makeRedirectUri({ native: 'com.umutugur.imame:/oauthredirect' });
 
-const [request, response, promptAsync] = Google.useAuthRequest({
-  androidClientId: '10042514664-2ogtkaoj8ja49650g17gu6rd084ggejp.apps.googleusercontent.com',
-  redirectUri,
-});
+  const [request, response, promptAsync] = Google.useAuthRequest({
+    androidClientId: '10042514664-2ogtkaoj8ja49650g17gu6rd084ggejp.apps.googleusercontent.com',
+    redirectUri,
+  });
 
   useEffect(() => {
-    if (response) {
-      Alert.alert("Google login response:", JSON.stringify(response));
-    }
     if (response?.type === 'success') {
       const { authentication } = response;
-      Alert.alert("Authentication objesi:", JSON.stringify(authentication));
       handleGoogleAuth(authentication.accessToken, authentication.idToken);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [response]);
 
   const handleGoogleAuth = async (accessToken, idToken) => {
-    Alert.alert("Google login başlıyor", "accessToken: " + accessToken + "\nidToken: " + idToken);
     try {
       const res = await axios.post('https://imame-backend.onrender.com/api/auth/social-login', {
         provider: 'google',
         accessToken,
         idToken,
       });
-      Alert.alert("Backend yanıtı:", JSON.stringify(res.data));
       const userData = res.data.user;
       setUser(userData);
       await AsyncStorage.setItem('user', JSON.stringify(userData));
       await registerForPushNotificationsAsync(userData._id);
     } catch (err) {
-      Alert.alert('❌ Google auth error:', JSON.stringify(err.response?.data || err.message));
+      // Hata yönetimini burada yapabilirsin, örn. bir snackbar veya toast gösterebilirsin.
     }
   };
 
-  // ✅ Push token
+  // Push token fonksiyonu
   const registerForPushNotificationsAsync = async (userId) => {
     try {
       if (!Device.isDevice) return;
@@ -71,11 +65,11 @@ const [request, response, promptAsync] = Google.useAuthRequest({
         pushToken: expoPushToken,
       });
     } catch (err) {
-      Alert.alert('❌ Push token kaydedilemedi:', err.message);
+      // İsteğe bağlı olarak hata gösterebilirsin.
     }
   };
 
-  // ✅ Normal email login
+  // Normal email login
   const login = async (email, password) => {
     try {
       const res = await axios.post('https://imame-backend.onrender.com/api/auth/login', { email, password });
@@ -84,7 +78,7 @@ const [request, response, promptAsync] = Google.useAuthRequest({
       await AsyncStorage.setItem('user', JSON.stringify(userData));
       await registerForPushNotificationsAsync(userData._id);
     } catch (err) {
-      Alert.alert('❌ Giriş başarısız:', JSON.stringify(err.response?.data || err.message));
+      // Hata yönetimi
     }
   };
 
@@ -107,7 +101,7 @@ const [request, response, promptAsync] = Google.useAuthRequest({
       setUser(updatedUser);
       await AsyncStorage.setItem('user', JSON.stringify(updatedUser));
     } catch (err) {
-      Alert.alert('❌ Profil güncelleme hatası:', JSON.stringify(err.response?.data || err.message));
+      // Hata yönetimi
     }
   };
 
@@ -126,6 +120,7 @@ const [request, response, promptAsync] = Google.useAuthRequest({
       setIsLoading(false);
     };
     loadUser();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (
