@@ -17,7 +17,7 @@ export const AuthProvider = ({ children }) => {
   const [isLoading, setIsLoading] = useState(true);
 
   // 👇👇 Redirect URI üretimi
-  const redirectUri = makeRedirectUri({ native: 'com.umutugur.imame:/oauthredirect' });
+  const redirectUri = makeRedirectUri({ native: 'com.umutugur.imame://oauthredirect' });
 
 const [request, response, promptAsync] = Google.useAuthRequest({
   androidClientId: '10042514664-2ogtkaoj8ja49650g17gu6rd084ggejp.apps.googleusercontent.com',
