@@ -1,25 +1,47 @@
-import React from 'react';
-import { View, Text, FlatList, StyleSheet } from 'react-native';
-
-const mockNotifications = [
-  { id: '1', title: 'Yeni mezat eklendi!', time: '5 dakika önce' },
-  { id: '2', title: 'Teklifiniz kabul edildi.', time: '1 saat önce' },
-  { id: '3', title: 'Mezat kazandınız! Dekont yüklemeyi unutmayın.', time: 'Dün' },
-];
+// screens/NotificationsScreen.js
+import React, { useContext } from 'react';
+import { View, Text, FlatList, StyleSheet, TouchableOpacity } from 'react-native';
+import axios from 'axios';
+import { AuthContext } from '../context/AuthContext';
 
 export default function NotificationsScreen() {
+  const { notifications, setNotifications } = useContext(AuthContext);
+
+  const markAsRead = async (notifId) => {
+    try {
+      await axios.patch(
+        `https://imame-backend.onrender.com/api/user-notifications/${notifId}/read`
+      );
+      setNotifications((prev) =>
+        prev.map((n) => (n._id === notifId ? { ...n, isRead: true } : n))
+      );
+    } catch (err) {
+      console.log('Bildirim okundu yapılamadı', err.message);
+    }
+  };
+
   const renderItem = ({ item }) => (
-    <View style={styles.notification}>
-      <Text style={styles.title}>{item.title}</Text>
-      <Text style={styles.time}>{item.time}</Text>
-    </View>
+    <TouchableOpacity onPress={() => markAsRead(item._id)}>
+      <View
+        style={[
+          styles.notification,
+          !item.isRead && { backgroundColor: '#ffe0b2' }, // okunmamış bildirimler için renk
+        ]}
+      >
+        <Text style={[styles.title, !item.isRead && { fontWeight: 'bold' }]}>
+          {item.title}
+        </Text>
+        <Text style={styles.body}>{item.message}</Text>
+        {/* İsterseniz tarih gösterebilirsiniz */}
+      </View>
+    </TouchableOpacity>
   );
 
   return (
     <View style={styles.container}>
       <FlatList
-        data={mockNotifications}
-        keyExtractor={(item) => item.id}
+        data={notifications}
+        keyExtractor={(item) => item._id}
         renderItem={renderItem}
         contentContainerStyle={{ paddingBottom: 20 }}
       />
@@ -30,28 +52,13 @@ export default function NotificationsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff8e1',
     padding: 16,
   },
   notification: {
-    backgroundColor: '#fff',
     padding: 16,
+    borderRadius: 8,
     marginBottom: 12,
-    borderRadius: 10,
-    shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 4,
-    elevation: 3,
   },
-  title: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#4e342e',
-  },
-  time: {
-    fontSize: 12,
-    color: 'gray',
-    marginTop: 4,
-  },
+  title: { fontSize: 16 },
+  body: { fontSize: 14, marginTop: 4 },
 });

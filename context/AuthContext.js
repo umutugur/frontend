@@ -14,6 +14,7 @@ export const AuthContext = createContext();
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [notifications, setNotifications] = useState([]);
 
   // Redirect URI
   const redirectUri = makeRedirectUri({ native: 'com.umutugur.imame:/oauthredirect' });
@@ -23,6 +24,7 @@ export const AuthProvider = ({ children }) => {
     redirectUri,
   });
 
+  // Google auth response listener
   useEffect(() => {
     if (response?.type === 'success') {
       const { authentication } = response;
@@ -31,6 +33,19 @@ export const AuthProvider = ({ children }) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [response]);
 
+  // Bildirimleri backend'den çek
+  const fetchNotifications = async (userId) => {
+    try {
+      const res = await axios.get(
+        `https://imame-backend.onrender.com/api/user-notifications/user/${userId}`
+      );
+      setNotifications(res.data);
+    } catch (err) {
+      console.log('Bildirimler alınamadı:', err.message);
+    }
+  };
+
+  // Google sosyal girişini tamamla
   const handleGoogleAuth = async (accessToken, idToken) => {
     try {
       const res = await axios.post('https://imame-backend.onrender.com/api/auth/social-login', {
@@ -42,12 +57,13 @@ export const AuthProvider = ({ children }) => {
       setUser(userData);
       await AsyncStorage.setItem('user', JSON.stringify(userData));
       await registerForPushNotificationsAsync(userData._id);
+      await fetchNotifications(userData._id);
     } catch (err) {
-      // Hata yönetimini burada yapabilirsin, örn. bir snackbar veya toast gösterebilirsin.
+      // Hata yönetimi
     }
   };
 
-  // Push token fonksiyonu
+  // Push token kaydetme
   const registerForPushNotificationsAsync = async (userId) => {
     try {
       if (!Device.isDevice) return;
@@ -58,25 +74,35 @@ export const AuthProvider = ({ children }) => {
         finalStatus = status;
       }
       if (finalStatus !== 'granted') return;
+
       const tokenData = await Notifications.getExpoPushTokenAsync();
       const expoPushToken = tokenData.data;
+
+      // Token'ı backend'e gönder
       await axios.post('https://imame-backend.onrender.com/api/users/update-token', {
         userId,
         pushToken: expoPushToken,
       });
+
+      // Token güncellendikten sonra bildirimleri çek
+      await fetchNotifications(userId);
     } catch (err) {
-      // İsteğe bağlı olarak hata gösterebilirsin.
+      // İsteğe bağlı hata yönetimi
     }
   };
 
-  // Normal email login
+  // Normal login
   const login = async (email, password) => {
     try {
-      const res = await axios.post('https://imame-backend.onrender.com/api/auth/login', { email, password });
+      const res = await axios.post('https://imame-backend.onrender.com/api/auth/login', {
+        email,
+        password,
+      });
       const userData = res.data.user;
       setUser(userData);
       await AsyncStorage.setItem('user', JSON.stringify(userData));
       await registerForPushNotificationsAsync(userData._id);
+      await fetchNotifications(userData._id);
     } catch (err) {
       // Hata yönetimi
     }
@@ -84,6 +110,7 @@ export const AuthProvider = ({ children }) => {
 
   const logout = async () => {
     setUser(null);
+    setNotifications([]);
     await AsyncStorage.removeItem('user');
   };
 
@@ -105,6 +132,7 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  // Uygulama ilk açıldığında kullanıcıyı ve bildirimleri yükle
   useEffect(() => {
     const loadUser = async () => {
       try {
@@ -113,6 +141,7 @@ export const AuthProvider = ({ children }) => {
           const parsed = JSON.parse(storedUser);
           setUser(parsed);
           await registerForPushNotificationsAsync(parsed._id);
+          await fetchNotifications(parsed._id);
         }
       } catch (err) {
         setUser(null);
@@ -123,15 +152,35 @@ export const AuthProvider = ({ children }) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Gelen push'ları dinle ve listeye ekle
+  useEffect(() => {
+    const subscription = Notifications.addNotificationReceivedListener((notification) => {
+      const { title, body, data } = notification.request.content;
+      setNotifications((prev) => [
+        {
+          _id: Date.now().toString(), // geçici ID; backend'den gerçek ID gelince yenilenebilir
+          title,
+          message: body,
+          data,
+          isRead: false,
+        },
+        ...prev,
+      ]);
+    });
+    return () => subscription.remove();
+  }, []);
+
   return (
     <AuthContext.Provider
       value={{
         user,
+        isLoading,
         login,
         logout,
-        promptGoogle: () => promptAsync(),
         updateUser,
-        isLoading,
+        promptGoogle: () => promptAsync(),
+        notifications,
+        setNotifications,
       }}
     >
       {children}
