@@ -6,6 +6,7 @@ import * as Device from 'expo-device';
 import * as WebBrowser from 'expo-web-browser';
 import * as Google from 'expo-auth-session/providers/google';
 import { makeRedirectUri } from 'expo-auth-session';
+import * as AppleAuthentication from 'expo-apple-authentication';
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -60,6 +61,39 @@ export const AuthProvider = ({ children }) => {
       await fetchNotifications(userData._id);
     } catch (err) {
       // Hata yönetimi
+    }
+  };
+   const loginWithApple = async () => {
+    try {
+      // Apple kimlik ekranını aç
+      const credential = await AppleAuthentication.signInAsync({
+        requestedScopes: [
+          AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+          AppleAuthentication.AppleAuthenticationScope.EMAIL,
+        ],
+      });
+
+      const { identityToken, email, fullName } = credential;
+      // identityToken (JWT) backend’e gönderilir
+      const res = await axios.post(
+        'https://imame-backend.onrender.com/api/auth/social-login',
+        {
+          provider: 'apple',
+          idToken: identityToken,
+          // opsiyonel olarak isim/eposta gönderebilirsiniz
+          email: email,
+          name: fullName ? `${fullName.givenName || ''} ${fullName.familyName || ''}`.trim() : undefined,
+        }
+      );
+
+      const userData = res.data.user;
+      setUser(userData);
+      await AsyncStorage.setItem('user', JSON.stringify(userData));
+      await registerForPushNotificationsAsync(userData._id);
+      await fetchNotifications(userData._id);
+    } catch (err) {
+      // Kullanıcı iptal ettiyse err.code === 'ERR_CANCELED' olur
+      throw err;
     }
   };
 
@@ -174,11 +208,13 @@ export const AuthProvider = ({ children }) => {
     <AuthContext.Provider
       value={{
         user,
+        setUser,
         isLoading,
         login,
         logout,
         updateUser,
         promptGoogle: () => promptAsync(),
+        loginWithApple,
         notifications,
         setNotifications,
       }}

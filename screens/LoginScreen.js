@@ -85,6 +85,24 @@ const LoginScreen = ({ navigation }) => {
             <Image source={require('../assets/google-icon.png')} style={styles.googleIcon} />
             <Text style={styles.googleButtonText}>Google ile Giriş Yap</Text>
           </TouchableOpacity>
+          <AppleAuthentication.AppleAuthenticationButton
+          buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN}
+          buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.BLACK}
+          cornerRadius={5}
+          style={{ width: '100%', height: 50, marginBottom: 15 }}
+          onPress={async () => {
+            try {
+              await loginWithApple();
+              navigation.replace('Main');
+            } catch (err) {
+              if (err.code === 'ERR_CANCELED') {
+                // Kullanıcı iptal etti, sessizce geçilebilir
+              } else {
+                Alert.alert('Apple Girişi Hatası', err.message || 'Bir hata oluştu.');
+              }
+            }
+          }}
+        />
 
           <View style={styles.registerContainer}>
             <Text style={styles.registerText}>Hesabın yok mu?</Text>

@@ -11,7 +11,7 @@ import ReportSellerModal from '../components/ReportSellerModal';
 export default function ProfileScreen() {
   const navigation = useNavigation();
   const route = useRoute();
-  const { user: currentUser, logout } = useContext(AuthContext);
+  const { user: currentUser,setUser,logout } = useContext(AuthContext);
 
   const [profileData, setProfileData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -77,21 +77,48 @@ export default function ProfileScreen() {
     }
   };
 
-  // Favori toggle
-  const handleToggleFavorite = async () => {
-    if (!currentUser?._id || !profileData?._id) return;
-    setFavLoading(true);
-    try {
-      const res = await axios.post('https://imame-backend.onrender.com/api/users/toggle-favorite', {
+ // Favori toggle
+const handleToggleFavorite = async () => {
+  if (!currentUser?._id || !profileData?._id) return;
+  setFavLoading(true);
+
+  try {
+    const res = await axios.post(
+      'https://imame-backend.onrender.com/api/users/toggle-favorite',
+      {
         userId: currentUser._id,
         sellerId: profileData._id,
-      });
-      setIsFavorite(res.data.status === 'added');
-    } catch (err) {
-      Alert.alert('Hata', 'Favori işlemi başarısız: ' + err.message);
-    }
-    setFavLoading(false);
-  };
+      }
+    );
+
+    // API 'added' veya 'removed' döner
+    const { status } = res.data;
+    setIsFavorite(status === 'added');
+
+    // Kullanıcı state’ini güncelle
+    setUser(prev => {
+      const updatedFavorites =
+        status === 'added'
+          ? [...(prev.favorites || []), profileData._id]
+          : (prev.favorites || []).filter(id => id !== profileData._id);
+
+      // AsyncStorage’e de kaydetmek isterseniz:
+      AsyncStorage.setItem(
+        'user',
+        JSON.stringify({ ...prev, favorites: updatedFavorites })
+      );
+
+      return {
+        ...prev,
+        favorites: updatedFavorites,
+      };
+    });
+  } catch (err) {
+    Alert.alert('Hata', 'Favori işlemi başarısız: ' + err.message);
+  }
+
+  setFavLoading(false);
+};
 
   // Buyer opsiyonları
   const renderBuyerOptions = () => (
@@ -243,11 +270,13 @@ export default function ProfileScreen() {
         visible={showRateModal}
         onClose={() => setShowRateModal(false)}
         sellerId={profileData._id}
+        buyerId={currentUser._id}
       />
       <ReportSellerModal
         visible={showReportModal}
         onClose={() => setShowReportModal(false)}
         sellerId={profileData._id}
+         reporterId={currentUser._id}
       />
     </ScrollView>
   );
