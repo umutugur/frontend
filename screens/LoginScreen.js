@@ -12,6 +12,7 @@ import {
   Alert,
 } from 'react-native';
 import { AuthContext } from '../context/AuthContext';
+import * as AppleAuthentication from 'expo-apple-authentication';
 
 const LoginScreen = ({ navigation }) => {
   const { login, promptGoogle } = useContext(AuthContext);
@@ -19,6 +20,12 @@ const LoginScreen = ({ navigation }) => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [banned, setBanned] = useState(false);
+  const [isAppleAvailable, setIsAppleAvailable] = useState(false);
+  useEffect(() => {
+  if (Platform.OS === 'ios') {
+    AppleAuthentication.isAvailableAsync().then(setIsAppleAvailable);
+  }
+}, []);
 
   const handleLogin = async () => {
     setError('');
@@ -85,6 +92,7 @@ const LoginScreen = ({ navigation }) => {
             <Image source={require('../assets/google-icon.png')} style={styles.googleIcon} />
             <Text style={styles.googleButtonText}>Google ile Giriş Yap</Text>
           </TouchableOpacity>
+          {Platform.OS === 'ios' && isAppleAvailable && (
           <AppleAuthentication.AppleAuthenticationButton
           buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN}
           buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.BLACK}
@@ -102,7 +110,7 @@ const LoginScreen = ({ navigation }) => {
               }
             }
           }}
-        />
+        />)}
 
           <View style={styles.registerContainer}>
             <Text style={styles.registerText}>Hesabın yok mu?</Text>
