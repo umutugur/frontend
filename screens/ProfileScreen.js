@@ -7,6 +7,7 @@ import { AuthContext } from '../context/AuthContext';
 import axios from 'axios';
 import RateSellerModal from '../components/RateSellerModal';
 import ReportSellerModal from '../components/ReportSellerModal';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function ProfileScreen() {
   const navigation = useNavigation();
@@ -39,10 +40,10 @@ export default function ProfileScreen() {
 
   // Favori kontrolü
   useEffect(() => {
-    if (!isOwnProfile && currentUser && profileData?._id) {
-      setIsFavorite(currentUser.favorites?.includes(profileData._id));
-    }
-  }, [profileData, currentUser, isOwnProfile]);
+  if (!isOwnProfile && currentUser && profileData?._id) {
+    setIsFavorite(currentUser.favorites?.includes(profileData._id));
+  }
+}, [profileData, currentUser?.favorites]);
 
   // Ortalama puan ve "kazandı mı" kontrolü
   useEffect(() => {
@@ -91,34 +92,29 @@ const handleToggleFavorite = async () => {
       }
     );
 
-    // API 'added' veya 'removed' döner
     const { status } = res.data;
-    setIsFavorite(status === 'added');
+    const updatedFavorites =
+      status === 'added'
+        ? [...(currentUser.favorites || []), profileData._id]
+        : (currentUser.favorites || []).filter(id => id !== profileData._id);
 
-    // Kullanıcı state’ini güncelle
-    setUser(prev => {
-      const updatedFavorites =
-        status === 'added'
-          ? [...(prev.favorites || []), profileData._id]
-          : (prev.favorites || []).filter(id => id !== profileData._id);
+    const updatedUser = {
+      ...currentUser,
+      favorites: updatedFavorites,
+    };
 
-      // AsyncStorage’e de kaydetmek isterseniz:
-      AsyncStorage.setItem(
-        'user',
-        JSON.stringify({ ...prev, favorites: updatedFavorites })
-      );
+    setUser(updatedUser); // önce context güncelle
+    await AsyncStorage.setItem('user', JSON.stringify(updatedUser)); // sonra cache güncelle
 
-      return {
-        ...prev,
-        favorites: updatedFavorites,
-      };
-    });
+    setIsFavorite(status === 'added'); // UI update
+
   } catch (err) {
     Alert.alert('Hata', 'Favori işlemi başarısız: ' + err.message);
   }
 
   setFavLoading(false);
 };
+
 
   // Buyer opsiyonları
   const renderBuyerOptions = () => (
