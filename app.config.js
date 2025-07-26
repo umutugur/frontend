@@ -43,7 +43,7 @@ export default {
       supportsTablet: true,
       bundleIdentifier: "com.umutugur.imame",
       config: {
-        googleMobileAdsAppId: "ca-app-pub-4306778139267554~1925991963"
+        googleMobileAdsAppId: "ca-app-pub-4306778139267554~3035532261"
       },
       infoPlist: {
         NSUserTrackingUsageDescription:

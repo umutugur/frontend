@@ -39,7 +39,8 @@
     "react-native-safe-area-context": "5.4.0",
     "react-native-screens": "~4.11.1",
     "react-native-toast-message": "^2.3.3",
-    "expo-tracking-transparency": "~5.2.4"
+    "expo-tracking-transparency": "~5.2.4",
+    "expo-apple-authentication": "~7.2.4"
   },
   "devDependencies": {
     "@babel/core": "^7.20.0"
