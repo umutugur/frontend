@@ -1,5 +1,13 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, Button, Modal, StyleSheet, Alert } from 'react-native';
+import {
+  View,
+  Text,
+  TextInput,
+  Button,
+  Modal,
+  StyleSheet,
+  Alert,
+} from 'react-native';
 import axios from 'axios';
 
 export default function ReportSellerModal({ visible, onClose, sellerId, reporterId }) {
@@ -13,6 +21,7 @@ export default function ReportSellerModal({ visible, onClose, sellerId, reporter
         message,
       });
       Alert.alert('Teşekkürler', 'Şikayetiniz alındı');
+      setMessage('');
       onClose();
     } catch (err) {
       Alert.alert('Hata', err.response?.data?.message || err.message);
@@ -30,6 +39,7 @@ export default function ReportSellerModal({ visible, onClose, sellerId, reporter
             style={[styles.input, { height: 80 }]}
             multiline
             placeholder="Şikayet sebebinizi yazabilirsiniz (isteğe bağlı)"
+            placeholderTextColor="#8e8e8e" // ✅ Görünmeyen placeholder düzeltildi
           />
           <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
             <Button title="İptal" onPress={onClose} color="#a1887f" />
@@ -40,9 +50,32 @@ export default function ReportSellerModal({ visible, onClose, sellerId, reporter
     </Modal>
   );
 }
+
 const styles = StyleSheet.create({
-  modalBackground: { flex:1, backgroundColor: 'rgba(0,0,0,0.3)', justifyContent:'center', alignItems:'center' },
-  modalContent: { backgroundColor:'#fff', borderRadius:12, padding:24, width:'90%' },
-  title: { fontWeight:'bold', fontSize:18, marginBottom:12, color:'#4e342e' },
-  input: { backgroundColor:'#f5f5f5', borderRadius:8, padding:12, marginBottom:12 },
+  modalBackground: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.3)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 24,
+    width: '90%',
+  },
+  title: {
+    fontWeight: 'bold',
+    fontSize: 18,
+    marginBottom: 12,
+    color: '#4e342e',
+    textAlign: 'center',
+  },
+  input: {
+    backgroundColor: '#f5f5f5',
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 12,
+    color: '#000', // ✍️ Giriş yapan kullanıcının yazdığı metnin rengi net görünür
+  },
 });
