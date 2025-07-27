@@ -1,4 +1,4 @@
-import React, { useState, useContext,useEffect } from 'react';
+import React, { useState, useContext, useEffect } from 'react';
 import {
   View,
   Text,
@@ -21,11 +21,12 @@ const LoginScreen = ({ navigation }) => {
   const [error, setError] = useState('');
   const [banned, setBanned] = useState(false);
   const [isAppleAvailable, setIsAppleAvailable] = useState(false);
+
   useEffect(() => {
-  if (Platform.OS === 'ios') {
-    AppleAuthentication.isAvailableAsync().then(setIsAppleAvailable);
-  }
-}, []);
+    if (Platform.OS === 'ios') {
+      AppleAuthentication.isAvailableAsync().then(setIsAppleAvailable);
+    }
+  }, []);
 
   const handleLogin = async () => {
     setError('');
@@ -35,7 +36,6 @@ const LoginScreen = ({ navigation }) => {
       navigation.replace('Main');
     } catch (error) {
       const message = error?.message?.toLowerCase() || '';
-
       if (message.includes('ban') || message.includes('askıya') || message.includes('banned')) {
         setBanned(true);
         setError('Hesabınız geçici olarak askıya alınmıştır. Lütfen 7 gün sonra tekrar deneyin veya destek ekibimizle iletişime geçin.');
@@ -47,9 +47,14 @@ const LoginScreen = ({ navigation }) => {
     }
   };
 
+  const handleRegisterPress = () => {
+    Alert.alert('Kayıt Bilgisi', 'Şu an için yalnızca Google ile kayıt olabilirsiniz.');
+    // navigation.navigate('Register');
+  };
+
   return (
     <KeyboardAvoidingView
-      style={{ flex: 1, backgroundColor: '#F9F6F2' }}
+      style={{ flex: 1, backgroundColor: '#fff8e1' }}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <ScrollView contentContainerStyle={styles.scrollContainer}>
@@ -58,10 +63,7 @@ const LoginScreen = ({ navigation }) => {
           <Text style={styles.title}>Giriş Yap</Text>
 
           {error !== '' && (
-            <View style={[
-              styles.errorBox,
-              banned ? styles.banBox : null
-            ]}>
+            <View style={[styles.errorBox, banned ? styles.banBox : null]}>
               <Text style={styles.errorText}>{error}</Text>
             </View>
           )}
@@ -87,34 +89,34 @@ const LoginScreen = ({ navigation }) => {
           <TouchableOpacity style={styles.button} onPress={handleLogin}>
             <Text style={styles.buttonText}>Giriş Yap</Text>
           </TouchableOpacity>
-          
+
           <TouchableOpacity style={styles.googleButton} onPress={() => promptGoogle()}>
             <Image source={require('../assets/google-icon.png')} style={styles.googleIcon} />
             <Text style={styles.googleButtonText}>Google ile Giriş Yap</Text>
           </TouchableOpacity>
+
           {Platform.OS === 'ios' && isAppleAvailable && (
-          <AppleAuthentication.AppleAuthenticationButton
-          buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN}
-          buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.BLACK}
-          cornerRadius={5}
-          style={{ width: '100%', height: 50, marginBottom: 15 }}
-          onPress={async () => {
-            try {
-              await loginWithApple();
-              navigation.replace('Main');
-            } catch (err) {
-              if (err.code === 'ERR_CANCELED') {
-                // Kullanıcı iptal etti, sessizce geçilebilir
-              } else {
-                Alert.alert('Apple Girişi Hatası', err.message || 'Bir hata oluştu.');
-              }
-            }
-          }}
-        />)}
+            <AppleAuthentication.AppleAuthenticationButton
+              buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN}
+              buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.BLACK}
+              cornerRadius={5}
+              style={{ width: '100%', height: 50, marginBottom: 15 }}
+              onPress={async () => {
+                try {
+                  await loginWithApple();
+                  navigation.replace('Main');
+                } catch (err) {
+                  if (err.code !== 'ERR_CANCELED') {
+                    Alert.alert('Apple Girişi Hatası', err.message || 'Bir hata oluştu.');
+                  }
+                }
+              }}
+            />
+          )}
 
           <View style={styles.registerContainer}>
             <Text style={styles.registerText}>Hesabın yok mu?</Text>
-            <TouchableOpacity onPress={() => navigation.navigate('Register')}>
+            <TouchableOpacity onPress={handleRegisterPress}>
               <Text style={styles.registerLink}> Kayıt ol</Text>
             </TouchableOpacity>
           </View>
@@ -133,23 +135,23 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
+    backgroundColor: '#fff8e1',
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
-    backgroundColor: '#F9F6F2',
   },
   logo: {
-    width: 240,
-    height: 120,
-    marginBottom: 20,
+    width: 260,
+    height: 130,
+    marginBottom: 10,
     resizeMode: 'contain',
   },
   title: {
     fontSize: 26,
     fontWeight: 'bold',
-    color: '#7B1421',
+    color: '#4e342e',
     marginBottom: 20,
-    letterSpacing: 0.5,
+    letterSpacing: 0.4,
   },
   errorBox: {
     width: '100%',
@@ -179,28 +181,28 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     marginBottom: 15,
     backgroundColor: '#fff',
-    color: '#7B1421',
+    color: '#4e342e',
     fontSize: 16,
   },
   button: {
     width: '100%',
     height: 50,
-    backgroundColor: '#B5A16B',
+    backgroundColor: '#6d4c41',
     borderRadius: 10,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 15,
-    shadowColor: '#b5a16b',
-    shadowOpacity: 0.1,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 2,
     elevation: 2,
+    shadowColor: '#000',
+    shadowOpacity: 0.08,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 3,
   },
   buttonText: {
     color: '#fff',
     fontWeight: 'bold',
     fontSize: 16,
-    letterSpacing: 0.2,
+    letterSpacing: 0.3,
   },
   googleButton: {
     flexDirection: 'row',
@@ -209,31 +211,31 @@ const styles = StyleSheet.create({
     height: 50,
     backgroundColor: '#fff',
     borderWidth: 1,
-    borderColor: '#B5A16B',
+    borderColor: '#b5a16b',
     borderRadius: 10,
     justifyContent: 'center',
     marginBottom: 20,
   },
   googleIcon: {
-    width: 24,
-    height: 24,
+    width: 22,
+    height: 22,
     marginRight: 10,
   },
   googleButtonText: {
-    color: '#7B1421',
+    color: '#4e342e',
     fontWeight: 'bold',
-    fontSize: 16,
+    fontSize: 15,
   },
   registerContainer: {
     flexDirection: 'row',
     marginTop: 10,
   },
   registerText: {
-    color: '#2C2C2C',
+    color: '#4e342e',
     fontSize: 14,
   },
   registerLink: {
-    color: '#B5A16B',
+    color: '#6d4c41',
     fontWeight: 'bold',
     fontSize: 14,
   },
