@@ -46,7 +46,7 @@ export default function TabNavigator() {
                   }}
                 >
                   <Text style={{ color: 'white', fontSize: 10, fontWeight: 'bold' }}>
-                    {unreadCount}
+                    {unreadCount > 99 ? '99+' : unreadCount}
                   </Text>
                 </View>
               )}
