@@ -8,15 +8,13 @@ export default function ChatListScreen({ navigation }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Kullanıcıya ait sohbetleri çek
     const fetchChats = async () => {
       try {
         const res = await fetch(`https://imame-backend.onrender.com/api/chats/user/${user._id}`);
-const data = await res.json();
-setChats(data.chats || []);
-
+        const data = await res.json();
+        setChats(data.chats || []);
       } catch (err) {
-        setChats([]); // Boş liste dön
+        setChats([]);
       } finally {
         setLoading(false);
       }
@@ -25,16 +23,24 @@ setChats(data.chats || []);
   }, []);
 
   const renderItem = ({ item }) => {
-    // Karşı tarafı bul (sen alıcıysan satıcı, satıcıysan alıcı)
     const otherUser = item.buyer?._id === user._id ? item.seller : item.buyer;
+    const unreadCount = item.unreadMessages || 0;
+
     return (
       <TouchableOpacity
         style={styles.chatItem}
         onPress={() => navigation.navigate('Chat', { chatId: item._id })}
       >
-        <Text style={styles.chatName}>
-          {otherUser?.companyName || otherUser?.name || "Kullanıcı"}
-        </Text>
+        <View style={styles.row}>
+          <Text style={styles.chatName}>
+            {otherUser?.companyName || otherUser?.name || 'Kullanıcı'}
+          </Text>
+          {unreadCount > 0 && (
+            <View style={styles.badge}>
+              <Text style={styles.badgeText}>{unreadCount}</Text>
+            </View>
+          )}
+        </View>
       </TouchableOpacity>
     );
   };
@@ -53,7 +59,9 @@ setChats(data.chats || []);
         data={chats}
         renderItem={renderItem}
         keyExtractor={(item) => item._id}
-        ListEmptyComponent={<Text style={{textAlign:'center',color:'#666'}}>Sohbet bulunamadı.</Text>}
+        ListEmptyComponent={
+          <Text style={{ textAlign: 'center', color: '#666' }}>Sohbet bulunamadı.</Text>
+        }
       />
     </View>
   );
@@ -76,6 +84,25 @@ const styles = StyleSheet.create({
   chatName: {
     fontSize: 18,
     color: '#4e342e',
+  },
+  badge: {
+    backgroundColor: 'red',
+    borderRadius: 12,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    marginLeft: 10,
+    minWidth: 24,
+    alignItems: 'center',
+  },
+  badgeText: {
+    color: 'white',
+    fontSize: 12,
+    fontWeight: 'bold',
+  },
+  row: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
 });
