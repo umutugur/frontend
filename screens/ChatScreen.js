@@ -11,21 +11,29 @@ import {
   Platform,
 } from 'react-native';
 import { AuthContext } from '../context/AuthContext';
+import * as Notifications from 'expo-notifications';
 
-export default function ChatScreen({ route }) {
-  const { chatId } = route.params;
+export default function ChatScreen({ route, navigation }) {
+  const { chatId, otherUserName } = route.params; // 👈 bildirimden veya listeden gelen isim
   const { user } = useContext(AuthContext);
 
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(true);
 
-  // ✅ Chat mesajlarını çek
+  useEffect(() => {
+    // Başlıkta kullanıcı adını göster
+    navigation.setOptions({
+      headerShown: true,
+      title: otherUserName || 'Sohbet',
+    });
+  }, [otherUserName]);
+
   const fetchMessages = async () => {
     try {
       const res = await fetch(`https://imame-backend.onrender.com/api/chats/${chatId}`);
       const data = await res.json();
-      setMessages(data.messages.reverse()); // Sondan başa
+      setMessages(data.messages.reverse());
     } catch (err) {
       console.error('❌ Mesajlar yüklenemedi:', err.message);
     } finally {
@@ -37,7 +45,6 @@ export default function ChatScreen({ route }) {
     fetchMessages();
   }, []);
 
-  // ✅ Mesaj gönder
   const handleSend = async () => {
     if (!input.trim()) return;
 
