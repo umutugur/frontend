@@ -69,7 +69,6 @@ export default function FavoritesScreen() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Favori Satıcıların Mezatları</Text>
       <FlatList
         data={auctions}
         renderItem={renderItem}
