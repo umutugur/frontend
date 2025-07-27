@@ -216,7 +216,7 @@ const handleToggleFavorite = async () => {
   return (
     <ScrollView contentContainerStyle={styles.container}>
       <Text style={styles.title}>
-        {isOwnProfile ? 'Profilim' : `${profileData?.name || 'Kullanıcı'} Profili`}
+        {isOwnProfile ? 'Profilim' : `${profileData?.companyName || 'Satıcı'}}
       </Text>
 
       {/* ⭐⭐⭐⭐⭐ Ortalama puan alanı */}
