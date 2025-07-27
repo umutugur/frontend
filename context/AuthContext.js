@@ -7,6 +7,7 @@ import * as WebBrowser from 'expo-web-browser';
 import * as Google from 'expo-auth-session/providers/google';
 import { makeRedirectUri } from 'expo-auth-session';
 import * as AppleAuthentication from 'expo-apple-authentication';
+import { Alert } from 'react-native';
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -142,6 +143,16 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = async () => {
+    try {
+      if (user?.notificationToken || user?._id) {
+        await axios.post('https://imame-backend.onrender.com/api/users/remove-token', {
+          userId: user._id,
+        });
+      }
+    } catch (err) {
+      console.log("Push token silme hatası:", err.message);
+    }
+
     setUser(null);
     setNotifications([]);
     setUnreadCount(0);
@@ -185,6 +196,26 @@ export const AuthProvider = ({ children }) => {
     loadUser();
   }, []);
 
+  // ✅ Ban kontrolü: user objesi güncellendiğinde çalışır
+  useEffect(() => {
+    const checkBanStatus = async () => {
+      if (!user?._id) return;
+
+      try {
+        const res = await axios.get(`https://imame-backend.onrender.com/api/users/${user._id}`);
+        if (res.data?.isBanned) {
+          Alert.alert("Hesabınız askıya alındı", "Lütfen destekle iletişime geçin.");
+          logout();
+        }
+      } catch (err) {
+        console.log("Ban kontrolü hatası:", err.message);
+      }
+    };
+
+    checkBanStatus();
+  }, [user]);
+
+  // 🔔 Yeni bildirim geldiğinde state'e ekle
   useEffect(() => {
     const subscription = Notifications.addNotificationReceivedListener((notification) => {
       const { title, body, data } = notification.request.content;
