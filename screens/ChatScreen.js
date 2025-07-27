@@ -29,11 +29,22 @@ export default function ChatScreen({ route, navigation }) {
     });
   }, [otherUserName]);
 
+  useEffect(() => {
   const fetchMessages = async () => {
     try {
       const res = await fetch(`https://imame-backend.onrender.com/api/chats/${chatId}`);
       const data = await res.json();
       setMessages(data.messages.reverse());
+
+      // 👇 Mesajlar çekildikten sonra okundu olarak işaretle
+      await fetch(`https://imame-backend.onrender.com/api/messages/mark-as-read`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          chatId: chatId,
+          userId: user._id,
+        }),
+      });
     } catch (err) {
       console.error('❌ Mesajlar yüklenemedi:', err.message);
     } finally {
@@ -41,9 +52,8 @@ export default function ChatScreen({ route, navigation }) {
     }
   };
 
-  useEffect(() => {
-    fetchMessages();
-  }, []);
+  fetchMessages();
+}, []);
 
   const handleSend = async () => {
     if (!input.trim()) return;
