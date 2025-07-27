@@ -1,26 +1,39 @@
-import React, { useContext, useEffect, useState } from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
+import React, { useContext, useState } from 'react';
+import {
+  View,
+  Text,
+  FlatList,
+  TouchableOpacity,
+  StyleSheet,
+  ActivityIndicator,
+} from 'react-native';
 import { AuthContext } from '../context/AuthContext';
+import { useFocusEffect } from '@react-navigation/native';
+import { useCallback } from 'react';
 
 export default function ChatListScreen({ navigation }) {
   const { user } = useContext(AuthContext);
   const [chats, setChats] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const fetchChats = async () => {
-      try {
-        const res = await fetch(`https://imame-backend.onrender.com/api/chats/user/${user._id}`);
-        const data = await res.json();
-        setChats(data.chats || []);
-      } catch (err) {
-        setChats([]);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchChats();
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      const fetchChats = async () => {
+        try {
+          const res = await fetch(`https://imame-backend.onrender.com/api/chats/user/${user._id}`);
+          const data = await res.json();
+          setChats(data.chats || []);
+        } catch (err) {
+          console.error('❌ Chat listesi alınamadı:', err.message);
+          setChats([]);
+        } finally {
+          setLoading(false);
+        }
+      };
+
+      fetchChats();
+    }, [user._id])
+  );
 
   const renderItem = ({ item }) => {
     const otherUser = item.buyer?._id === user._id ? item.seller : item.buyer;
@@ -29,7 +42,12 @@ export default function ChatListScreen({ navigation }) {
     return (
       <TouchableOpacity
         style={styles.chatItem}
-        onPress={() => navigation.navigate('Chat', { chatId: item._id })}
+        onPress={() =>
+          navigation.navigate('Chat', {
+            chatId: item._id,
+            otherUserName: otherUser?.companyName || otherUser?.name || 'Kullanıcı',
+          })
+        }
       >
         <View style={styles.row}>
           <Text style={styles.chatName}>
