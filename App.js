@@ -1,4 +1,4 @@
-import React, { useContext, useEffect } from 'react';
+import React, { useContext, useEffect, useRef } from 'react';
 import { ActivityIndicator, View } from 'react-native';
 import * as Notifications from 'expo-notifications';
 import { NavigationContainer } from '@react-navigation/native';
@@ -7,6 +7,7 @@ import Toast from 'react-native-toast-message';
 import { AuthProvider, AuthContext } from './context/AuthContext';
 import OfflineNotice from './components/OfflineNotice';
 import { SafeAreaView } from 'react-native-safe-area-context';
+
 // Screens
 import LoginScreen from './screens/LoginScreen';
 import RegisterScreen from './screens/RegisterScreen';
@@ -42,7 +43,7 @@ function MainNavigator() {
 
   if (isLoading) {
     return (
-      <View style={{flex:1, justifyContent:'center', alignItems:'center'}}>
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
         <ActivityIndicator size="large" color="#6d4c41" />
       </View>
     );
@@ -78,10 +79,10 @@ function MainNavigator() {
           <Stack.Screen name="MyAuctions" component={MyAuctionsScreen} />
           <Stack.Screen name="EditProfile" component={EditProfileScreen} />
           <Stack.Screen name="Terms" component={TermsAndConditionsScreen} />
-          <Stack.Screen name="Profile" component={ProfileScreen}/>
-          <Stack.Screen name="ProfileDetail" component={ProfileScreen}/>
-          <Stack.Screen name="PrivacyPolicy" component={PrivacyPolicyScreen}/>
-          <Stack.Screen name="HelpAndSupport" component={HelpAndSupportScreen}/>
+          <Stack.Screen name="Profile" component={ProfileScreen} />
+          <Stack.Screen name="ProfileDetail" component={ProfileScreen} />
+          <Stack.Screen name="PrivacyPolicy" component={PrivacyPolicyScreen} />
+          <Stack.Screen name="HelpAndSupport" component={HelpAndSupportScreen} />
         </>
       )}
     </Stack.Navigator>
@@ -89,18 +90,47 @@ function MainNavigator() {
 }
 
 export default function App() {
+  const navigationRef = useRef();
 
+  // Bildirime tıklanma durumunda yönlendirme
+  useEffect(() => {
+    const subscription = Notifications.addNotificationResponseReceivedListener(response => {
+      const data = response.notification.request.content.data;
+      console.log('🔗 Bildirime tıklandı:', data);
+
+      if (data?.type === 'chat' && data.chatId) {
+        navigationRef.current?.navigate('Chat', {
+          chatId: data.chatId,
+          otherUserName: data.otherUserName || 'Sohbet',
+        });
+      }
+
+      if (data?.type === 'auction' && data.auctionId) {
+        navigationRef.current?.navigate('AuctionDetail', {
+          auctionId: data.auctionId,
+        });
+      }
+
+      if (data?.type === 'receipt') {
+        navigationRef.current?.navigate('UploadReceipt');
+      }
+
+      // İsteğe bağlı olarak farklı yönlendirmeler eklenebilir
+    });
+
+    return () => subscription.remove();
+  }, []);
+
+  // Bildirim alındığında toast göster
   useEffect(() => {
     const subscription = Notifications.addNotificationReceivedListener(notification => {
       const { title, body } = notification.request.content;
-      console.log('📣 Bildirim alındı:', title, body);
-
       Toast.show({
         type: 'success',
         text1: title || 'Bildirim',
         text2: body || 'Yeni bir bildirim aldınız.',
         visibilityTime: 4000,
-        position: 'top'
+        position: 'top',
       });
     });
 
@@ -109,13 +139,13 @@ export default function App() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#F9F6F2' }}>
-    <AuthProvider>
-      <NavigationContainer>
-        <OfflineNotice />
-        <MainNavigator />
-        <Toast />
-      </NavigationContainer>
-    </AuthProvider>
+      <AuthProvider>
+        <NavigationContainer ref={navigationRef}>
+          <OfflineNotice />
+          <MainNavigator />
+          <Toast />
+        </NavigationContainer>
+      </AuthProvider>
     </SafeAreaView>
   );
-}
+        }
