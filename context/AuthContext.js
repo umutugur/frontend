@@ -235,21 +235,22 @@ export const AuthProvider = ({ children }) => {
 
   return (
     <AuthContext.Provider
-      value={{
-        user,
-        setUser,
-        isLoading,
-        login,
-        logout,
-        updateUser,
-        promptGoogle: () => promptAsync(),
-        loginWithApple,
-        notifications,
-        setNotifications,
-        unreadCount,
-        setUnreadCount,
-      }}
-    >
+  value={{
+    user,
+    setUser,
+    isLoading,
+    login,
+    logout,
+    updateUser,
+    promptGoogle: () => promptAsync(),
+    loginWithApple,
+    notifications,
+    setNotifications,
+    unreadCount,
+    setUnreadCount,
+    fetchUnreadMessages, // 👈 BU SATIRI EKLE
+  }}
+>
       {children}
     </AuthContext.Provider>
   );
