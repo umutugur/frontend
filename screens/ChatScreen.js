@@ -14,29 +14,27 @@ import { AuthContext } from '../context/AuthContext';
 import * as Notifications from 'expo-notifications';
 
 export default function ChatScreen({ route, navigation }) {
-  const { chatId, otherUserName } = route.params; // 👈 bildirimden veya listeden gelen isim
-  const { user } = useContext(AuthContext);
+  const { chatId, otherUserName } = route.params;
+  const { user, fetchUnreadMessages } = useContext(AuthContext);
 
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Başlıkta kullanıcı adını göster
     navigation.setOptions({
       headerShown: true,
       title: otherUserName || 'Sohbet',
     });
   }, [otherUserName]);
 
-  useEffect(() => {
   const fetchMessages = async () => {
     try {
       const res = await fetch(`https://imame-backend.onrender.com/api/chats/${chatId}`);
       const data = await res.json();
       setMessages(data.messages.reverse());
 
-      // 👇 Mesajlar çekildikten sonra okundu olarak işaretle
+      // ✅ Okunmamış mesajları işaretle
       await fetch(`https://imame-backend.onrender.com/api/messages/mark-as-read`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
@@ -45,6 +43,10 @@ export default function ChatScreen({ route, navigation }) {
           userId: user._id,
         }),
       });
+
+      // ✅ Tab bar'daki unreadCount'u sıfırla
+      await fetchUnreadMessages(user._id);
+
     } catch (err) {
       console.error('❌ Mesajlar yüklenemedi:', err.message);
     } finally {
@@ -52,8 +54,9 @@ export default function ChatScreen({ route, navigation }) {
     }
   };
 
-  fetchMessages();
-}, []);
+  useEffect(() => {
+    fetchMessages();
+  }, []);
 
   const handleSend = async () => {
     if (!input.trim()) return;
