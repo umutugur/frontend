@@ -16,37 +16,42 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [notifications, setNotifications] = useState([]);
+  const [unreadCount, setUnreadCount] = useState(0);
 
-  // Redirect URI
-  const redirectUri = makeRedirectUri({ native: 'com.umutugur.imame:/oauthredirect' });
+  const redirectUri = makeRedirectUri({
+    native: 'com.umutugur.imame:/oauthredirect',
+  });
 
   const [request, response, promptAsync] = Google.useAuthRequest({
     androidClientId: '10042514664-2ogtkaoj8ja49650g17gu6rd084ggejp.apps.googleusercontent.com',
     redirectUri,
   });
 
-  // Google auth response listener
   useEffect(() => {
     if (response?.type === 'success') {
       const { authentication } = response;
       handleGoogleAuth(authentication.accessToken, authentication.idToken);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [response]);
 
-  // Bildirimleri backend'den çek
   const fetchNotifications = async (userId) => {
     try {
-      const res = await axios.get(
-        `https://imame-backend.onrender.com/api/user-notifications/user/${userId}`
-      );
+      const res = await axios.get(`https://imame-backend.onrender.com/api/user-notifications/user/${userId}`);
       setNotifications(res.data);
     } catch (err) {
       console.log('Bildirimler alınamadı:', err.message);
     }
   };
 
-  // Google sosyal girişini tamamla
+  const fetchUnreadMessages = async (userId) => {
+    try {
+      const res = await axios.get(`https://imame-backend.onrender.com/api/messages/unread-count/${userId}`);
+      setUnreadCount(res.data.count || 0);
+    } catch (err) {
+      console.log('❌ Okunmamış mesaj sayısı alınamadı:', err.message);
+    }
+  };
+
   const handleGoogleAuth = async (accessToken, idToken) => {
     try {
       const res = await axios.post('https://imame-backend.onrender.com/api/auth/social-login', {
@@ -59,13 +64,14 @@ export const AuthProvider = ({ children }) => {
       await AsyncStorage.setItem('user', JSON.stringify(userData));
       await registerForPushNotificationsAsync(userData._id);
       await fetchNotifications(userData._id);
+      await fetchUnreadMessages(userData._id);
     } catch (err) {
-      // Hata yönetimi
+      console.log('Google login hatası:', err.message);
     }
   };
-   const loginWithApple = async () => {
+
+  const loginWithApple = async () => {
     try {
-      // Apple kimlik ekranını aç
       const credential = await AppleAuthentication.signInAsync({
         requestedScopes: [
           AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
@@ -74,30 +80,24 @@ export const AuthProvider = ({ children }) => {
       });
 
       const { identityToken, email, fullName } = credential;
-      // identityToken (JWT) backend’e gönderilir
-      const res = await axios.post(
-        'https://imame-backend.onrender.com/api/auth/social-login',
-        {
-          provider: 'apple',
-          idToken: identityToken,
-          // opsiyonel olarak isim/eposta gönderebilirsiniz
-          email: email,
-          name: fullName ? `${fullName.givenName || ''} ${fullName.familyName || ''}`.trim() : undefined,
-        }
-      );
+      const res = await axios.post('https://imame-backend.onrender.com/api/auth/social-login', {
+        provider: 'apple',
+        idToken: identityToken,
+        email,
+        name: fullName ? `${fullName.givenName || ''} ${fullName.familyName || ''}`.trim() : undefined,
+      });
 
       const userData = res.data.user;
       setUser(userData);
       await AsyncStorage.setItem('user', JSON.stringify(userData));
       await registerForPushNotificationsAsync(userData._id);
       await fetchNotifications(userData._id);
+      await fetchUnreadMessages(userData._id);
     } catch (err) {
-      // Kullanıcı iptal ettiyse err.code === 'ERR_CANCELED' olur
       throw err;
     }
   };
 
-  // Push token kaydetme
   const registerForPushNotificationsAsync = async (userId) => {
     try {
       if (!Device.isDevice) return;
@@ -112,20 +112,18 @@ export const AuthProvider = ({ children }) => {
       const tokenData = await Notifications.getExpoPushTokenAsync();
       const expoPushToken = tokenData.data;
 
-      // Token'ı backend'e gönder
       await axios.post('https://imame-backend.onrender.com/api/users/update-token', {
         userId,
         pushToken: expoPushToken,
       });
 
-      // Token güncellendikten sonra bildirimleri çek
       await fetchNotifications(userId);
+      await fetchUnreadMessages(userId);
     } catch (err) {
-      // İsteğe bağlı hata yönetimi
+      console.log('Bildirim token gönderme hatası:', err.message);
     }
   };
 
-  // Normal login
   const login = async (email, password) => {
     try {
       const res = await axios.post('https://imame-backend.onrender.com/api/auth/login', {
@@ -137,14 +135,16 @@ export const AuthProvider = ({ children }) => {
       await AsyncStorage.setItem('user', JSON.stringify(userData));
       await registerForPushNotificationsAsync(userData._id);
       await fetchNotifications(userData._id);
+      await fetchUnreadMessages(userData._id);
     } catch (err) {
-      // Hata yönetimi
+      console.log('Login hatası:', err.message);
     }
   };
 
   const logout = async () => {
     setUser(null);
     setNotifications([]);
+    setUnreadCount(0);
     await AsyncStorage.removeItem('user');
   };
 
@@ -162,11 +162,10 @@ export const AuthProvider = ({ children }) => {
       setUser(updatedUser);
       await AsyncStorage.setItem('user', JSON.stringify(updatedUser));
     } catch (err) {
-      // Hata yönetimi
+      console.log('Profil güncelleme hatası:', err.message);
     }
   };
 
-  // Uygulama ilk açıldığında kullanıcıyı ve bildirimleri yükle
   useEffect(() => {
     const loadUser = async () => {
       try {
@@ -176,6 +175,7 @@ export const AuthProvider = ({ children }) => {
           setUser(parsed);
           await registerForPushNotificationsAsync(parsed._id);
           await fetchNotifications(parsed._id);
+          await fetchUnreadMessages(parsed._id);
         }
       } catch (err) {
         setUser(null);
@@ -183,16 +183,14 @@ export const AuthProvider = ({ children }) => {
       setIsLoading(false);
     };
     loadUser();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Gelen push'ları dinle ve listeye ekle
   useEffect(() => {
     const subscription = Notifications.addNotificationReceivedListener((notification) => {
       const { title, body, data } = notification.request.content;
       setNotifications((prev) => [
         {
-          _id: Date.now().toString(), // geçici ID; backend'den gerçek ID gelince yenilenebilir
+          _id: Date.now().toString(),
           title,
           message: body,
           data,
@@ -217,6 +215,8 @@ export const AuthProvider = ({ children }) => {
         loginWithApple,
         notifications,
         setNotifications,
+        unreadCount,
+        setUnreadCount,
       }}
     >
       {children}
