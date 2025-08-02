@@ -15,6 +15,12 @@
       "autoIncrement": true,
       "android": {
         "buildType": "app-bundle"
+      },
+      "ios": {
+        "releaseChannel": "production",
+        "env": {
+          "EXPO_NO_LINK": "1"
+        }
       }
     },
     "production-apk": {
@@ -27,3 +33,4 @@
     "production": {}
   }
 }
+

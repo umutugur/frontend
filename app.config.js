@@ -1,7 +1,7 @@
 export default {
   expo: {
     owner: "umutugur",
-    name: "İmame",
+    name: "Imame",
     slug: "imame",
     scheme: "com.umutugur.imame",
     icon: "./assets/logo.png",
@@ -12,6 +12,9 @@ export default {
     },
     main: "index.js",
     platforms: ["android", "ios"],
+    runtimeVersion: {
+      policy: "sdkVersion"
+    },
     updates: {
       enabled: false
     },
@@ -42,13 +45,20 @@ export default {
     ios: {
       supportsTablet: true,
       bundleIdentifier: "com.umutugur.imame",
+      buildNumber: "1.0.1", // yeni build için artırıldı
       config: {
-        googleMobileAdsAppId: "ca-app-pub-4306778139267554~3035532261"
+        googleMobileAdsAppId: "ca-app-pub-4306778139267554~3035532261",
+        usesNonExemptEncryption: false // 🔥 bu satır eksikti!
       },
       infoPlist: {
         NSUserTrackingUsageDescription:
-          "İmame uygulaması reklam ve analiz servisleri için takip izni ister. Bu izin verilmediği takdirde, size özel reklamlar gösterilemeyebilir."
-      }
+          "İmame uygulaması reklam ve analiz servisleri için takip izni ister. Bu izin verilmediği takdirde, size özel reklamlar gösterilemeyebilir.",
+        ITSAppUsesNonExemptEncryption: false // 🔥 bu da App Store için şart!
+      },
+      runtimeVersion: {
+        policy: "sdkVersion"
+      },
+      minimumOsVersion: "13.0" // 🔥 iOS 18 ile test eden Apple için minimum destek şart
     },
     plugins: [
       [
@@ -58,6 +68,9 @@ export default {
             compileSdkVersion: 35,
             targetSdkVersion: 35,
             minSdkVersion: 24
+          },
+          ios: {
+            deploymentTarget: "15.1" // iOS 18'de test edilen cihazlar için uyum
           }
         }
       ],
@@ -70,3 +83,4 @@ export default {
     ]
   }
 };
+

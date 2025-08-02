@@ -25,6 +25,7 @@ export const AuthProvider = ({ children }) => {
 
   const [request, response, promptAsync] = Google.useAuthRequest({
     androidClientId: '10042514664-2ogtkaoj8ja49650g17gu6rd084ggejp.apps.googleusercontent.com',
+    iosClientId:'10042514664-3hndgs91erv9lsi477vgij988r85liel.apps.googleusercontent.com',
     redirectUri,
   });
 
