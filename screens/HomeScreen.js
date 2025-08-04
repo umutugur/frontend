@@ -133,9 +133,10 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   adContainer: {
-    width:'%',
+    width:'100%',
     alignItems: 'center',
     backgroundColor: '#fff',
     paddingBottom: 8,
+    minHeight:60,
   },
 });
