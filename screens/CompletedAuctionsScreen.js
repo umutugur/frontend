@@ -2,6 +2,8 @@ import React, { useEffect, useState, useContext } from 'react';
 import { View, Text, FlatList, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
 import axios from 'axios';
 import { AuthContext } from '../context/AuthContext';
+import * as Clipboard from 'expo-clipboard';
+import Toast from 'react-native-toast-message';
 
 export default function CompletedAuctionsScreen({ navigation }) {
   const { user } = useContext(AuthContext);
@@ -35,61 +37,90 @@ export default function CompletedAuctionsScreen({ navigation }) {
     navigation.navigate('UploadReceipt', { auctionId });
   };
 
+  // IBAN kopyalama fonksiyonu
+  const copyIban = async (iban) => {
+    if (!iban) return;
+    await Clipboard.setStringAsync(iban);
+    Toast.show({
+      type: 'success',
+      text1: 'IBAN kopyalandı',
+      position: 'bottom',
+      visibilityTime: 2000,
+    });
+  };
+
   const renderItem = ({ item }) => {
-  const rejected = item.receiptStatus === 'rejected';
+    const rejected = item.receiptStatus === 'rejected';
 
-  return (
-    <TouchableOpacity
-      onPress={() => navigation.navigate('AuctionDetail', { auctionId: item._id })}
-      style={styles.auctionItem}
-      activeOpacity={0.9}
-    >
-      <Text style={styles.title}>{item.title}</Text>
-      <Text style={styles.price}>Kazandığınız Fiyat: {item.currentPrice} TL</Text>
+    return (
+      <TouchableOpacity
+        onPress={() => navigation.navigate('AuctionDetail', { auctionId: item._id })}
+        style={styles.auctionItem}
+        activeOpacity={0.9}
+      >
+        <Text style={styles.title}>{item.title}</Text>
+        <Text style={styles.price}>Kazandığınız Fiyat: {item.currentPrice} TL</Text>
 
-      <View style={styles.infoBox}>
-        <Text style={styles.infoLabel}>🏦 Satıcı Ödeme Bilgileri</Text>
-        <Text>IBAN: {item.seller?.iban || '-'}</Text>
-        <Text>IBAN İsmi: {item.seller?.ibanName || '-'}</Text>
-        <Text>Banka: {item.seller?.bankName || '-'}</Text>
-        <Text style={styles.countdown}>⏳ {formatCountdown(item.paymentDeadline)}</Text>
-      </View>
+        <View style={styles.infoBox}>
+          <Text style={styles.infoLabel}>🏦 Satıcı Ödeme Bilgileri</Text>
+          {/* IBAN ve kopyala butonu */}
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 2 }}>
+            <Text>IBAN: {item.seller?.iban || '-'}</Text>
+            {item.seller?.iban && (
+              <TouchableOpacity
+                onPress={() => copyIban(item.seller.iban)}
+                style={styles.copyButton}
+              >
+                <Text style={styles.copyButtonText}>Kopyala</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+          <Text>IBAN İsmi: {item.seller?.ibanName || '-'}</Text>
+          <Text>Banka: {item.seller?.bankName || '-'}</Text>
+          <Text style={styles.countdown}>⏳ {formatCountdown(item.paymentDeadline)}</Text>
+        </View>
 
-      {/* Dekont durumu */}
-      {item.receiptUploaded && (
-        <Text style={[
-          styles.statusLabel,
-          item.receiptStatus === 'approved' ? styles.statusApproved :
-          item.receiptStatus === 'rejected' ? styles.statusRejected :
-          styles.statusPending
-        ]}>
-          {item.receiptStatus === 'approved' ? 'Onaylandı' :
-           item.receiptStatus === 'rejected' ? 'Reddedildi' : 'Bekliyor'}
-        </Text>
-      )}
+        {/* Dekont durumu */}
+        {item.receiptUploaded && (
+          <Text
+            style={[
+              styles.statusLabel,
+              item.receiptStatus === 'approved'
+                ? styles.statusApproved
+                : item.receiptStatus === 'rejected'
+                ? styles.statusRejected
+                : styles.statusPending,
+            ]}
+          >
+            {item.receiptStatus === 'approved'
+              ? 'Onaylandı'
+              : item.receiptStatus === 'rejected'
+              ? 'Reddedildi'
+              : 'Bekliyor'}
+          </Text>
+        )}
 
-      {/* Dekont yükleme seçenekleri */}
-      {rejected ? (
-        <TouchableOpacity
-          style={styles.uploadButton}
-          onPress={() => handleUploadReceipt(item._id)}
-        >
-          <Text style={styles.uploadButtonText}>Tekrar Dekont Yükle</Text>
-        </TouchableOpacity>
-      ) : item.receiptUploaded ? (
-        <Text style={styles.uploadedLabel}>📄 Dekont yüklendi</Text>
-      ) : (
-        <TouchableOpacity
-          style={styles.uploadButton}
-          onPress={() => handleUploadReceipt(item._id)}
-        >
-          <Text style={styles.uploadButtonText}>Dekont Yükle</Text>
-        </TouchableOpacity>
-      )}
-    </TouchableOpacity>
-  );
-};
-
+        {/* Dekont yükleme seçenekleri */}
+        {rejected ? (
+          <TouchableOpacity
+            style={styles.uploadButton}
+            onPress={() => handleUploadReceipt(item._id)}
+          >
+            <Text style={styles.uploadButtonText}>Tekrar Dekont Yükle</Text>
+          </TouchableOpacity>
+        ) : item.receiptUploaded ? (
+          <Text style={styles.uploadedLabel}>📄 Dekont yüklendi</Text>
+        ) : (
+          <TouchableOpacity
+            style={styles.uploadButton}
+            onPress={() => handleUploadReceipt(item._id)}
+          >
+            <Text style={styles.uploadButtonText}>Dekont Yükle</Text>
+          </TouchableOpacity>
+        )}
+      </TouchableOpacity>
+    );
+  };
 
   if (loading) {
     return (
@@ -174,5 +205,18 @@ const styles = StyleSheet.create({
     marginTop: 50,
     fontSize: 16,
     color: '#666',
+  },
+  // Eklenen stiller
+  copyButton: {
+    marginLeft: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    backgroundColor: '#e0c9a6',
+    borderRadius: 6,
+  },
+  copyButtonText: {
+    color: '#4e342e',
+    fontWeight: 'bold',
+    fontSize: 12,
   },
 });

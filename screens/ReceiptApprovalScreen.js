@@ -5,12 +5,22 @@ import {
 } from 'react-native';
 import axios from 'axios';
 import { AuthContext } from '../context/AuthContext';
+import iller from '../assets/data/sehirler.json';
+import ilceler from '../assets/data/ilceler.json';
+import mahalleler1 from '../assets/data/mahalleler-1.json';
+import mahalleler2 from '../assets/data/mahalleler-2.json';
+import mahalleler3 from '../assets/data/mahalleler-3.json';
+import mahalleler4 from '../assets/data/mahalleler-4.json';
+const mahalleler = [...mahalleler1, ...mahalleler2, ...mahalleler3, ...mahalleler4];
 
 export default function ReceiptApprovalScreen() {
   const { user } = useContext(AuthContext); // Satıcı bilgisi
   const [receipts, setReceipts] = useState([]);
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedImage, setSelectedImage] = useState(null);
+  const getIlName = (id) => iller.find(il => il.sehir_id === String(id))?.sehir_adi;
+const getIlceName = (id) => ilceler.find(ilce => ilce.ilce_id === String(id))?.ilce_adi;
+const getMahalleName = (id) => mahalleler.find(m => m.mahalle_id === String(id))?.mahalle_adi;
 
   useEffect(() => {
     if (user?.role === 'seller') {
@@ -49,47 +59,58 @@ export default function ReceiptApprovalScreen() {
     setSelectedImage(null);
   };
 
-  const renderItem = ({ item }) => {
-    const address = item.buyer?.address || {};
-    return (
-      <View style={styles.card}>
-        <Text style={styles.title}>{item.title}</Text>
-        <Text style={styles.subtitle}>Kazanan: {item.buyer?.name || 'Bilinmiyor'}</Text>
+ const renderItem = ({ item }) => {
+  const address = item.buyer?.address || {};
+  const ilName = getIlName(address.ilId) || '';
+  const ilceName = getIlceName(address.ilceId) || '';
+  const mahalleName = getMahalleName(address.mahalleId) || '';
 
-        <TouchableOpacity onPress={() => openImageModal(item.receiptUrl)}>
-          <Image source={{ uri: item.receiptUrl }} style={styles.image} />
-        </TouchableOpacity>
+  return (
+    <View style={styles.card}>
+      <Text style={styles.title}>{item.title}</Text>
+      <Text style={styles.subtitle}>Kazanan: {item.buyer?.name || 'Bilinmiyor'}</Text>
 
-        <Text style={styles.subtitle}>Durum: {item.receiptStatus}</Text>
+      <TouchableOpacity onPress={() => openImageModal(item.receiptUrl)}>
+        <Image source={{ uri: item.receiptUrl }} style={styles.image} />
+      </TouchableOpacity>
 
-        {item.receiptStatus === 'pending' ? (
-          <View style={styles.buttonRow}>
-            <TouchableOpacity style={styles.approveButton} onPress={() => handleApproval(item._id, true)}>
-              <Text style={styles.buttonText}>Onayla</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.rejectButton} onPress={() => handleApproval(item._id, false)}>
-              <Text style={styles.buttonText}>Reddet</Text>
-            </TouchableOpacity>
-          </View>
-        ) : (
-          <View style={styles.buyerInfo}>
-  <Text style={styles.infoText}><Text style={styles.bold}>Ad Soyad:</Text> {item.buyer?.name || '-'}</Text>
-  <Text style={styles.infoText}><Text style={styles.bold}>Telefon:</Text> {item.buyer?.phone || '-'}</Text>
-  <Text style={styles.infoText}><Text style={styles.bold}>Adres:</Text></Text>
-  <ScrollView style={styles.addressBox}>
-    <Text>
-      {address.mahalle || ''} {address.sokak || ''} Apartman no: {address.apartmanNo || '-'} Daire: {address.daireNo || '-'}
-    </Text>
-    <Text>
-      {address.ilce || ''} / {address.il || ''}
-    </Text>
-  </ScrollView>
-</View>
+      <Text style={styles.subtitle}>Durum: {item.receiptStatus}</Text>
 
-        )}
-      </View>
-    );
-  };
+      {item.receiptStatus === 'pending' ? (
+        <View style={styles.buttonRow}>
+          <TouchableOpacity style={styles.approveButton} onPress={() => handleApproval(item._id, true)}>
+            <Text style={styles.buttonText}>Onayla</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.rejectButton} onPress={() => handleApproval(item._id, false)}>
+            <Text style={styles.buttonText}>Reddet</Text>
+          </TouchableOpacity>
+        </View>
+      ) : (
+        <View style={styles.buyerInfo}>
+          <Text style={styles.infoText}>
+            <Text style={styles.bold}>Ad Soyad:</Text> {item.buyer?.name || '-'}
+          </Text>
+          <Text style={styles.infoText}>
+            <Text style={styles.bold}>Telefon:</Text> {item.buyer?.phone || '-'}
+          </Text>
+          <Text style={styles.infoText}>
+            <Text style={styles.bold}>Adres:</Text>
+          </Text>
+          <ScrollView style={styles.addressBox}>
+            <Text>
+              {mahalleName || ''} {address.sokak || ''} Apartman no: {address.apartmanNo || '-'} Daire:{' '}
+              {address.daireNo || '-'}
+            </Text>
+            <Text>
+              {ilceName || ''} / {ilName || ''}
+            </Text>
+          </ScrollView>
+        </View>
+      )}
+    </View>
+  );
+};
+
 
   return (
     <View style={styles.container}>
