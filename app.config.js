@@ -46,6 +46,7 @@ export default {
       supportsTablet: true,
       bundleIdentifier: "com.umutugur.imame",
       buildNumber: "1.0.1", // yeni build için artırıldı
+      usesAppleSignIn: true,
       config: {
         googleMobileAdsAppId: "ca-app-pub-4306778139267554~3035532261",
         usesNonExemptEncryption: false // 🔥 bu satır eksikti!
