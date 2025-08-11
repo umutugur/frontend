@@ -15,7 +15,7 @@ import { AuthContext } from '../context/AuthContext';
 import * as AppleAuthentication from 'expo-apple-authentication';
 
 const LoginScreen = ({ navigation }) => {
-  const { login, promptGoogle, loginWithApple } = useContext(AuthContext);
+  const { user, login, promptGoogle, loginWithApple } = useContext(AuthContext);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
