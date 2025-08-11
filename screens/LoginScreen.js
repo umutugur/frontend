@@ -27,13 +27,17 @@ const LoginScreen = ({ navigation }) => {
       AppleAuthentication.isAvailableAsync().then(setIsAppleAvailable);
     }
   }, []);
+  useEffect(() => {
+  if (user) {
+    navigation.reset({ index: 0, routes: [{ name: 'Main' }] });
+  }
+}, [user]);
 
   const handleLogin = async () => {
     setError('');
     setBanned(false);
     try {
       await login(email, password);      // Başarılı login sonrası yönlendirme yok.
-      navigation.reset({ index: 0, routes: [{ name: 'Main' }] });
     } catch (error) {
       const message = error?.message?.toLowerCase() || '';
       if (
@@ -125,7 +129,6 @@ const LoginScreen = ({ navigation }) => {
               onPress={async () => {
                 try {
                   await loginWithApple(); // Apple login sonrası yönlendirme yok.
-                  navigation.reset({ index: 0, routes: [{ name: 'Main' }] });
                 } catch (err) {
                   if (err.code !== 'ERR_CANCELED') {
                     Alert.alert(

@@ -204,6 +204,7 @@ export const AuthProvider = ({ children }) => {
         logout,
         loginWithApple,
         promptAsync, // Google login çağrısı
+        promptGoogle:promptAsync,
         notifications,
         setNotifications,
         unreadCount,
