@@ -1,4 +1,4 @@
-// SendNotificationScreen.js
+// screens/SendNotificationScreen.js
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import CheckBox from '@react-native-community/checkbox';
@@ -16,12 +16,16 @@ export default function SendNotificationScreen() {
       Alert.alert('Uyarı', 'Lütfen başlık ve mesaj girin.');
       return;
     }
-
+    // Kullanıcı seçilmemişse uyar
+    if (!email.trim() && !toAllBuyers && !toAllSellers) {
+      Alert.alert('Uyarı', 'Lütfen e‑posta yazın ya da alıcı grubu seçin.');
+      return;
+    }
     try {
       await axios.post('https://imame-backend.onrender.com/api/notifications/send', {
         title,
         message,
-        email,
+        email: email.trim() || undefined,
         toAllBuyers,
         toAllSellers,
       });
@@ -32,14 +36,14 @@ export default function SendNotificationScreen() {
       setToAllBuyers(false);
       setToAllSellers(false);
     } catch (err) {
-      Alert.alert('Hata', err.response?.data?.message || 'Bir hata oluştu.');
+      const msg = err.response?.data?.message || err.message;
+      Alert.alert('Hata', msg);
     }
   };
 
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Bildirim Gönder</Text>
-
       <TextInput
         style={styles.input}
         placeholder="Başlık"
@@ -47,20 +51,17 @@ export default function SendNotificationScreen() {
         onChangeText={setTitle}
       />
       <TextInput
-        style={[styles.input, { height: 100 }]}
+        style={styles.input}
         placeholder="Mesaj"
         value={message}
         onChangeText={setMessage}
-        multiline
       />
-
       <TextInput
         style={styles.input}
-        placeholder="E-posta ile gönder (isteğe bağlı)"
+        placeholder="Tek bir kullanıcıya göndermek için e‑posta"
         value={email}
         onChangeText={setEmail}
       />
-
       <View style={styles.checkboxContainer}>
         <CheckBox value={toAllBuyers} onValueChange={setToAllBuyers} />
         <Text style={styles.checkboxLabel}>Tüm Alıcılara Gönder</Text>
@@ -69,13 +70,14 @@ export default function SendNotificationScreen() {
         <CheckBox value={toAllSellers} onValueChange={setToAllSellers} />
         <Text style={styles.checkboxLabel}>Tüm Satıcılara Gönder</Text>
       </View>
-
       <TouchableOpacity style={styles.button} onPress={handleSend}>
         <Text style={styles.buttonText}>Gönder</Text>
       </TouchableOpacity>
     </View>
   );
 }
+
+// stiller mevcut kodda olduğu gibi
 
 const styles = StyleSheet.create({
   container: {
