@@ -32,14 +32,22 @@ const LoginScreen = ({ navigation }) => {
     setError('');
     setBanned(false);
     try {
-      await login(email, password);
-      navigation.replace('Main');
+      await login(email, password);      // Başarılı login sonrası yönlendirme yok.
     } catch (error) {
       const message = error?.message?.toLowerCase() || '';
-      if (message.includes('ban') || message.includes('askıya') || message.includes('banned')) {
+      if (
+        message.includes('ban') ||
+        message.includes('askıya') ||
+        message.includes('banned')
+      ) {
         setBanned(true);
-        setError('Hesabınız geçici olarak askıya alınmıştır. Lütfen 7 gün sonra tekrar deneyin veya destek ekibimizle iletişime geçin.');
-      } else if (message.includes('wrong password') || message.includes('şifre')) {
+        setError(
+          'Hesabınız geçici olarak askıya alınmıştır. Lütfen 7 gün sonra tekrar deneyin veya destek ekibimizle iletişime geçin.'
+        );
+      } else if (
+        message.includes('wrong password') ||
+        message.includes('şifre')
+      ) {
         setError('E-posta veya şifre hatalı.');
       } else {
         setError('Giriş başarısız: ' + error.message);
@@ -48,7 +56,10 @@ const LoginScreen = ({ navigation }) => {
   };
 
   const handleRegisterPress = () => {
-    Alert.alert('Kayıt Bilgisi', 'Şu an için yalnızca Google ile kayıt olabilirsiniz.');
+    Alert.alert(
+      'Kayıt Bilgisi',
+      'Şu an için yalnızca Google ile kayıt olabilirsiniz.'
+    );
     // navigation.navigate('Register');
   };
 
@@ -59,7 +70,10 @@ const LoginScreen = ({ navigation }) => {
     >
       <ScrollView contentContainerStyle={styles.scrollContainer}>
         <View style={styles.container}>
-          <Image source={require('../assets/logo.png')} style={styles.logo} />
+          <Image
+            source={require('../assets/logo.png')}
+            style={styles.logo}
+          />
           <Text style={styles.title}>Giriş Yap</Text>
 
           {error !== '' && (
@@ -90,8 +104,14 @@ const LoginScreen = ({ navigation }) => {
             <Text style={styles.buttonText}>Giriş Yap</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.googleButton} onPress={() => promptGoogle()}>
-            <Image source={require('../assets/google-icon.png')} style={styles.googleIcon} />
+          <TouchableOpacity
+            style={styles.googleButton}
+            onPress={() => promptGoogle()}
+          >
+            <Image
+              source={require('../assets/google-icon.png')}
+              style={styles.googleIcon}
+            />
             <Text style={styles.googleButtonText}>Google ile Giriş Yap</Text>
           </TouchableOpacity>
 
@@ -103,11 +123,13 @@ const LoginScreen = ({ navigation }) => {
               style={{ width: '100%', height: 50, marginBottom: 15 }}
               onPress={async () => {
                 try {
-                  await loginWithApple();
-                  navigation.replace('Main');
+                  await loginWithApple(); // Apple login sonrası yönlendirme yok.
                 } catch (err) {
                   if (err.code !== 'ERR_CANCELED') {
-                    Alert.alert('Apple Girişi Hatası', err.message || 'Bir hata oluştu.');
+                    Alert.alert(
+                      'Apple Girişi Hatası',
+                      err.message || 'Bir hata oluştu.'
+                    );
                   }
                 }
               }}
