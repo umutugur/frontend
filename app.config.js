@@ -81,6 +81,9 @@ export default {
           androidAppId: "ca-app-pub-4306778139267554~1925991963",
           iosAppId:"ca-app-pub-4306778139267554~3035532261"
         }
+      ],
+      [
+        "expo-apple-authentication"
       ]
     ]
   }

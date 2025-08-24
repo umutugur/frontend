@@ -23,14 +23,12 @@ export const AuthProvider = ({ children }) => {
 
   const redirectUri = makeRedirectUri({ native: 'com.umutugur.imame:/oauthredirect' });
 
-  // Google OAuth yapılandırması (mevcut değerler kullanılmalı)
   const [request, response, promptAsync] = Google.useAuthRequest({
     androidClientId: '10042514664-2ogtkaoj8ja49650g17gu6rd084ggejp.apps.googleusercontent.com',
     iosClientId: '10042514664-3hndgs91erv9lsi477vgij988r85liel.apps.googleusercontent.com',
     redirectUri,
   });
 
-  // Google OAuth callback
   useEffect(() => {
     if (response?.type === 'success') {
       const { authentication } = response;
@@ -38,7 +36,6 @@ export const AuthProvider = ({ children }) => {
     }
   }, [response]);
 
-  // Bildirimleri ve okunmamış mesaj sayısını al
   const fetchNotifications = async (userId) => {
     try {
       const res = await axios.get(`https://imame-backend.onrender.com/api/user-notifications/user/${userId}`);
@@ -57,7 +54,6 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // Google login işlemi
   const handleGoogleAuth = async (accessToken, idToken) => {
     try {
       const res = await axios.post('https://imame-backend.onrender.com/api/auth/social-login', {
@@ -77,7 +73,6 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // Apple ile giriş
   const loginWithApple = async () => {
     try {
       const credential = await AppleAuthentication.signInAsync({
@@ -109,7 +104,6 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // Klasik e‑posta/şifre ile giriş
   const login = async (email, password) => {
     try {
       const res = await axios.post('https://imame-backend.onrender.com/api/auth/login', { email, password });
@@ -125,7 +119,6 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // Çıkış işlemi (push token’ı sunucudan siler)
   const logout = async () => {
     try {
       if (user?._id) {
@@ -140,7 +133,29 @@ export const AuthProvider = ({ children }) => {
     await AsyncStorage.removeItem('user');
   };
 
-  // Push bildirim token’ını kaydet
+  // ✅ PROFİL GÜNCELLEME — eksik olan fonksiyon
+  const updateUser = async (updatedFields) => {
+    try {
+      // Backend’inizde Authorization zorunlu değilse header vermesek de olur;
+      // yine de varsa gönderelim
+      const token = await AsyncStorage.getItem('token');
+      const res = await axios.put(
+        'https://imame-backend.onrender.com/api/auth/update-profile',
+        updatedFields,
+        token ? { headers: { Authorization: `Bearer ${token}` } } : undefined
+      );
+
+      const updatedUser = res.data.user;
+      setUser(updatedUser);
+      await AsyncStorage.setItem('user', JSON.stringify(updatedUser));
+      return updatedUser;
+    } catch (err) {
+      console.error('Profil güncelleme hatası:', err.message);
+      Alert.alert('Hata', err.response?.data?.message || 'Profil güncellenemedi.');
+      throw err;
+    }
+  };
+
   const registerForPushNotificationsAsync = async (userId) => {
     try {
       if (!Device.isDevice) return;
@@ -152,8 +167,10 @@ export const AuthProvider = ({ children }) => {
       }
       if (finalStatus !== 'granted') return;
 
-      // iOS üzerinde token alırken projectId verilmezse expoPushToken üretmez
-      const projectId = Constants.expoConfig?.extra?.eas?.projectId;
+      // iOS'ta projectId verilmezse token dönmeyebilir
+      const projectId =
+        Constants.expoConfig?.extra?.eas?.projectId ||
+        Constants.easConfig?.projectId; // yedek okuma
       const tokenData = projectId
         ? await Notifications.getExpoPushTokenAsync({ projectId })
         : await Notifications.getExpoPushTokenAsync();
@@ -173,7 +190,6 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // Uygulama açıldığında kullanıcının bilgilerini yükle
   useEffect(() => {
     const loadUser = async () => {
       try {
@@ -203,13 +219,14 @@ export const AuthProvider = ({ children }) => {
         login,
         logout,
         loginWithApple,
-        promptAsync, // Google login çağrısı
-        promptGoogle:promptAsync,
+        promptAsync,
+        promptGoogle: promptAsync,
         notifications,
         setNotifications,
         unreadCount,
         setUnreadCount,
         fetchUnreadMessages,
+        updateUser, // 👈 EKRANLAR İÇİN SAĞLANIYOR
       }}
     >
       {children}
