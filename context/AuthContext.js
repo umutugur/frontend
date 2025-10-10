@@ -9,11 +9,13 @@ import * as Google from 'expo-auth-session/providers/google';
 import { makeRedirectUri } from 'expo-auth-session';
 import * as AppleAuthentication from 'expo-apple-authentication';
 import Constants from 'expo-constants';
-import { Alert } from 'react-native';
+import { Alert, Platform } from 'react-native';
 
 WebBrowser.maybeCompleteAuthSession();
 
 export const AuthContext = createContext();
+
+const API_BASE = 'https://imame-backend.onrender.com';
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
@@ -25,7 +27,7 @@ export const AuthProvider = ({ children }) => {
 
   const [request, response, promptAsync] = Google.useAuthRequest({
     androidClientId: '10042514664-2ogtkaoj8ja49650g17gu6rd084ggejp.apps.googleusercontent.com',
-    iosClientId: '10042514664-3hndgs91erv9lsi477vgij988r85liel.apps.googleusercontent.com',
+    iosClientId:     '10042514664-3hndgs91erv9lsi477vgij988r85liel.apps.googleusercontent.com',
     redirectUri,
   });
 
@@ -38,7 +40,7 @@ export const AuthProvider = ({ children }) => {
 
   const fetchNotifications = async (userId) => {
     try {
-      const res = await axios.get(`https://imame-backend.onrender.com/api/user-notifications/user/${userId}`);
+      const res = await axios.get(`${API_BASE}/api/user-notifications/user/${userId}`);
       setNotifications(res.data);
     } catch (err) {
       console.error('Bildirimler alınamadı:', err.message);
@@ -47,7 +49,7 @@ export const AuthProvider = ({ children }) => {
 
   const fetchUnreadMessages = async (userId) => {
     try {
-      const res = await axios.get(`https://imame-backend.onrender.com/api/messages/unread-count/${userId}`);
+      const res = await axios.get(`${API_BASE}/api/messages/unread-count/${userId}`);
       setUnreadCount(res.data.count || 0);
     } catch (err) {
       console.error('Okunmamış mesaj sayısı alınamadı:', err.message);
@@ -56,7 +58,7 @@ export const AuthProvider = ({ children }) => {
 
   const handleGoogleAuth = async (accessToken, idToken) => {
     try {
-      const res = await axios.post('https://imame-backend.onrender.com/api/auth/social-login', {
+      const res = await axios.post(`${API_BASE}/api/auth/social-login`, {
         provider: 'google',
         accessToken,
         idToken,
@@ -64,7 +66,7 @@ export const AuthProvider = ({ children }) => {
       const userData = res.data.user;
       setUser(userData);
       await AsyncStorage.setItem('user', JSON.stringify(userData));
-      await registerForPushNotificationsAsync(userData._id);
+      await ensureAndSendPushToken(userData._id);
       await fetchNotifications(userData._id);
       await fetchUnreadMessages(userData._id);
     } catch (err) {
@@ -75,27 +77,39 @@ export const AuthProvider = ({ children }) => {
 
   const loginWithApple = async () => {
     try {
+      // Apple Sign-In yalnız gerçek cihazda
+      if (Platform.OS === 'ios') {
+        const available = await AppleAuthentication.isAvailableAsync();
+        if (!available) {
+          Alert.alert('Uyarı', 'Bu cihazda Apple ile Giriş desteklenmiyor.');
+          return;
+        }
+      }
+
       const credential = await AppleAuthentication.signInAsync({
         requestedScopes: [
           AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
           AppleAuthentication.AppleAuthenticationScope.EMAIL,
         ],
       });
+
       const { identityToken, email, fullName } = credential;
       if (!identityToken) {
         Alert.alert('Giriş Hatası', 'Apple kimlik doğrulaması başarısız. Lütfen tekrar deneyin.');
         return;
       }
-      const res = await axios.post('https://imame-backend.onrender.com/api/auth/social-login', {
+
+      const res = await axios.post(`${API_BASE}/api/auth/social-login`, {
         provider: 'apple',
         idToken: identityToken,
         email,
         name: fullName ? `${fullName.givenName || ''} ${fullName.familyName || ''}`.trim() : undefined,
       });
+
       const userData = res.data.user;
       setUser(userData);
       await AsyncStorage.setItem('user', JSON.stringify(userData));
-      await registerForPushNotificationsAsync(userData._id);
+      await ensureAndSendPushToken(userData._id);
       await fetchNotifications(userData._id);
       await fetchUnreadMessages(userData._id);
     } catch (err) {
@@ -106,11 +120,11 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (email, password) => {
     try {
-      const res = await axios.post('https://imame-backend.onrender.com/api/auth/login', { email, password });
+      const res = await axios.post(`${API_BASE}/api/auth/login`, { email, password });
       const userData = res.data.user;
       setUser(userData);
       await AsyncStorage.setItem('user', JSON.stringify(userData));
-      await registerForPushNotificationsAsync(userData._id);
+      await ensureAndSendPushToken(userData._id);
       await fetchNotifications(userData._id);
       await fetchUnreadMessages(userData._id);
     } catch (err) {
@@ -122,7 +136,7 @@ export const AuthProvider = ({ children }) => {
   const logout = async () => {
     try {
       if (user?._id) {
-        await axios.post('https://imame-backend.onrender.com/api/users/remove-token', { userId: user._id });
+        await axios.post(`${API_BASE}/api/users/remove-token`, { userId: user._id });
       }
     } catch (err) {
       console.error('Push token silme hatası:', err.message);
@@ -133,14 +147,11 @@ export const AuthProvider = ({ children }) => {
     await AsyncStorage.removeItem('user');
   };
 
-  // ✅ PROFİL GÜNCELLEME — eksik olan fonksiyon
   const updateUser = async (updatedFields) => {
     try {
-      // Backend’inizde Authorization zorunlu değilse header vermesek de olur;
-      // yine de varsa gönderelim
       const token = await AsyncStorage.getItem('token');
       const res = await axios.put(
-        'https://imame-backend.onrender.com/api/auth/update-profile',
+        `${API_BASE}/api/auth/update-profile`,
         updatedFields,
         token ? { headers: { Authorization: `Bearer ${token}` } } : undefined
       );
@@ -156,9 +167,12 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const registerForPushNotificationsAsync = async (userId) => {
+  // ---- TOKEN ALMA: TEK NOKTA ----
+  const ensureAndSendPushToken = async (userId) => {
     try {
-      if (!Device.isDevice) return;
+      if (!Device.isDevice) return; // iOS sim token üretmez
+
+      // izinler
       const { status: existingStatus } = await Notifications.getPermissionsAsync();
       let finalStatus = existingStatus;
       if (existingStatus !== 'granted') {
@@ -167,22 +181,23 @@ export const AuthProvider = ({ children }) => {
       }
       if (finalStatus !== 'granted') return;
 
-      // iOS'ta projectId verilmezse token dönmeyebilir
+      // iOS'ta projectId şart — config + eas fallback
       const projectId =
-        Constants.expoConfig?.extra?.eas?.projectId ||
-        Constants.easConfig?.projectId; // yedek okuma
-      const tokenData = projectId
-        ? await Notifications.getExpoPushTokenAsync({ projectId })
-        : await Notifications.getExpoPushTokenAsync();
+        Constants?.expoConfig?.extra?.eas?.projectId ||
+        Constants?.easConfig?.projectId ||
+        '2de51fda-069e-4bcc-b5c4-a3add9da16d7'; // senin app.config.js’teki UUID — fallback
+
+      const tokenData = await Notifications.getExpoPushTokenAsync({ projectId });
       const expoPushToken = tokenData?.data;
+      if (!expoPushToken) return;
 
-      if (expoPushToken) {
-        await axios.post('https://imame-backend.onrender.com/api/users/update-token', {
-          userId,
-          pushToken: expoPushToken,
-        });
-      }
+      // backend alan adı = notificationToken (UYUM OK)
+      await axios.post(`${API_BASE}/api/users/update-token`, {
+        userId,
+        pushToken: expoPushToken,
+      });
 
+      // UI senkron
       await fetchNotifications(userId);
       await fetchUnreadMessages(userId);
     } catch (err) {
@@ -197,7 +212,7 @@ export const AuthProvider = ({ children }) => {
         if (storedUser) {
           const parsed = JSON.parse(storedUser);
           setUser(parsed);
-          await registerForPushNotificationsAsync(parsed._id);
+          await ensureAndSendPushToken(parsed._id);
           await fetchNotifications(parsed._id);
           await fetchUnreadMessages(parsed._id);
         }
@@ -226,7 +241,7 @@ export const AuthProvider = ({ children }) => {
         unreadCount,
         setUnreadCount,
         fetchUnreadMessages,
-        updateUser, // 👈 EKRANLAR İÇİN SAĞLANIYOR
+        updateUser,
       }}
     >
       {children}

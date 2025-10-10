@@ -1,3 +1,4 @@
+// App.js
 import React, { useContext, useEffect, useRef } from 'react';
 import { ActivityIndicator, View } from 'react-native';
 import * as Notifications from 'expo-notifications';
@@ -7,6 +8,15 @@ import Toast from 'react-native-toast-message';
 import { AuthProvider, AuthContext } from './context/AuthContext';
 import OfflineNotice from './components/OfflineNotice';
 import { SafeAreaView } from 'react-native-safe-area-context';
+
+// Foreground bildirim davranışı — iOS’ta uygulama açıkken banner/ses/rozet göstersin
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowAlert: true,
+    shouldPlaySound: true,
+    shouldSetBadge: true,
+  }),
+});
 
 // Screens
 import LoginScreen from './screens/LoginScreen';
@@ -92,7 +102,7 @@ function MainNavigator() {
 export default function App() {
   const navigationRef = useRef();
 
-  // Bildirime tıklanma durumunda yönlendirme
+  // Bildirime tıklanma → yönlendirme
   useEffect(() => {
     const subscription = Notifications.addNotificationResponseReceivedListener(response => {
       const data = response.notification.request.content.data;
@@ -114,8 +124,6 @@ export default function App() {
       if (data?.type === 'receipt') {
         navigationRef.current?.navigate('UploadReceipt');
       }
-
-      // İsteğe bağlı olarak farklı yönlendirmeler eklenebilir
     });
 
     return () => subscription.remove();
@@ -148,4 +156,4 @@ export default function App() {
       </AuthProvider>
     </SafeAreaView>
   );
-        }
+}
