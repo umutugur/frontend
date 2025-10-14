@@ -141,12 +141,7 @@ const LoginScreen = ({ navigation }) => {
             />
           )}
 
-          <View style={styles.registerContainer}>
-            <Text style={styles.registerText}>Hesabın yok mu?</Text>
-            <TouchableOpacity onPress={handleRegisterPress}>
-              <Text style={styles.registerLink}> Kayıt ol</Text>
-            </TouchableOpacity>
-          </View>
+         
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
