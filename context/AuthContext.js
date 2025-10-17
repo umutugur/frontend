@@ -17,6 +17,12 @@ export const AuthContext = createContext();
 
 const API_BASE = 'https://imame-backend.onrender.com';
 
+async function setAuthHeaderFromStorage() {
+  const token = await AsyncStorage.getItem('token');
+  if (token) axios.defaults.headers.common.Authorization = `Bearer ${token}`;
+  else delete axios.defaults.headers.common.Authorization;
+}
+
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -56,6 +62,29 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  // ---- SOSYAL/CLASSIC LOGIN YARDIMCILARI ----
+  const completeLogin = async (payload) => {
+    // beklenen: { user, token } veya {user, accessToken}
+    const token = payload?.token || payload?.accessToken || '';
+    const userData = payload?.user;
+
+    if (!userData) throw new Error('Login response invalid.');
+    setUser(userData);
+    await AsyncStorage.setItem('user', JSON.stringify(userData));
+
+    if (token) {
+      await AsyncStorage.setItem('token', token);
+      axios.defaults.headers.common.Authorization = `Bearer ${token}`;
+    } else {
+      await AsyncStorage.removeItem('token');
+      delete axios.defaults.headers.common.Authorization;
+    }
+
+    await ensureAndSendPushToken(userData._id);
+    await fetchNotifications(userData._id);
+    await fetchUnreadMessages(userData._id);
+  };
+
   const handleGoogleAuth = async (accessToken, idToken) => {
     try {
       const res = await axios.post(`${API_BASE}/api/auth/social-login`, {
@@ -63,12 +92,7 @@ export const AuthProvider = ({ children }) => {
         accessToken,
         idToken,
       });
-      const userData = res.data.user;
-      setUser(userData);
-      await AsyncStorage.setItem('user', JSON.stringify(userData));
-      await ensureAndSendPushToken(userData._id);
-      await fetchNotifications(userData._id);
-      await fetchUnreadMessages(userData._id);
+      await completeLogin(res.data);
     } catch (err) {
       console.error('Google login hatası:', err.message);
       Alert.alert('Giriş Hatası', err.response?.data?.message || err.message);
@@ -77,7 +101,6 @@ export const AuthProvider = ({ children }) => {
 
   const loginWithApple = async () => {
     try {
-      // Apple Sign-In yalnız gerçek cihazda
       if (Platform.OS === 'ios') {
         const available = await AppleAuthentication.isAvailableAsync();
         if (!available) {
@@ -106,12 +129,7 @@ export const AuthProvider = ({ children }) => {
         name: fullName ? `${fullName.givenName || ''} ${fullName.familyName || ''}`.trim() : undefined,
       });
 
-      const userData = res.data.user;
-      setUser(userData);
-      await AsyncStorage.setItem('user', JSON.stringify(userData));
-      await ensureAndSendPushToken(userData._id);
-      await fetchNotifications(userData._id);
-      await fetchUnreadMessages(userData._id);
+      await completeLogin(res.data);
     } catch (err) {
       console.error('Apple login hatası:', err.message);
       Alert.alert('Giriş Hatası', err.response?.data?.message || err.message);
@@ -121,12 +139,7 @@ export const AuthProvider = ({ children }) => {
   const login = async (email, password) => {
     try {
       const res = await axios.post(`${API_BASE}/api/auth/login`, { email, password });
-      const userData = res.data.user;
-      setUser(userData);
-      await AsyncStorage.setItem('user', JSON.stringify(userData));
-      await ensureAndSendPushToken(userData._id);
-      await fetchNotifications(userData._id);
-      await fetchUnreadMessages(userData._id);
+      await completeLogin(res.data);
     } catch (err) {
       console.error('Login hatası:', err.message);
       Alert.alert('Giriş Hatası', err.response?.data?.message || err.message);
@@ -136,7 +149,7 @@ export const AuthProvider = ({ children }) => {
   const logout = async () => {
     try {
       if (user?._id) {
-        await axios.post(`${API_BASE}/api/users/remove-token`, { userId: user._id });
+        await axios.post(`${API_BASE}/api/users/remove-token`, { userId: user._id }).catch(()=>{});
       }
     } catch (err) {
       console.error('Push token silme hatası:', err.message);
@@ -144,18 +157,30 @@ export const AuthProvider = ({ children }) => {
     setUser(null);
     setNotifications([]);
     setUnreadCount(0);
-    await AsyncStorage.removeItem('user');
+    await AsyncStorage.multiRemove(['user','token']);
+    delete axios.defaults.headers.common.Authorization;
+  };
+
+  // 🔥 HESAP SİLME (Apple 5.1.1(v))
+  const deleteMyAccount = async () => {
+    try {
+      await setAuthHeaderFromStorage(); // güvene al
+      const res = await axios.delete(`${API_BASE}/api/users/me`);
+      // sunucu 200 dönerse hepsini sıfırla
+      await logout();
+      Alert.alert('Hesap Silindi', 'Hesabınız ve verileriniz silindi.');
+      return res.data;
+    } catch (err) {
+      const msg = err?.response?.data?.message || err.message;
+      Alert.alert('Silme Başarısız', msg);
+      throw err;
+    }
   };
 
   const updateUser = async (updatedFields) => {
     try {
-      const token = await AsyncStorage.getItem('token');
-      const res = await axios.put(
-        `${API_BASE}/api/auth/update-profile`,
-        updatedFields,
-        token ? { headers: { Authorization: `Bearer ${token}` } } : undefined
-      );
-
+      await setAuthHeaderFromStorage();
+      const res = await axios.put(`${API_BASE}/api/auth/update-profile`, updatedFields);
       const updatedUser = res.data.user;
       setUser(updatedUser);
       await AsyncStorage.setItem('user', JSON.stringify(updatedUser));
@@ -172,7 +197,6 @@ export const AuthProvider = ({ children }) => {
     try {
       if (!Device.isDevice) return; // iOS sim token üretmez
 
-      // izinler
       const { status: existingStatus } = await Notifications.getPermissionsAsync();
       let finalStatus = existingStatus;
       if (existingStatus !== 'granted') {
@@ -181,23 +205,20 @@ export const AuthProvider = ({ children }) => {
       }
       if (finalStatus !== 'granted') return;
 
-      // iOS'ta projectId şart — config + eas fallback
       const projectId =
         Constants?.expoConfig?.extra?.eas?.projectId ||
         Constants?.easConfig?.projectId ||
-        '2de51fda-069e-4bcc-b5c4-a3add9da16d7'; // senin app.config.js’teki UUID — fallback
+        '2de51fda-069e-4bcc-b5c4-a3add9da16d7';
 
       const tokenData = await Notifications.getExpoPushTokenAsync({ projectId });
       const expoPushToken = tokenData?.data;
       if (!expoPushToken) return;
 
-      // backend alan adı = notificationToken (UYUM OK)
       await axios.post(`${API_BASE}/api/users/update-token`, {
         userId,
         pushToken: expoPushToken,
       });
 
-      // UI senkron
       await fetchNotifications(userId);
       await fetchUnreadMessages(userId);
     } catch (err) {
@@ -205,9 +226,11 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  // İlk açılışta user/token yükle
   useEffect(() => {
     const loadUser = async () => {
       try {
+        await setAuthHeaderFromStorage();
         const storedUser = await AsyncStorage.getItem('user');
         if (storedUser) {
           const parsed = JSON.parse(storedUser);
@@ -242,6 +265,7 @@ export const AuthProvider = ({ children }) => {
         setUnreadCount,
         fetchUnreadMessages,
         updateUser,
+        deleteMyAccount,     // 👈 dışarı veriyoruz
       }}
     >
       {children}

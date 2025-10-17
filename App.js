@@ -8,7 +8,8 @@ import Toast from 'react-native-toast-message';
 import { AuthProvider, AuthContext } from './context/AuthContext';
 import OfflineNotice from './components/OfflineNotice';
 import { SafeAreaView } from 'react-native-safe-area-context';
-
+import { requestTrackingPermissionsAsync, getTrackingPermissionsAsync } from 'expo-tracking-transparency';
+import { Platform } from 'react-native';
 // Foreground bildirim davranışı — iOS’ta uygulama açıkken banner/ses/rozet göstersin
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -101,7 +102,21 @@ function MainNavigator() {
 
 export default function App() {
   const navigationRef = useRef();
-
+useEffect(() => {
+  // iOS: reklam/analitikten önce ATT iste
+  const askATT = async () => {
+    if (Platform.OS !== 'ios') return;
+    try {
+      const { status } = await getTrackingPermissionsAsync();
+      if (status !== 'granted') {
+        await requestTrackingPermissionsAsync();
+      }
+    } catch (e) {
+      console.log('ATT request error:', e?.message || e);
+    }
+  };
+  askATT();
+}, []);
   // Bildirime tıklanma → yönlendirme
   useEffect(() => {
     const subscription = Notifications.addNotificationResponseReceivedListener(response => {

@@ -1,3 +1,4 @@
+// screens/ProfileScreen.js
 import React, { useContext, useEffect, useState } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, Alert
@@ -12,7 +13,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 export default function ProfileScreen() {
   const navigation = useNavigation();
   const route = useRoute();
-  const { user: currentUser,setUser,logout } = useContext(AuthContext);
+  const { user: currentUser, setUser, logout, deleteMyAccount } = useContext(AuthContext);
 
   const [profileData, setProfileData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -23,12 +24,10 @@ export default function ProfileScreen() {
   const [avgRating, setAvgRating] = useState(null);
   const [totalRatings, setTotalRatings] = useState(0);
   const [hasWonAuction, setHasWonAuction] = useState(false);
-  
 
   const userIdFromParams = route.params?.userId ?? null;
   const isOwnProfile = !userIdFromParams || userIdFromParams === currentUser?._id;
 
-  // Profili çek
   useEffect(() => {
     if (isOwnProfile) {
       setProfileData(currentUser);
@@ -38,17 +37,14 @@ export default function ProfileScreen() {
     }
   }, [userIdFromParams, currentUser]);
 
-  // Favori kontrolü
   useEffect(() => {
-  if (!isOwnProfile && currentUser && profileData?._id) {
-    setIsFavorite(currentUser.favorites?.includes(profileData._id));
-  }
-}, [profileData, currentUser?.favorites]);
+    if (!isOwnProfile && currentUser && profileData?._id) {
+      setIsFavorite(currentUser.favorites?.includes(profileData._id));
+    }
+  }, [profileData, currentUser?.favorites]);
 
-  // Ortalama puan ve "kazandı mı" kontrolü
   useEffect(() => {
     if (!isOwnProfile && profileData?.role === 'seller' && currentUser?._id) {
-      // Ortalama puan
       axios.get(`https://imame-backend.onrender.com/api/ratings/seller/${profileData._id}`)
         .then(res => {
           setAvgRating(res.data.avg);
@@ -59,7 +55,6 @@ export default function ProfileScreen() {
           setTotalRatings(0);
         });
 
-      // Kazanan mı
       axios.get(`https://imame-backend.onrender.com/api/auctions/won-by/${currentUser._id}/${profileData._id}`)
         .then(res => setHasWonAuction(res.data.hasWon))
         .catch(() => setHasWonAuction(false));
@@ -70,7 +65,7 @@ export default function ProfileScreen() {
     try {
       setLoading(true);
       const res = await axios.get(`https://imame-backend.onrender.com/api/users/${userId}`);
-     setProfileData(res.data);
+      setProfileData(res.data);
     } catch (err) {
       Alert.alert('Kullanıcı profili alınamadı', err.message);
     } finally {
@@ -78,45 +73,50 @@ export default function ProfileScreen() {
     }
   };
 
- // Favori toggle
-const handleToggleFavorite = async () => {
-  if (!currentUser?._id || !profileData?._id) return;
-  setFavLoading(true);
+  const handleToggleFavorite = async () => {
+    if (!currentUser?._id || !profileData?._id) return;
+    setFavLoading(true);
 
-  try {
-    const res = await axios.post(
-      'https://imame-backend.onrender.com/api/users/toggle-favorite',
-      {
-        userId: currentUser._id,
-        sellerId: profileData._id,
-      }
+    try {
+      const res = await axios.post(
+        'https://imame-backend.onrender.com/api/users/toggle-favorite',
+        { userId: currentUser._id, sellerId: profileData._id }
+      );
+
+      const { status } = res.data;
+      const updatedFavorites =
+        status === 'added'
+          ? [...(currentUser.favorites || []), profileData._id]
+          : (currentUser.favorites || []).filter(id => id !== profileData._id);
+
+      const updatedUser = { ...currentUser, favorites: updatedFavorites };
+      setUser(updatedUser);
+      await AsyncStorage.setItem('user', JSON.stringify(updatedUser));
+      setIsFavorite(status === 'added');
+    } catch (err) {
+      Alert.alert('Hata', 'Favori işlemi başarısız: ' + err.message);
+    }
+    setFavLoading(false);
+  };
+
+  // ---- Hesap Silme (UI + onay) ----
+  const confirmDelete = () => {
+    Alert.alert(
+      'Hesabı Sil',
+      'Hesabınızı ve verilerinizi kalıcı olarak sileceğiz. Bu işlem geri alınamaz.',
+      [
+        { text: 'Vazgeç', style: 'cancel' },
+        {
+          text: 'Evet, Sil',
+          style: 'destructive',
+          onPress: async () => {
+            await deleteMyAccount().catch(()=>{});
+          }
+        }
+      ]
     );
+  };
 
-    const { status } = res.data;
-    const updatedFavorites =
-      status === 'added'
-        ? [...(currentUser.favorites || []), profileData._id]
-        : (currentUser.favorites || []).filter(id => id !== profileData._id);
-
-    const updatedUser = {
-      ...currentUser,
-      favorites: updatedFavorites,
-    };
-
-    setUser(updatedUser); // önce context güncelle
-    await AsyncStorage.setItem('user', JSON.stringify(updatedUser)); // sonra cache güncelle
-
-    setIsFavorite(status === 'added'); // UI update
-
-  } catch (err) {
-    Alert.alert('Hata', 'Favori işlemi başarısız: ' + err.message);
-  }
-
-  setFavLoading(false);
-};
-
-
-  // Buyer opsiyonları
   const renderBuyerOptions = () => (
     <>
       <TouchableOpacity style={styles.card} onPress={() => navigation.navigate('MyBids')}>
@@ -131,7 +131,6 @@ const handleToggleFavorite = async () => {
     </>
   );
 
-  // Seller opsiyonları
   const renderSellerOptions = () => (
     <>
       <TouchableOpacity style={styles.card} onPress={() => navigation.navigate('AddAuction')}>
@@ -146,14 +145,12 @@ const handleToggleFavorite = async () => {
     </>
   );
 
-  // Admin opsiyonu
   const renderAdminOptions = () => (
     <TouchableOpacity onPress={() => navigation.navigate('AdminPanel')}>
       <Text style={{ color: 'blue', marginTop: 20, fontWeight: 'bold' }}>🔐 Admin Panel</Text>
     </TouchableOpacity>
   );
 
-  // Ortak butonlar
   const renderCommonOptions = () => (
     <>
       <TouchableOpacity style={styles.card} onPress={() => navigation.navigate('Terms')}>
@@ -163,22 +160,33 @@ const handleToggleFavorite = async () => {
         <Text style={styles.link}>🔔 Bildirimler</Text>
       </TouchableOpacity>
       <TouchableOpacity style={styles.card} onPress={() => navigation.navigate('PrivacyPolicy')}>
-        <Text style={styles.link}>🔔 Gizlilik Politikası</Text>
+        <Text style={styles.link}>🔒 Gizlilik Politikası</Text>
       </TouchableOpacity>
       <TouchableOpacity style={styles.card} onPress={() => navigation.navigate('HelpAndSupport')}>
-        <Text style={styles.link}>🔔 Yardım & Destek</Text>
+        <Text style={styles.link}>🆘 Yardım & Destek</Text>
       </TouchableOpacity>
+
+      {/* 🗑️ Apple 5.1.1(v) — Hesap Silme */}
+      {isOwnProfile && (
+        <TouchableOpacity
+          style={[styles.card, { backgroundColor: '#ffebee', borderColor: '#ef9a9a', borderWidth: 1 }]}
+          onPress={confirmDelete}
+        >
+          <Text style={[styles.link, { color: '#c62828', fontWeight: 'bold' }]}>🗑️ Hesabımı Sil</Text>
+          <Text style={{ color: '#8d6e63', marginTop: 6, fontSize: 12 }}>
+            Bu işlem tüm verilerinizi kalıcı olarak siler ve geri alınamaz.
+          </Text>
+        </TouchableOpacity>
+      )}
     </>
   );
 
-  // Çıkış
   const renderLogout = () => (
     <TouchableOpacity onPress={logout} style={[styles.card, { backgroundColor: '#fce4ec' }]}>
       <Text style={[styles.link, { color: '#d32f2f' }]}>🚪 Çıkış Yap</Text>
     </TouchableOpacity>
   );
 
-  // ⭐ Başkasının profilindeysek ve seller ise butonlar (ve kazandıysa)
   const renderVisitedProfileButtons = () => (
     <>
       <TouchableOpacity
@@ -203,7 +211,6 @@ const handleToggleFavorite = async () => {
     </>
   );
 
-  // ---- GÖRSEL ----
   if (loading || !profileData) {
     return (
       <View style={styles.loading}>
@@ -219,7 +226,6 @@ const handleToggleFavorite = async () => {
         {isOwnProfile ? 'Profilim' : `${profileData?.companyName || 'Satıcı'}`}
       </Text>
 
-      {/* ⭐⭐⭐⭐⭐ Ortalama puan alanı */}
       {!isOwnProfile && profileData?.role === 'seller' && (
         <View style={styles.ratingBox}>
           <Text style={styles.ratingLabel}>Satıcı Puanı: </Text>
@@ -251,17 +257,14 @@ const handleToggleFavorite = async () => {
         <Text style={styles.value}>{profileData?.phone || '-'}</Text>
       </View>
 
-      {/* Sadece kendi profilin açıldıysa eski butonlar + çıkış */}
       {isOwnProfile && profileData?.role === 'buyer' && renderBuyerOptions()}
       {isOwnProfile && profileData?.role === 'seller' && renderSellerOptions()}
       {isOwnProfile && profileData?.role === 'admin' && renderAdminOptions()}
       {renderCommonOptions()}
       {isOwnProfile && renderLogout()}
 
-      {/* Başkasının satıcı profili ise ve kazandıysan: */}
       {!isOwnProfile && profileData?.role === 'seller' && hasWonAuction && renderVisitedProfileButtons()}
 
-      {/* Modallar */}
       <RateSellerModal
         visible={showRateModal}
         onClose={() => setShowRateModal(false)}
@@ -272,7 +275,7 @@ const handleToggleFavorite = async () => {
         visible={showReportModal}
         onClose={() => setShowReportModal(false)}
         sellerId={profileData._id}
-         reporterId={currentUser._id}
+        reporterId={currentUser._id}
       />
     </ScrollView>
   );
@@ -318,15 +321,6 @@ const styles = StyleSheet.create({
     color: '#ffab00',
     alignItems: 'center',
   },
-  ratingScore: {
-    color: '#6d4c41',
-    fontWeight: '600',
-    marginLeft: 3,
-    fontSize: 16,
-  },
-  ratingTotal: {
-    color: '#8d6e63',
-    fontSize: 13,
-    marginLeft: 5,
-  }
+  ratingScore: { color: '#6d4c41', fontWeight: '600', marginLeft: 3, fontSize: 16 },
+  ratingTotal: { color: '#8d6e63', fontSize: 13, marginLeft: 5 }
 });
