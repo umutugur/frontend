@@ -1,6 +1,6 @@
 // App.js
 import React, { useContext, useEffect, useRef } from 'react';
-import { ActivityIndicator, View } from 'react-native';
+import { ActivityIndicator, View, Platform } from 'react-native';
 import * as Notifications from 'expo-notifications';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -9,8 +9,7 @@ import { AuthProvider, AuthContext } from './context/AuthContext';
 import OfflineNotice from './components/OfflineNotice';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { requestTrackingPermissionsAsync, getTrackingPermissionsAsync } from 'expo-tracking-transparency';
-import { Platform } from 'react-native';
-// Foreground bildirim davranışı — iOS’ta uygulama açıkken banner/ses/rozet göstersin
+
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
     shouldShowAlert: true,
@@ -61,7 +60,8 @@ function MainNavigator() {
   }
 
   return (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
+    // ⬇️ id eklendi
+    <Stack.Navigator id="RootStack" screenOptions={{ headerShown: false }}>
       {!user ? (
         <>
           <Stack.Screen name="Login" component={LoginScreen} />
@@ -96,32 +96,37 @@ function MainNavigator() {
           <Stack.Screen name="HelpAndSupport" component={HelpAndSupportScreen} />
         </>
       )}
+
+      {/* Modallar her durumda mevcut */}
+      <Stack.Group screenOptions={{ presentation: 'modal', headerShown: false }}>
+        <Stack.Screen name="LoginModal" component={LoginScreen} />
+        <Stack.Screen name="RegisterModal" component={RegisterScreen} />
+      </Stack.Group>
     </Stack.Navigator>
   );
 }
 
 export default function App() {
   const navigationRef = useRef();
-useEffect(() => {
-  // iOS: reklam/analitikten önce ATT iste
-  const askATT = async () => {
-    if (Platform.OS !== 'ios') return;
-    try {
-      const { status } = await getTrackingPermissionsAsync();
-      if (status !== 'granted') {
-        await requestTrackingPermissionsAsync();
-      }
-    } catch (e) {
-      console.log('ATT request error:', e?.message || e);
-    }
-  };
-  askATT();
-}, []);
-  // Bildirime tıklanma → yönlendirme
+
   useEffect(() => {
-    const subscription = Notifications.addNotificationResponseReceivedListener(response => {
+    const askATT = async () => {
+      if (Platform.OS !== 'ios') return;
+      try {
+        const { status } = await getTrackingPermissionsAsync();
+        if (status !== 'granted') {
+          await requestTrackingPermissionsAsync();
+        }
+      } catch (e) {
+        console.log('ATT request error:', e?.message || e);
+      }
+    };
+    askATT();
+  }, []);
+
+  useEffect(() => {
+    const sub = Notifications.addNotificationResponseReceivedListener((response) => {
       const data = response.notification.request.content.data;
-      console.log('🔗 Bildirime tıklandı:', data);
 
       if (data?.type === 'chat' && data.chatId) {
         navigationRef.current?.navigate('Chat', {
@@ -140,13 +145,11 @@ useEffect(() => {
         navigationRef.current?.navigate('UploadReceipt');
       }
     });
-
-    return () => subscription.remove();
+    return () => sub.remove();
   }, []);
 
-  // Bildirim alındığında toast göster
   useEffect(() => {
-    const subscription = Notifications.addNotificationReceivedListener(notification => {
+    const sub = Notifications.addNotificationReceivedListener((notification) => {
       const { title, body } = notification.request.content;
       Toast.show({
         type: 'success',
@@ -156,8 +159,7 @@ useEffect(() => {
         position: 'top',
       });
     });
-
-    return () => subscription.remove();
+    return () => sub.remove();
   }, []);
 
   return (

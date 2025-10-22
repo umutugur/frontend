@@ -23,8 +23,11 @@ async function setAuthHeaderFromStorage() {
   else delete axios.defaults.headers.common.Authorization;
 }
 
+// ---- Yardımcılar
+const isGuestUser = (u) => !u || u?.role === 'guest';
+
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null);
+  const [user, setUser] = useState(null);         // null | {role:'guest'} | gerçek kullanıcı
   const [isLoading, setIsLoading] = useState(true);
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -45,6 +48,7 @@ export const AuthProvider = ({ children }) => {
   }, [response]);
 
   const fetchNotifications = async (userId) => {
+    if (!userId) return; // guest için kullanıcıya bağlı bildirim listesi yok
     try {
       const res = await axios.get(`${API_BASE}/api/user-notifications/user/${userId}`);
       setNotifications(res.data);
@@ -54,6 +58,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   const fetchUnreadMessages = async (userId) => {
+    if (!userId) return;
     try {
       const res = await axios.get(`${API_BASE}/api/messages/unread-count/${userId}`);
       setUnreadCount(res.data.count || 0);
@@ -62,13 +67,12 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // ---- SOSYAL/CLASSIC LOGIN YARDIMCILARI ----
+  // ---- Giriş sonrası ortak iş
   const completeLogin = async (payload) => {
-    // beklenen: { user, token } veya {user, accessToken}
     const token = payload?.token || payload?.accessToken || '';
     const userData = payload?.user;
-
     if (!userData) throw new Error('Login response invalid.');
+
     setUser(userData);
     await AsyncStorage.setItem('user', JSON.stringify(userData));
 
@@ -80,11 +84,58 @@ export const AuthProvider = ({ children }) => {
       delete axios.defaults.headers.common.Authorization;
     }
 
-    await ensureAndSendPushToken(userData._id);
+    // gerçek kullanıcı için push token’ı kullanıcıya kaydet
+    await ensureAndSendPushTokenForUser(userData._id);
     await fetchNotifications(userData._id);
     await fetchUnreadMessages(userData._id);
   };
 
+  // ---- GUEST MODE
+  const signInGuest = async () => {
+    // DB’ye kullanıcı oluşturmuyoruz; local “misafir” state’i
+    const guest = { _id: null, role: 'guest', name: 'Misafir' };
+    setUser(guest);
+    await AsyncStorage.setItem('user', JSON.stringify(guest));
+    await AsyncStorage.removeItem('token');
+    delete axios.defaults.headers.common.Authorization;
+
+    // misafir push token’ını cihaz bazlı kaydet (kullanıcı bağımsız)
+    await registerGuestPushToken();
+  };
+
+  const registerGuestPushToken = async () => {
+    try {
+      if (!Device.isDevice) return;
+
+      const { status: existingStatus } = await Notifications.getPermissionsAsync();
+      let finalStatus = existingStatus;
+      if (existingStatus !== 'granted') {
+        const { status } = await Notifications.requestPermissionsAsync();
+        finalStatus = status;
+      }
+      if (finalStatus !== 'granted') return;
+
+      const projectId =
+        Constants?.expoConfig?.extra?.eas?.projectId ||
+        Constants?.easConfig?.projectId ||
+        '2de51fda-069e-4bcc-b5c4-a3add9da16d7';
+
+      const tokenData = await Notifications.getExpoPushTokenAsync({ projectId });
+      const expoPushToken = tokenData?.data;
+      if (!expoPushToken) return;
+
+      // backend’e guest device kaydı (aşağıdaki /api/devices/register route’u ekledim)
+      await axios.post(`${API_BASE}/api/devices/register`, {
+        token: expoPushToken,
+        platform: Platform.OS,
+        app: 'imame',
+      });
+    } catch (err) {
+      console.error('Guest push token kaydı hatası:', err.message);
+    }
+  };
+
+  // ---- Sosyal/klasik login
   const handleGoogleAuth = async (accessToken, idToken) => {
     try {
       const res = await axios.post(`${API_BASE}/api/auth/social-login`, {
@@ -151,6 +202,8 @@ export const AuthProvider = ({ children }) => {
       if (user?._id) {
         await axios.post(`${API_BASE}/api/users/remove-token`, { userId: user._id }).catch(()=>{});
       }
+      // misafir için cihaz kaydını silmek isterseniz opsiyonel:
+      // await axios.post(`${API_BASE}/api/devices/unregister`, { token: lastExpoToken });
     } catch (err) {
       console.error('Push token silme hatası:', err.message);
     }
@@ -161,12 +214,11 @@ export const AuthProvider = ({ children }) => {
     delete axios.defaults.headers.common.Authorization;
   };
 
-  // 🔥 HESAP SİLME (Apple 5.1.1(v))
+  // 🔥 Hesap silme (Apple 5.1.1(v))
   const deleteMyAccount = async () => {
     try {
-      await setAuthHeaderFromStorage(); // güvene al
+      await setAuthHeaderFromStorage();
       const res = await axios.delete(`${API_BASE}/api/users/me`);
-      // sunucu 200 dönerse hepsini sıfırla
       await logout();
       Alert.alert('Hesap Silindi', 'Hesabınız ve verileriniz silindi.');
       return res.data;
@@ -192,10 +244,11 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // ---- TOKEN ALMA: TEK NOKTA ----
-  const ensureAndSendPushToken = async (userId) => {
+  // ---- Push token kullanıcıya yaz (loginli)
+  const ensureAndSendPushTokenForUser = async (userId) => {
     try {
-      if (!Device.isDevice) return; // iOS sim token üretmez
+      if (!userId) return;
+      if (!Device.isDevice) return;
 
       const { status: existingStatus } = await Notifications.getPermissionsAsync();
       let finalStatus = existingStatus;
@@ -235,9 +288,13 @@ export const AuthProvider = ({ children }) => {
         if (storedUser) {
           const parsed = JSON.parse(storedUser);
           setUser(parsed);
-          await ensureAndSendPushToken(parsed._id);
-          await fetchNotifications(parsed._id);
-          await fetchUnreadMessages(parsed._id);
+          if (isGuestUser(parsed)) {
+            await registerGuestPushToken();
+          } else {
+            await ensureAndSendPushTokenForUser(parsed._id);
+            await fetchNotifications(parsed._id);
+            await fetchUnreadMessages(parsed._id);
+          }
         }
       } catch {
         setUser(null);
@@ -265,7 +322,9 @@ export const AuthProvider = ({ children }) => {
         setUnreadCount,
         fetchUnreadMessages,
         updateUser,
-        deleteMyAccount,     // 👈 dışarı veriyoruz
+        deleteMyAccount,
+        signInGuest,            // 👈 dışarı verdik (misafir)
+        isGuestUser,           // 👈 helper da dışarıda
       }}
     >
       {children}

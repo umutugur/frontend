@@ -1,3 +1,4 @@
+// screens/LoginScreen.js
 import React, { useState, useContext, useEffect } from 'react';
 import {
   View,
@@ -27,45 +28,32 @@ const LoginScreen = ({ navigation }) => {
       AppleAuthentication.isAvailableAsync().then(setIsAppleAvailable);
     }
   }, []);
+
+  // ❗ Eski reset('Main') effect'ini kaldırdık.
+  // Kullanıcı oluşursa önce geldiğimiz yere dön; mümkün değilse Main'e git.
   useEffect(() => {
-  if (user) {
-    navigation.reset({ index: 0, routes: [{ name: 'Main' }] });
-  }
-}, [user]);
+    if (user) {
+      if (navigation.canGoBack()) navigation.goBack();
+      else navigation.navigate('Main');
+    }
+  }, [user, navigation]);
 
   const handleLogin = async () => {
     setError('');
     setBanned(false);
     try {
-      await login(email, password);      // Başarılı login sonrası yönlendirme yok.
-    } catch (error) {
-      const message = error?.message?.toLowerCase() || '';
-      if (
-        message.includes('ban') ||
-        message.includes('askıya') ||
-        message.includes('banned')
-      ) {
+      await login(email, password); // başarılıysa yukarıdaki effect tetiklenir
+    } catch (err) {
+      const message = err?.message?.toLowerCase() || '';
+      if (message.includes('ban') || message.includes('askıya') || message.includes('banned')) {
         setBanned(true);
-        setError(
-          'Hesabınız geçici olarak askıya alınmıştır. Lütfen 7 gün sonra tekrar deneyin veya destek ekibimizle iletişime geçin.'
-        );
-      } else if (
-        message.includes('wrong password') ||
-        message.includes('şifre')
-      ) {
+        setError('Hesabınız geçici olarak askıya alınmıştır. Lütfen 7 gün sonra tekrar deneyin veya destek ekibimizle iletişime geçin.');
+      } else if (message.includes('wrong password') || message.includes('şifre')) {
         setError('E-posta veya şifre hatalı.');
       } else {
-        setError('Giriş başarısız: ' + error.message);
+        setError('Giriş başarısız: ' + err.message);
       }
     }
-  };
-
-  const handleRegisterPress = () => {
-    Alert.alert(
-      'Kayıt Bilgisi',
-      'Şu an için yalnızca Google ile kayıt olabilirsiniz.'
-    );
-    // navigation.navigate('Register');
   };
 
   return (
@@ -75,13 +63,10 @@ const LoginScreen = ({ navigation }) => {
     >
       <ScrollView contentContainerStyle={styles.scrollContainer}>
         <View style={styles.container}>
-          <Image
-            source={require('../assets/logo.png')}
-            style={styles.logo}
-          />
+          <Image source={require('../assets/logo.png')} style={styles.logo} />
           <Text style={styles.title}>Giriş Yap</Text>
 
-          {error !== '' && (
+          {!!error && (
             <View style={[styles.errorBox, banned ? styles.banBox : null]}>
               <Text style={styles.errorText}>{error}</Text>
             </View>
@@ -109,14 +94,8 @@ const LoginScreen = ({ navigation }) => {
             <Text style={styles.buttonText}>Giriş Yap</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity
-            style={styles.googleButton}
-            onPress={() => promptGoogle()}
-          >
-            <Image
-              source={require('../assets/google-icon.png')}
-              style={styles.googleIcon}
-            />
+          <TouchableOpacity style={styles.googleButton} onPress={() => promptGoogle()}>
+            <Image source={require('../assets/google-icon.png')} style={styles.googleIcon} />
             <Text style={styles.googleButtonText}>Google ile Giriş Yap</Text>
           </TouchableOpacity>
 
@@ -128,20 +107,15 @@ const LoginScreen = ({ navigation }) => {
               style={{ width: '100%', height: 50, marginBottom: 15 }}
               onPress={async () => {
                 try {
-                  await loginWithApple(); // Apple login sonrası yönlendirme yok.
+                  await loginWithApple(); // başarılı olursa yukarıdaki effect çalışır
                 } catch (err) {
                   if (err.code !== 'ERR_CANCELED') {
-                    Alert.alert(
-                      'Apple Girişi Hatası',
-                      err.message || 'Bir hata oluştu.'
-                    );
+                    Alert.alert('Apple Girişi Hatası', err.message || 'Bir hata oluştu.');
                   }
                 }
               }}
             />
           )}
-
-         
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -151,10 +125,7 @@ const LoginScreen = ({ navigation }) => {
 export default LoginScreen;
 
 const styles = StyleSheet.create({
-  scrollContainer: {
-    flexGrow: 1,
-    justifyContent: 'center',
-  },
+  scrollContainer: { flexGrow: 1, justifyContent: 'center' },
   container: {
     flex: 1,
     backgroundColor: '#fff8e1',
@@ -162,19 +133,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 20,
   },
-  logo: {
-    width: 260,
-    height: 130,
-    marginBottom: 10,
-    resizeMode: 'contain',
-  },
-  title: {
-    fontSize: 26,
-    fontWeight: 'bold',
-    color: '#4e342e',
-    marginBottom: 20,
-    letterSpacing: 0.4,
-  },
+  logo: { width: 260, height: 130, marginBottom: 10, resizeMode: 'contain' },
+  title: { fontSize: 26, fontWeight: 'bold', color: '#4e342e', marginBottom: 20, letterSpacing: 0.4 },
   errorBox: {
     width: '100%',
     backgroundColor: '#fff3cd',
@@ -184,16 +144,8 @@ const styles = StyleSheet.create({
     padding: 12,
     marginBottom: 16,
   },
-  banBox: {
-    backgroundColor: '#f8d7da',
-    borderColor: '#7B1421',
-  },
-  errorText: {
-    color: '#7B1421',
-    fontSize: 15,
-    textAlign: 'center',
-    fontWeight: '600',
-  },
+  banBox: { backgroundColor: '#f8d7da', borderColor: '#7B1421' },
+  errorText: { color: '#7B1421', fontSize: 15, textAlign: 'center', fontWeight: '600' },
   input: {
     width: '100%',
     height: 50,
@@ -220,12 +172,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowRadius: 3,
   },
-  buttonText: {
-    color: '#fff',
-    fontWeight: 'bold',
-    fontSize: 16,
-    letterSpacing: 0.3,
-  },
+  buttonText: { color: '#fff', fontWeight: 'bold', fontSize: 16, letterSpacing: 0.3 },
   googleButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -238,27 +185,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginBottom: 20,
   },
-  googleIcon: {
-    width: 22,
-    height: 22,
-    marginRight: 10,
-  },
-  googleButtonText: {
-    color: '#4e342e',
-    fontWeight: 'bold',
-    fontSize: 15,
-  },
-  registerContainer: {
-    flexDirection: 'row',
-    marginTop: 10,
-  },
-  registerText: {
-    color: '#4e342e',
-    fontSize: 14,
-  },
-  registerLink: {
-    color: '#6d4c41',
-    fontWeight: 'bold',
-    fontSize: 14,
-  },
+  googleIcon: { width: 22, height: 22, marginRight: 10 },
+  googleButtonText: { color: '#4e342e', fontWeight: 'bold', fontSize: 15 },
 });

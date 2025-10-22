@@ -1,7 +1,14 @@
 // screens/ProfileScreen.js
-import React, { useContext, useEffect, useState } from 'react';
+import React, { useContext, useEffect, useMemo, useState } from 'react';
 import {
-  View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, Alert
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  ScrollView,
+  ActivityIndicator,
+  Alert,
+  Platform,
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { AuthContext } from '../context/AuthContext';
@@ -9,318 +16,422 @@ import axios from 'axios';
 import RateSellerModal from '../components/RateSellerModal';
 import ReportSellerModal from '../components/ReportSellerModal';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import Ionicons from '@expo/vector-icons/Ionicons';
+import * as AppleAuthentication from 'expo-apple-authentication';
+
+const API = 'https://imame-backend.onrender.com';
+
+/* ---------- Yardımcı Bileşenler (function deklarasyonu → hoisted) ---------- */
+function SectionTitle({ children }) {
+  return <Text style={styles.sectionTitle}>{children}</Text>;
+}
+
+function RowButton({
+  title,
+  subtitle,
+  icon,
+  onPress,
+  variant = 'solid', // 'solid' | 'outline' | 'danger'
+  disabled = false,
+  rightChevron = true,
+}) {
+  const base = [styles.row, disabled && { opacity: 0.6 }];
+  if (variant === 'outline') base.push(styles.rowOutline);
+  if (variant === 'danger') base.push(styles.rowDanger);
+
+  const iconColor =
+    variant === 'solid' ? '#fff' : variant === 'danger' ? '#c62828' : '#6d4c41';
+  const textColor =
+    variant === 'solid' ? '#fff' : variant === 'danger' ? '#c62828' : '#4e342e';
+
+  return (
+    <TouchableOpacity onPress={onPress} disabled={disabled} style={base}>
+      <View style={styles.rowLeft}>
+        {!!icon && <Ionicons name={icon} size={20} color={iconColor} style={{ marginRight: 10 }} />}
+        <View>
+          <Text style={[styles.rowTitle, { color: textColor }]}>{title}</Text>
+          {subtitle ? <Text style={styles.rowSubtitle}>{subtitle}</Text> : null}
+        </View>
+      </View>
+      {rightChevron && (
+        <Ionicons
+          name="chevron-forward"
+          size={18}
+          color={variant === 'solid' ? '#fff' : '#8d6e63'}
+        />
+      )}
+    </TouchableOpacity>
+  );
+}
+
+function InfoLine({ label, value }) {
+  return (
+    <View style={styles.infoLine}>
+      <Text style={styles.infoLabel}>{label}</Text>
+      <Text style={styles.infoValue}>{value || '-'}</Text>
+    </View>
+  );
+}
+/* --------------------------------------------------------------------------- */
 
 export default function ProfileScreen() {
   const navigation = useNavigation();
-  const route = useRoute();
-  const { user: currentUser, setUser, logout, deleteMyAccount } = useContext(AuthContext);
 
-  const [profileData, setProfileData] = useState(null);
+  // Kök stack'teki LoginModal'ı aç
+  const openLogin = () => {
+    const root = navigation.getParent?.('RootStack') || navigation;
+    root.navigate('LoginModal');
+  };
+
+  const route = useRoute();
+  const {
+    user: me,
+    setUser,
+    logout,
+    deleteMyAccount,
+    promptGoogle,
+    loginWithApple,
+  } = useContext(AuthContext);
+
+  const viewedUserId = route.params?.userId ?? null;
+  const isOwnProfile = !viewedUserId || viewedUserId === me?._id;
+
+  const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [isFavorite, setIsFavorite] = useState(false);
-  const [favLoading, setFavLoading] = useState(false);
-  const [showRateModal, setShowRateModal] = useState(false);
-  const [showReportModal, setShowReportModal] = useState(false);
+
+  // seller view extras
   const [avgRating, setAvgRating] = useState(null);
   const [totalRatings, setTotalRatings] = useState(0);
-  const [hasWonAuction, setHasWonAuction] = useState(false);
+  const [isFavorite, setIsFavorite] = useState(false);
+  const [favBusy, setFavBusy] = useState(false);
+  const [wonFromThisSeller, setWonFromThisSeller] = useState(false);
 
-  const userIdFromParams = route.params?.userId ?? null;
-  const isOwnProfile = !userIdFromParams || userIdFromParams === currentUser?._id;
+  const [showRate, setShowRate] = useState(false);
+  const [showReport, setShowReport] = useState(false);
 
+  const isLoggedIn = !!me?._id;
+
+  // Apple button availability
+  const [appleAvail, setAppleAvail] = useState(false);
   useEffect(() => {
-    if (isOwnProfile) {
-      setProfileData(currentUser);
-      setLoading(false);
-    } else {
-      fetchUserProfile(userIdFromParams);
+    if (Platform.OS === 'ios') {
+      AppleAuthentication.isAvailableAsync()
+        .then(setAppleAvail)
+        .catch(() => setAppleAvail(false));
     }
-  }, [userIdFromParams, currentUser]);
+  }, []);
 
+  // profile yükle
   useEffect(() => {
-    if (!isOwnProfile && currentUser && profileData?._id) {
-      setIsFavorite(currentUser.favorites?.includes(profileData._id));
-    }
-  }, [profileData, currentUser?.favorites]);
+    let mounted = true;
+    (async () => {
+      try {
+        setLoading(true);
+        if (isOwnProfile) {
+          if (mounted) setProfile(me || null);
+        } else {
+          const res = await axios.get(`${API}/api/users/${viewedUserId}`);
+          if (mounted) setProfile(res.data);
+        }
+      } catch {
+        Alert.alert('Hata', 'Kullanıcı profili alınamadı.');
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    })();
+    return () => {
+      mounted = false;
+    };
+  }, [isOwnProfile, viewedUserId, me]);
 
+  // seller extras
   useEffect(() => {
-    if (!isOwnProfile && profileData?.role === 'seller' && currentUser?._id) {
-      axios.get(`https://imame-backend.onrender.com/api/ratings/seller/${profileData._id}`)
-        .then(res => {
-          setAvgRating(res.data.avg);
-          setTotalRatings(res.data.total);
-        })
-        .catch(() => {
-          setAvgRating(null);
-          setTotalRatings(0);
-        });
+    if (isOwnProfile || !profile?._id) return;
+    (async () => {
+      try {
+        if (me?._id) {
+          setIsFavorite(me?.favorites?.includes(profile._id));
+          const won = await axios.get(`${API}/api/auctions/won-by/${me._id}/${profile._id}`);
+          setWonFromThisSeller(!!won.data?.hasWon);
+        }
+        if (profile?.role === 'seller') {
+          const r = await axios.get(`${API}/api/ratings/seller/${profile._id}`);
+          setAvgRating(r.data?.avg ?? 0);
+          setTotalRatings(r.data?.total ?? 0);
+        }
+      } catch {
+        // ignore
+      }
+    })();
+  }, [profile, isOwnProfile, me?._id]);
 
-      axios.get(`https://imame-backend.onrender.com/api/auctions/won-by/${currentUser._id}/${profileData._id}`)
-        .then(res => setHasWonAuction(res.data.hasWon))
-        .catch(() => setHasWonAuction(false));
-    }
-  }, [profileData, currentUser, isOwnProfile]);
-
-  const fetchUserProfile = async (userId) => {
+  const toggleFavorite = async () => {
+    if (!me?._id || !profile?._id) return;
+    setFavBusy(true);
     try {
-      setLoading(true);
-      const res = await axios.get(`https://imame-backend.onrender.com/api/users/${userId}`);
-      setProfileData(res.data);
-    } catch (err) {
-      Alert.alert('Kullanıcı profili alınamadı', err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleToggleFavorite = async () => {
-    if (!currentUser?._id || !profileData?._id) return;
-    setFavLoading(true);
-
-    try {
-      const res = await axios.post(
-        'https://imame-backend.onrender.com/api/users/toggle-favorite',
-        { userId: currentUser._id, sellerId: profileData._id }
-      );
-
-      const { status } = res.data;
-      const updatedFavorites =
+      const res = await axios.post(`${API}/api/users/toggle-favorite`, {
+        userId: me._id,
+        sellerId: profile._id,
+      });
+      const status = res.data?.status;
+      const updated =
         status === 'added'
-          ? [...(currentUser.favorites || []), profileData._id]
-          : (currentUser.favorites || []).filter(id => id !== profileData._id);
-
-      const updatedUser = { ...currentUser, favorites: updatedFavorites };
-      setUser(updatedUser);
-      await AsyncStorage.setItem('user', JSON.stringify(updatedUser));
+          ? [...(me.favorites || []), profile._id]
+          : (me.favorites || []).filter((id) => id !== profile._id);
+      const newMe = { ...me, favorites: updated };
+      setUser(newMe);
+      await AsyncStorage.setItem('user', JSON.stringify(newMe));
       setIsFavorite(status === 'added');
-    } catch (err) {
-      Alert.alert('Hata', 'Favori işlemi başarısız: ' + err.message);
+    } catch {
+      Alert.alert('Hata', 'Favori işlemi başarısız.');
+    } finally {
+      setFavBusy(false);
     }
-    setFavLoading(false);
   };
 
-  // ---- Hesap Silme (UI + onay) ----
-  const confirmDelete = () => {
+  const confirmDelete = () =>
     Alert.alert(
       'Hesabı Sil',
       'Hesabınızı ve verilerinizi kalıcı olarak sileceğiz. Bu işlem geri alınamaz.',
       [
         { text: 'Vazgeç', style: 'cancel' },
-        {
-          text: 'Evet, Sil',
-          style: 'destructive',
-          onPress: async () => {
-            await deleteMyAccount().catch(()=>{});
-          }
-        }
+        { text: 'Evet, Sil', style: 'destructive', onPress: async () => { await deleteMyAccount().catch(() => {}); } },
       ]
     );
-  };
 
-  const renderBuyerOptions = () => (
-    <>
-      <TouchableOpacity style={styles.card} onPress={() => navigation.navigate('MyBids')}>
-        <Text style={styles.link}>📌 Tekliflerim</Text>
-      </TouchableOpacity>
-      <TouchableOpacity style={styles.card} onPress={() => navigation.navigate('CompletedAuctions')}>
-        <Text style={styles.link}>✅ Biten Mezatlar</Text>
-      </TouchableOpacity>
-      <TouchableOpacity style={[styles.card, { backgroundColor: '#d7ccc8' }]} onPress={() => navigation.navigate('EditProfile')}>
-        <Text style={[styles.link, { color: '#4e342e', fontWeight: 'bold' }]}>✏️ Profili Düzenle</Text>
-      </TouchableOpacity>
-    </>
+  const headerTitle = useMemo(
+    () => (isOwnProfile ? 'Profilim' : profile?.companyName || 'Profil'),
+    [isOwnProfile, profile?.companyName]
   );
 
-  const renderSellerOptions = () => (
-    <>
-      <TouchableOpacity style={styles.card} onPress={() => navigation.navigate('AddAuction')}>
-        <Text style={styles.link}>➕ Mezat Ekle</Text>
-      </TouchableOpacity>
-      <TouchableOpacity style={styles.card} onPress={() => navigation.navigate('ReceiptApproval')}>
-        <Text style={styles.link}>🧾 Dekont Onayla</Text>
-      </TouchableOpacity>
-      <TouchableOpacity style={styles.card} onPress={() => navigation.navigate('MyAuctions')}>
-        <Text style={styles.link}>📦 Mezatlarım</Text>
-      </TouchableOpacity>
-    </>
-  );
-
-  const renderAdminOptions = () => (
-    <TouchableOpacity onPress={() => navigation.navigate('AdminPanel')}>
-      <Text style={{ color: 'blue', marginTop: 20, fontWeight: 'bold' }}>🔐 Admin Panel</Text>
-    </TouchableOpacity>
-  );
-
-  const renderCommonOptions = () => (
-    <>
-      <TouchableOpacity style={styles.card} onPress={() => navigation.navigate('Terms')}>
-        <Text style={styles.link}>📃 Kullanım Koşulları</Text>
-      </TouchableOpacity>
-      <TouchableOpacity style={styles.card} onPress={() => navigation.navigate('Notifications')}>
-        <Text style={styles.link}>🔔 Bildirimler</Text>
-      </TouchableOpacity>
-      <TouchableOpacity style={styles.card} onPress={() => navigation.navigate('PrivacyPolicy')}>
-        <Text style={styles.link}>🔒 Gizlilik Politikası</Text>
-      </TouchableOpacity>
-      <TouchableOpacity style={styles.card} onPress={() => navigation.navigate('HelpAndSupport')}>
-        <Text style={styles.link}>🆘 Yardım & Destek</Text>
-      </TouchableOpacity>
-
-      {/* 🗑️ Apple 5.1.1(v) — Hesap Silme */}
-      {isOwnProfile && (
-        <TouchableOpacity
-          style={[styles.card, { backgroundColor: '#ffebee', borderColor: '#ef9a9a', borderWidth: 1 }]}
-          onPress={confirmDelete}
-        >
-          <Text style={[styles.link, { color: '#c62828', fontWeight: 'bold' }]}>🗑️ Hesabımı Sil</Text>
-          <Text style={{ color: '#8d6e63', marginTop: 6, fontSize: 12 }}>
-            Bu işlem tüm verilerinizi kalıcı olarak siler ve geri alınamaz.
-          </Text>
-        </TouchableOpacity>
-      )}
-    </>
-  );
-
-  const renderLogout = () => (
-    <TouchableOpacity onPress={logout} style={[styles.card, { backgroundColor: '#fce4ec' }]}>
-      <Text style={[styles.link, { color: '#d32f2f' }]}>🚪 Çıkış Yap</Text>
-    </TouchableOpacity>
-  );
-
-  const renderVisitedProfileButtons = () => (
-    <>
-      <TouchableOpacity
-        style={[
-          styles.card,
-          { backgroundColor: isFavorite ? '#ffe082' : '#fff' },
-          favLoading && { opacity: 0.7 },
-        ]}
-        onPress={handleToggleFavorite}
-        disabled={favLoading}
-      >
-        <Text style={[styles.link, { color: '#4e342e', fontWeight: 'bold' }]}>
-          {isFavorite ? '⭐ Favorilerden Çıkar' : '⭐ Favorilere Ekle'}
-        </Text>
-      </TouchableOpacity>
-      <TouchableOpacity style={styles.card} onPress={() => setShowReportModal(true)}>
-        <Text style={styles.link}>🚩 Satıcıyı Şikayet Et</Text>
-      </TouchableOpacity>
-      <TouchableOpacity style={styles.card} onPress={() => setShowRateModal(true)}>
-        <Text style={styles.link}>🌟 Satıcıyı Puanla</Text>
-      </TouchableOpacity>
-    </>
-  );
-
-  if (loading || !profileData) {
+  if (loading || !profile) {
     return (
-      <View style={styles.loading}>
+      <View style={[styles.full, { justifyContent: 'center', alignItems: 'center' }]}>
         <ActivityIndicator size="large" color="#6d4c41" />
-        <Text>Profil yükleniyor...</Text>
+        <Text style={{ marginTop: 8, color: '#6d4c41' }}>Profil yükleniyor…</Text>
       </View>
     );
   }
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.title}>
-        {isOwnProfile ? 'Profilim' : `${profileData?.companyName || 'Satıcı'}`}
-      </Text>
-
-      {!isOwnProfile && profileData?.role === 'seller' && (
-        <View style={styles.ratingBox}>
-          <Text style={styles.ratingLabel}>Satıcı Puanı: </Text>
-          <Text style={styles.ratingStars}>
-            {avgRating === null
-              ? <ActivityIndicator size="small" color="#6d4c41" />
-              : (
-                <>
-                  {[...Array(5)].map((_, i) => (
-                    <Text key={i}>{i < Math.round(avgRating) ? '⭐' : '☆'}</Text>
-                  ))}
-                  <Text style={styles.ratingScore}>
-                    {avgRating > 0 ? ` ${avgRating.toFixed(1)} / 5` : ' Henüz puan yok'}
-                  </Text>
-                  {totalRatings > 0 && <Text style={styles.ratingTotal}>  ({totalRatings})</Text>}
-                </>
-              )
-            }
+    <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
+      <View style={styles.container}>
+        {/* Başlık */}
+        <Text style={styles.title}>{headerTitle}</Text>
+        {!isLoggedIn && isOwnProfile && (
+          <Text style={styles.subtitle}>
+            Misafir olarak geziniyorsunuz. Teklif vermek, favori eklemek gibi özellikler için giriş yapın.
           </Text>
-        </View>
-      )}
+        )}
 
-      <View style={styles.card}>
-        <Text style={styles.label}>Ad Soyad:</Text>
-        <Text style={styles.value}>{profileData?.name || '-'}</Text>
-        <Text style={styles.label}>Email:</Text>
-        <Text style={styles.value}>{profileData?.email || '-'}</Text>
-        <Text style={styles.label}>Telefon:</Text>
-        <Text style={styles.value}>{profileData?.phone || '-'}</Text>
+        {/* Profil bilgileri */}
+        <View style={styles.card}>
+          <InfoLine label="Ad Soyad" value={profile?.name} />
+          <InfoLine label="E-posta" value={profile?.email} />
+          <InfoLine label="Telefon" value={profile?.phone} />
+        </View>
+
+        {/* Alıcı */}
+        {isOwnProfile && isLoggedIn && profile?.role === 'buyer' && (
+          <>
+            <SectionTitle>Hesabım</SectionTitle>
+            <RowButton title="Tekliflerim" icon="pricetag-outline" onPress={() => navigation.navigate('MyBids')} />
+            <RowButton title="Biten Mezatlar" icon="checkmark-done-outline" onPress={() => navigation.navigate('CompletedAuctions')} />
+            <RowButton title="Profili Düzenle" icon="create-outline" variant="outline" onPress={() => navigation.navigate('EditProfile')} />
+          </>
+        )}
+
+        {/* Satıcı */}
+        {isOwnProfile && isLoggedIn && profile?.role === 'seller' && (
+          <>
+            <SectionTitle>Satıcı Araçları</SectionTitle>
+            <RowButton title="Mezat Ekle" icon="add-circle-outline" onPress={() => navigation.navigate('AddAuction')} />
+            <RowButton title="Dekont Onayla" icon="receipt-outline" onPress={() => navigation.navigate('ReceiptApproval')} />
+            <RowButton title="Mezatlarım" icon="cube-outline" onPress={() => navigation.navigate('MyAuctions')} />
+          </>
+        )}
+
+        {/* Admin */}
+        {isOwnProfile && isLoggedIn && profile?.role === 'admin' && (
+          <>
+            <SectionTitle>Yönetim</SectionTitle>
+            <RowButton title="Admin Panel" icon="lock-closed-outline" onPress={() => navigation.navigate('AdminPanel')} />
+          </>
+        )}
+
+        {/* Başkası (satıcı) */}
+        {!isOwnProfile && profile?.role === 'seller' && (
+          <>
+            <SectionTitle>Satıcı Bilgisi</SectionTitle>
+            <View style={styles.ratingBox}>
+              <Text style={styles.ratingText}>
+                {avgRating === null ? 'Puanlanmamış' : `Puan: ${avgRating.toFixed(1)} / 5`}
+              </Text>
+              {totalRatings > 0 && <Text style={styles.ratingCount}>({totalRatings})</Text>}
+            </View>
+
+            {wonFromThisSeller && (
+              <>
+                <RowButton
+                  title={isFavorite ? 'Favorilerden Çıkar' : 'Favorilere Ekle'}
+                  icon={isFavorite ? 'star' : 'star-outline'}
+                  variant={isFavorite ? 'outline' : 'solid'}
+                  onPress={toggleFavorite}
+                  disabled={favBusy}
+                />
+                <RowButton title="Satıcıyı Puanla" icon="thumbs-up-outline" variant="outline" onPress={() => setShowRate(true)} />
+                <RowButton title="Satıcıyı Şikayet Et" icon="flag-outline" variant="outline" onPress={() => setShowReport(true)} />
+              </>
+            )}
+          </>
+        )}
+
+        {/* Genel */}
+        <SectionTitle>Genel</SectionTitle>
+        <RowButton title="Kullanım Koşulları" icon="document-text-outline" variant="outline" onPress={() => navigation.navigate('Terms')} />
+        <RowButton title="Gizlilik Politikası" icon="shield-checkmark-outline" variant="outline" onPress={() => navigation.navigate('PrivacyPolicy')} />
+        <RowButton title="Yardım & Destek" icon="help-circle-outline" variant="outline" onPress={() => navigation.navigate('HelpAndSupport')} />
+
+        {/* Giriş CTA (misafir) */}
+        {isOwnProfile && !isLoggedIn && (
+          <>
+            <SectionTitle>Giriş</SectionTitle>
+            <RowButton title="Google ile Giriş Yap" icon="logo-google" variant="outline" onPress={() => promptGoogle && promptGoogle()} />
+            {appleAvail && (
+              <RowButton title="Apple ile Giriş Yap" icon="logo-apple" variant="outline" onPress={() => loginWithApple && loginWithApple()} />
+            )}
+          </>
+        )}
+
+        {/* Hesap */}
+        {isOwnProfile && isLoggedIn && (
+          <>
+            <SectionTitle>Hesap</SectionTitle>
+            <RowButton title="Çıkış Yap" icon="exit-outline" variant="outline" onPress={logout} />
+            <View style={styles.dangerCard}>
+              <Text style={styles.dangerTitle}>Hesabımı Sil</Text>
+              <Text style={styles.dangerDesc}>
+                Bu işlem geri alınamaz ve tüm verileriniz kalıcı olarak silinir.
+              </Text>
+              <RowButton title="Hesabımı Sil" icon="trash-outline" variant="danger" onPress={confirmDelete} rightChevron={false} />
+            </View>
+          </>
+        )}
       </View>
 
-      {isOwnProfile && profileData?.role === 'buyer' && renderBuyerOptions()}
-      {isOwnProfile && profileData?.role === 'seller' && renderSellerOptions()}
-      {isOwnProfile && profileData?.role === 'admin' && renderAdminOptions()}
-      {renderCommonOptions()}
-      {isOwnProfile && renderLogout()}
-
-      {!isOwnProfile && profileData?.role === 'seller' && hasWonAuction && renderVisitedProfileButtons()}
-
-      <RateSellerModal
-        visible={showRateModal}
-        onClose={() => setShowRateModal(false)}
-        sellerId={profileData._id}
-        buyerId={currentUser._id}
-      />
-      <ReportSellerModal
-        visible={showReportModal}
-        onClose={() => setShowReportModal(false)}
-        sellerId={profileData._id}
-        reporterId={currentUser._id}
-      />
+      {/* Modallar */}
+      <RateSellerModal visible={showRate} onClose={() => setShowRate(false)} sellerId={profile?._id} buyerId={me?._id} />
+      <ReportSellerModal visible={showReport} onClose={() => setShowReport(false)} sellerId={profile?._id} reporterId={me?._id} />
     </ScrollView>
   );
 }
 
+/* ---------- Stiller ---------- */
 const styles = StyleSheet.create({
-  container: { padding: 20, backgroundColor: '#fff8e1' },
-  title: { fontSize: 26, fontWeight: 'bold', marginBottom: 20, color: '#4e342e' },
+  full: { flex: 1, backgroundColor: '#fff8e1' },
+  scroll: {
+    flexGrow: 1,
+    backgroundColor: '#fff8e1',
+    paddingVertical: 16,
+  },
+  container: {
+    width: '100%',
+    maxWidth: 720,
+    alignSelf: 'center',
+    paddingHorizontal: 16,
+  },
+  title: {
+    fontSize: 28,
+    fontWeight: '700',
+    color: '#4e342e',
+    marginBottom: 8,
+  },
+  subtitle: {
+    color: '#8d6e63',
+    marginBottom: 12,
+  },
+
   card: {
     backgroundColor: '#fff',
-    padding: 15,
-    borderRadius: 12,
-    marginBottom: 15,
-    shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 5,
-    elevation: 3,
-  },
-  label: { color: '#6d4c41', fontWeight: 'bold', fontSize: 16 },
-  value: { fontSize: 16, marginBottom: 5 },
-  link: { fontSize: 18, fontWeight: '500', color: '#6d4c41' },
-  loading: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  ratingBox: {
-    backgroundColor: '#f5f5f5',
     borderRadius: 12,
     padding: 14,
     marginBottom: 16,
+    shadowColor: '#000',
+    shadowOpacity: 0.08,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 6,
+    elevation: 2,
+  },
+  infoLine: {
+    marginBottom: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0e6d6',
+    paddingBottom: 8,
+  },
+  infoLabel: { fontSize: 13, fontWeight: '600', color: '#6d4c41' },
+  infoValue: { fontSize: 16, color: '#3e2723', marginTop: 2 },
+
+  sectionTitle: {
+    fontSize: 12,
+    letterSpacing: 0.6,
+    fontWeight: '700',
+    color: '#8d6e63',
+    marginTop: 8,
+    marginBottom: 8,
+    textTransform: 'uppercase',
+  },
+
+  row: {
+    height: 48,
+    borderRadius: 12,
+    backgroundColor: '#6d4c41',
+    paddingHorizontal: 14,
+    marginBottom: 10,
     flexDirection: 'row',
     alignItems: 'center',
-    alignSelf: 'flex-start'
+    justifyContent: 'space-between',
+    shadowColor: '#000',
+    shadowOpacity: 0.06,
+    shadowOffset: { width: 0, height: 1 },
+    shadowRadius: 3,
+    elevation: 1,
   },
-  ratingLabel: {
-    fontWeight: 'bold',
-    color: '#6d4c41',
-    fontSize: 17,
-    marginRight: 5,
+  rowOutline: {
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#b5a16b',
   },
-  ratingStars: {
+  rowDanger: {
+    backgroundColor: '#ffebee',
+    borderWidth: 1,
+    borderColor: '#ef9a9a',
+  },
+  rowLeft: { flexDirection: 'row', alignItems: 'center' },
+  rowTitle: { fontSize: 16, fontWeight: '600' },
+  rowSubtitle: { fontSize: 12, color: '#8d6e63', marginTop: 2 },
+
+  ratingBox: {
     flexDirection: 'row',
-    fontSize: 19,
-    fontWeight: 'bold',
-    color: '#ffab00',
     alignItems: 'center',
+    alignSelf: 'flex-start',
+    backgroundColor: '#f5eee6',
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    marginBottom: 10,
   },
-  ratingScore: { color: '#6d4c41', fontWeight: '600', marginLeft: 3, fontSize: 16 },
-  ratingTotal: { color: '#8d6e63', fontSize: 13, marginLeft: 5 }
+  ratingText: { color: '#6d4c41', fontWeight: '700' },
+  ratingCount: { marginLeft: 6, color: '#8d6e63', fontWeight: '600' },
+
+  dangerCard: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 14,
+    marginTop: 8,
+    marginBottom: 24,
+    borderWidth: 1,
+    borderColor: '#fde0e0',
+  },
+  dangerTitle: { color: '#c62828', fontWeight: '700', marginBottom: 6 },
+  dangerDesc: { color: '#8d6e63', fontSize: 12, marginBottom: 10 },
 });
