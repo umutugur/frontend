@@ -296,6 +296,7 @@ export default function ProfileScreen() {
         {isOwnProfile && !isLoggedIn && (
           <>
             <SectionTitle>Giriş</SectionTitle>
+            <RowButton title="Giriş / Kayıt Yap" icon="log-in-outline" variant="outline" onPress={logout}/>
             <RowButton title="Google ile Giriş Yap" icon="logo-google" variant="outline" onPress={() => promptGoogle && promptGoogle()} />
             {appleAvail && (
               <RowButton title="Apple ile Giriş Yap" icon="logo-apple" variant="outline" onPress={() => loginWithApple && loginWithApple()} />

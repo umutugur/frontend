@@ -16,7 +16,14 @@ import { AuthContext } from '../context/AuthContext';
 import * as AppleAuthentication from 'expo-apple-authentication';
 
 const LoginScreen = ({ navigation }) => {
-  const { user, login, promptGoogle, loginWithApple } = useContext(AuthContext);
+  const {
+    user,
+    login,
+    promptGoogle,
+    loginWithApple,
+    signInGuest, // 👈 misafir girişi
+  } = useContext(AuthContext);
+
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -29,8 +36,7 @@ const LoginScreen = ({ navigation }) => {
     }
   }, []);
 
-  // ❗ Eski reset('Main') effect'ini kaldırdık.
-  // Kullanıcı oluşursa önce geldiğimiz yere dön; mümkün değilse Main'e git.
+  // Kullanıcı giriş yaptığında geri dön; mümkün değilse Main'e git.
   useEffect(() => {
     if (user) {
       if (navigation.canGoBack()) navigation.goBack();
@@ -42,12 +48,14 @@ const LoginScreen = ({ navigation }) => {
     setError('');
     setBanned(false);
     try {
-      await login(email, password); // başarılıysa yukarıdaki effect tetiklenir
+      await login(email, password);
     } catch (err) {
       const message = err?.message?.toLowerCase() || '';
       if (message.includes('ban') || message.includes('askıya') || message.includes('banned')) {
         setBanned(true);
-        setError('Hesabınız geçici olarak askıya alınmıştır. Lütfen 7 gün sonra tekrar deneyin veya destek ekibimizle iletişime geçin.');
+        setError(
+          'Hesabınız geçici olarak askıya alınmıştır. Lütfen 7 gün sonra tekrar deneyin veya destek ekibimizle iletişime geçin.'
+        );
       } else if (message.includes('wrong password') || message.includes('şifre')) {
         setError('E-posta veya şifre hatalı.');
       } else {
@@ -57,10 +65,11 @@ const LoginScreen = ({ navigation }) => {
   };
 
   return (
-    <KeyboardAvoidingView
-      style={{ flex: 1, backgroundColor: '#fff8e1' }}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-    >
+  <KeyboardAvoidingView
+    style={{ flex: 1, backgroundColor: '#fff8e1' }}
+    behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+  >
+    <View style={{ flex: 1 }}>
       <ScrollView contentContainerStyle={styles.scrollContainer}>
         <View style={styles.container}>
           <Image source={require('../assets/logo.png')} style={styles.logo} />
@@ -107,7 +116,7 @@ const LoginScreen = ({ navigation }) => {
               style={{ width: '100%', height: 50, marginBottom: 15 }}
               onPress={async () => {
                 try {
-                  await loginWithApple(); // başarılı olursa yukarıdaki effect çalışır
+                  await loginWithApple();
                 } catch (err) {
                   if (err.code !== 'ERR_CANCELED') {
                     Alert.alert('Apple Girişi Hatası', err.message || 'Bir hata oluştu.');
@@ -118,8 +127,16 @@ const LoginScreen = ({ navigation }) => {
           )}
         </View>
       </ScrollView>
-    </KeyboardAvoidingView>
-  );
+
+      {/* 👇 Alt sabit buton */}
+      <View style={styles.footer}>
+        <TouchableOpacity style={styles.guestButton} onPress={signInGuest}>
+          <Text style={styles.guestButtonText}>Üye Olmadan Devam Et</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  </KeyboardAvoidingView>
+);
 };
 
 export default LoginScreen;
@@ -187,4 +204,22 @@ const styles = StyleSheet.create({
   },
   googleIcon: { width: 22, height: 22, marginRight: 10 },
   googleButtonText: { color: '#4e342e', fontWeight: 'bold', fontSize: 15 },
+
+  // Üye olmadan devam et
+  guestButton: {
+    width: '100%',
+    height: 50,
+    borderWidth: 1,
+    borderStyle: 'dashed',
+    borderColor: '#6d4c41',
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 10,
+  },
+  guestButtonText: {
+    color: '#6d4c41',
+    fontWeight: '700',
+    fontSize: 15,
+  },
 });
