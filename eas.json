@@ -12,11 +12,12 @@
       "distribution": "internal"
     },
     "production": {
-      "autoIncrement": true,
       "android": {
-        "buildType": "app-bundle"
+        "buildType": "app-bundle",
+        "autoIncrement": "versionCode"
       },
       "ios": {
+        "autoIncrement": "buildNumber",
         "releaseChannel": "production",
         "env": {
           "EXPO_NO_LINK": "1"
@@ -25,12 +26,17 @@
     },
     "production-apk": {
       "android": {
-        "buildType": "apk"
+        "buildType": "apk",
+        "autoIncrement": "versionCode"
       }
     }
   },
   "submit": {
-    "production": {}
+    "production": {
+      "ios": {
+        "ascAppId": "6749379667"
+      },
+      "android": {}
+    }
   }
 }
-
