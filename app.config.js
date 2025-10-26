@@ -19,7 +19,7 @@ export default {
     },
 
     // 🔹 App Store’un marketing version değeri (CFBundleShortVersionString)
-    version: "1.0.4",
+    version: "1.0.1",
 
     android: {
       package: "com.umutugur.imame",
@@ -37,13 +37,13 @@ export default {
           "ca-app-pub-4306778139267554~1925991963"
       },
       // EAS autoIncrement devrede → sadece referans değeri
-      versionCode: 4
+      versionCode: 31
     },
 
     ios: {
       supportsTablet: true,
       bundleIdentifier: "com.umutugur.imame",
-      buildNumber: "4", // EAS autoIncrement bunu her build’de +1 yapacak
+      buildNumber: "31", // EAS autoIncrement bunu her build’de +1 yapacak
       usesAppleSignIn: true,
       infoPlist: {
         NSUserTrackingUsageDescription:
