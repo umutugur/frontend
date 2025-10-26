@@ -23,7 +23,7 @@ export default {
     ios: {
       supportsTablet: true,
       bundleIdentifier: "com.umutugur.imame",
-      buildNumber: "1.0.2",               // ⬅️ her yüklemede arttır
+      buildNumber: "1.0.3",               // ⬅️ her yüklemede arttır
       usesAppleSignIn: true,
       infoPlist: {
         NSUserTrackingUsageDescription:
