@@ -77,15 +77,27 @@ export function interleaveAds(items, ads, gap = 6) {
  * NativeAdCard — AuctionCard ile aynı görünümde native reklam kartı.
  * Props: { nativeAd } (useNativeAds'ten gelen yüklü reklam)
  */
+const MEDIA_H = 158;
+
 export default function NativeAdCard({ nativeAd }) {
+  // Kabın gerçek genişliğini ölçüp medyaya SAYISAL genişlik veriyoruz; '100%'
+  // native medya görünümünde tam çözülmediği için sağda boşluk kalıyordu.
+  const [mediaW, setMediaW] = useState(0);
+
   if (!nativeAd) return null;
   const advertiser = nativeAd.advertiser || nativeAd.store || 'Sponsorlu içerik';
 
   return (
     <View style={styles.shadow}>
       <NativeAdView nativeAd={nativeAd} style={styles.card}>
-        <View style={styles.imageWrap}>
-          <NativeMediaView resizeMode="cover" style={styles.media} />
+        <View
+          style={styles.imageWrap}
+          onLayout={(e) => setMediaW(e.nativeEvent.layout.width)}
+        >
+          <NativeMediaView
+            resizeMode="cover"
+            style={{ width: mediaW || '100%', height: MEDIA_H }}
+          />
           <View style={styles.sponsor}>
             <Text style={styles.sponsorText}>SPONSORLU</Text>
           </View>
@@ -131,14 +143,12 @@ const styles = StyleSheet.create({
   // (2) tüm asset sınırları NativeAdView içinde kalmalı → overflow:'hidden' ile kırpılır.
   imageWrap: {
     width: '100%',
-    height: 158,
+    height: MEDIA_H,
     position: 'relative',
     overflow: 'hidden',
     backgroundColor: '#efe3cd',
   },
-  // Açık sayısal yükseklik + tam genişlik: NativeMediaView'ın kendi aspectRatio'su
-  // devreye girip taşmasın diye iki boyut da veriliyor.
-  media: { width: '100%', height: 158 },
+  // Not: medyanın boyutu inline veriliyor (ölçülen sayısal genişlik + MEDIA_H).
   sponsor: {
     position: 'absolute',
     top: spacing.sm,
