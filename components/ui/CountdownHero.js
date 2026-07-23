@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { colors, gradients, radii, shadows, spacing, typography } from '../../theme/tokens';
+import { colors, fonts, gradients, radii, shadows, spacing, typography } from '../../theme/tokens';
 
 /**
  * CountdownHero — bugünkü TR saatiyle `endsAtHour`:00'a geri sayan gradient başlık.
@@ -13,7 +13,7 @@ import { colors, gradients, radii, shadows, spacing, typography } from '../../th
  */
 const TR_OFFSET_HOURS = 3;
 
-function getRemainingMs(endsAtHour) {
+function getRemaining(endsAtHour) {
   const nowMs = Date.now();
   // TR duvar saatini elde etmek için UTC'ye +3 saat kayan bir tarih.
   const shifted = new Date(nowMs + TR_OFFSET_HOURS * 3600 * 1000);
@@ -21,13 +21,15 @@ function getRemainingMs(endsAtHour) {
   const mo = shifted.getUTCMonth();
   const d = shifted.getUTCDate();
   // Hedef TR duvar saati = bugün endsAtHour:00 → UTC olarak (endsAtHour - 3):00.
-  let targetUtcMs = Date.UTC(y, mo, d, endsAtHour - TR_OFFSET_HOURS, 0, 0, 0);
+  const targetUtcMs = Date.UTC(y, mo, d, endsAtHour - TR_OFFSET_HOURS, 0, 0, 0);
   let diff = targetUtcMs - nowMs;
+  let tomorrow = false;
   if (diff < 0) {
     // Bugünkü bitiş geçti → yarına sar.
     diff += 24 * 3600 * 1000;
+    tomorrow = true;
   }
-  return diff;
+  return { ms: diff, tomorrow };
 }
 
 function format(ms) {
@@ -40,16 +42,17 @@ function format(ms) {
 }
 
 export default function CountdownHero({ endsAtHour = 22 }) {
-  const [remaining, setRemaining] = useState(() => getRemainingMs(endsAtHour));
+  const [remaining, setRemaining] = useState(() => getRemaining(endsAtHour));
 
   useEffect(() => {
     const id = setInterval(() => {
-      setRemaining(getRemainingMs(endsAtHour));
+      setRemaining(getRemaining(endsAtHour));
     }, 1000);
     return () => clearInterval(id);
   }, [endsAtHour]);
 
-  const { h, m, s } = format(remaining);
+  const { h, m, s } = format(remaining.ms);
+  const dayLabel = remaining.tomorrow ? 'yarın' : 'bugün';
 
   const Unit = ({ value, unitLabel }) => (
     <View style={styles.unit}>
@@ -67,7 +70,7 @@ export default function CountdownHero({ endsAtHour = 22 }) {
     >
       <View style={styles.header}>
         <MaterialCommunityIcons name="gavel" size={20} color={colors.cream} />
-        <Text style={styles.heading}>Mezatlar bugün {endsAtHour}:00'de bitiyor</Text>
+        <Text style={styles.heading}>Mezatlar {dayLabel} {endsAtHour}:00'de bitiyor</Text>
       </View>
 
       <View style={styles.timer}>
@@ -110,7 +113,7 @@ const styles = StyleSheet.create({
   },
   unitValue: {
     fontSize: 32,
-    fontWeight: '800',
+    fontFamily: fonts.extrabold,
     color: colors.white,
     fontVariant: ['tabular-nums'],
   },
@@ -122,7 +125,7 @@ const styles = StyleSheet.create({
   },
   colon: {
     fontSize: 28,
-    fontWeight: '800',
+    fontFamily: fonts.extrabold,
     color: 'rgba(255,255,255,0.6)',
     marginHorizontal: spacing.xs,
     marginBottom: spacing.md,
