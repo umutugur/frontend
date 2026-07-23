@@ -1,6 +1,8 @@
 // components/BidConfirmModal.js
 import React from 'react';
-import { Modal, View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { Modal, View, Text, StyleSheet } from 'react-native';
+import GradientButton from './ui/GradientButton';
+import { colors, radii, shadows, spacing, typography } from '../theme/tokens';
 
 export default function BidConfirmModal({ visible, onClose, onConfirm }) {
   return (
@@ -15,12 +17,17 @@ export default function BidConfirmModal({ visible, onClose, onConfirm }) {
           <Text style={styles.message}>Bu mezata teklif vermek istediğinize emin misiniz?</Text>
 
           <View style={styles.buttonContainer}>
-            <TouchableOpacity onPress={onClose} style={[styles.button, styles.cancel]}>
-              <Text style={styles.buttonText}>İptal</Text>
-            </TouchableOpacity>
-            <TouchableOpacity onPress={onConfirm} style={[styles.button, styles.confirm]}>
-              <Text style={styles.buttonText}>Evet</Text>
-            </TouchableOpacity>
+            <GradientButton
+              title="İptal"
+              variant="secondary"
+              onPress={onClose}
+              style={styles.button}
+            />
+            <GradientButton
+              title="Evet"
+              onPress={onConfirm}
+              style={styles.button}
+            />
           </View>
         </View>
       </View>
@@ -31,46 +38,38 @@ export default function BidConfirmModal({ visible, onClose, onConfirm }) {
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.4)',
+    backgroundColor: 'rgba(46,30,25,0.55)',
     justifyContent: 'center',
     alignItems: 'center',
+    padding: spacing.xl,
   },
   modalContainer: {
-    backgroundColor: '#fff',
-    padding: 25,
-    borderRadius: 15,
+    backgroundColor: colors.white,
+    padding: spacing.xxl,
+    borderRadius: radii.xl,
     width: '85%',
+    maxWidth: 400,
     alignItems: 'center',
+    ...shadows.raised,
   },
   title: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#4e342e',
-    marginBottom: 10,
+    ...typography.h2,
+    color: colors.brownDark,
+    marginBottom: spacing.sm,
   },
   message: {
+    ...typography.body,
     fontSize: 16,
-    color: '#444',
+    color: colors.brown,
     textAlign: 'center',
-    marginBottom: 20,
+    marginBottom: spacing.xl,
+    lineHeight: 22,
   },
   buttonContainer: {
     flexDirection: 'row',
-    gap: 10,
+    gap: spacing.md,
   },
   button: {
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 10,
-  },
-  cancel: {
-    backgroundColor: '#ccc',
-  },
-  confirm: {
-    backgroundColor: '#6d4c41',
-  },
-  buttonText: {
-    color: '#fff',
-    fontWeight: 'bold',
+    flex: 1,
   },
 });

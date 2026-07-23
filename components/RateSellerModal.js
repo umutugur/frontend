@@ -2,17 +2,19 @@ import React, { useState } from 'react';
 import {
   View,
   Text,
-  TextInput,
   Modal,
   StyleSheet,
-  Button,
-  Alert,
   TouchableOpacity,
 } from 'react-native';
 import axios from 'axios';
 import { FontAwesome } from '@expo/vector-icons';
+import Input from './ui/Input';
+import GradientButton from './ui/GradientButton';
+import { useAlert } from '../context/AlertContext';
+import { colors, radii, shadows, spacing, typography } from '../theme/tokens';
 
 export default function RateSellerModal({ visible, onClose, sellerId, auctionId, buyerId }) {
+  const { showAlert } = useAlert();
   const [score, setScore] = useState(0);
   const [comment, setComment] = useState('');
 
@@ -20,7 +22,7 @@ export default function RateSellerModal({ visible, onClose, sellerId, auctionId,
 
   const submitRating = async () => {
     if (score === 0) {
-      Alert.alert('Hata', 'Lütfen 1-5 arası bir puan verin.');
+      showAlert({ title: 'Hata', message: 'Lütfen 1-5 arası bir puan verin.' });
       return;
     }
 
@@ -33,12 +35,12 @@ export default function RateSellerModal({ visible, onClose, sellerId, auctionId,
         comment,
       });
 
-      Alert.alert('Teşekkürler', 'Puanınız kaydedildi');
+      showAlert({ title: 'Teşekkürler', message: 'Puanınız kaydedildi' });
       setScore(0);
       setComment('');
       onClose();
     } catch (err) {
-      Alert.alert('Hata', err.response?.data?.message || err.message);
+      showAlert({ title: 'Hata', message: err.response?.data?.message || err.message });
     }
   };
 
@@ -61,18 +63,26 @@ export default function RateSellerModal({ visible, onClose, sellerId, auctionId,
             ))}
           </View>
 
-          <TextInput
+          <Input
             value={comment}
             onChangeText={setComment}
-            style={[styles.input, { height: 80 }]}
+            style={styles.input}
             multiline
             placeholder="Yorum (opsiyonel)"
-            placeholderTextColor="#8e8e8e"
           />
 
           <View style={styles.buttonRow}>
-            <Button title="İptal" onPress={onClose} color="#a1887f" />
-            <Button title="Puanla" onPress={submitRating} color="#388e3c" />
+            <GradientButton
+              title="İptal"
+              variant="secondary"
+              onPress={onClose}
+              style={styles.button}
+            />
+            <GradientButton
+              title="Puanla"
+              onPress={submitRating}
+              style={styles.button}
+            />
           </View>
         </View>
       </View>
@@ -83,36 +93,41 @@ export default function RateSellerModal({ visible, onClose, sellerId, auctionId,
 const styles = StyleSheet.create({
   modalBackground: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.3)',
+    backgroundColor: 'rgba(46,30,25,0.55)',
     justifyContent: 'center',
     alignItems: 'center',
+    padding: spacing.xl,
   },
   modalContent: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 24,
+    backgroundColor: colors.white,
+    borderRadius: radii.xl,
+    padding: spacing.xxl,
     width: '90%',
+    maxWidth: 400,
+    ...shadows.raised,
   },
   title: {
-    fontWeight: 'bold',
+    ...typography.h3,
     fontSize: 18,
-    marginBottom: 12,
-    color: '#4e342e',
+    marginBottom: spacing.md,
+    color: colors.brownDark,
     textAlign: 'center',
   },
   starContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
-    marginBottom: 16,
+    marginBottom: spacing.lg,
   },
   input: {
-    backgroundColor: '#f5f5f5',
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 12,
+    height: 80,
+    textAlignVertical: 'top',
   },
   buttonRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    gap: spacing.md,
+  },
+  button: {
+    flex: 1,
   },
 });
