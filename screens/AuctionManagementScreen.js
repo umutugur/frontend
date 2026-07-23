@@ -2,7 +2,7 @@
 import React from 'react';
 import { View, Text, FlatList, StyleSheet } from 'react-native';
 import { useAlert } from '../context/AlertContext';
-import { Screen, Card, Badge, GradientButton } from '../components/ui';
+import { Screen, ScreenHeader, Card, Badge, GradientButton } from '../components/ui';
 import { colors, spacing, typography } from '../theme/tokens';
 
 const dummyAuctions = [
@@ -52,13 +52,13 @@ const AuctionManagementScreen = ({ navigation }) => {
   );
 
   return (
-    <Screen contentContainerStyle={styles.container}>
-      <Text style={styles.header}>Mezat Yönetimi</Text>
+    <Screen>
+      <ScreenHeader variant="plain" title="Mezat Yönetimi" />
       <FlatList
         data={dummyAuctions}
         keyExtractor={(item) => item.id}
         renderItem={renderItem}
-        contentContainerStyle={{ paddingBottom: spacing.xl }}
+        contentContainerStyle={styles.list}
         showsVerticalScrollIndicator={false}
       />
     </Screen>
@@ -66,14 +66,10 @@ const AuctionManagementScreen = ({ navigation }) => {
 };
 
 const styles = StyleSheet.create({
-  container: {
+  list: {
     paddingHorizontal: spacing.lg,
-    paddingTop: spacing.md,
-  },
-  header: {
-    ...typography.h1,
-    color: colors.brownDark,
-    marginBottom: spacing.lg,
+    paddingTop: spacing.xs,
+    paddingBottom: spacing.xl,
   },
   card: {
     marginBottom: spacing.md,

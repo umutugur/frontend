@@ -2,7 +2,7 @@ import React, { useState, useEffect, useContext } from 'react';
 import { View, Text, FlatList, StyleSheet, ActivityIndicator, Switch } from 'react-native';
 import axios from 'axios';
 import { AuthContext } from '../context/AuthContext';
-import { Screen, Card, Badge, EmptyState } from '../components/ui';
+import { Screen, ScreenHeader, Card, Badge, EmptyState } from '../components/ui';
 import { colors, spacing, typography } from '../theme/tokens';
 
 export default function MyAuctionsScreen({ navigation }) {
@@ -73,6 +73,7 @@ export default function MyAuctionsScreen({ navigation }) {
   if (loading) {
     return (
       <Screen>
+        <ScreenHeader variant="plain" title="Mezatlarım" />
         <View style={styles.loader}>
           <ActivityIndicator size="large" color={colors.brown} />
         </View>
@@ -81,8 +82,8 @@ export default function MyAuctionsScreen({ navigation }) {
   }
 
   return (
-    <Screen contentContainerStyle={styles.container}>
-      <Text style={styles.header}>Mezatlarım</Text>
+    <Screen>
+      <ScreenHeader variant="plain" title="Mezatlarım" />
       <View style={styles.checkboxRow}>
         <View style={styles.checkboxContainer}>
           <Switch
@@ -122,13 +123,11 @@ export default function MyAuctionsScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  container: { paddingHorizontal: spacing.lg, paddingTop: spacing.md },
-  header: { ...typography.h1, color: colors.brownDark, marginBottom: spacing.md },
   loader: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  checkboxRow: { flexDirection: 'row', justifyContent: 'center', marginBottom: spacing.sm },
+  checkboxRow: { flexDirection: 'row', justifyContent: 'center', marginBottom: spacing.sm, marginTop: spacing.xs },
   checkboxContainer: { flexDirection: 'row', alignItems: 'center', marginHorizontal: spacing.lg },
-  checkboxLabel: { marginLeft: spacing.xs, color: colors.brown, fontWeight: '700' },
-  list: { paddingBottom: spacing.lg, flexGrow: 1 },
+  checkboxLabel: { ...typography.bodyStrong, marginLeft: spacing.xs, color: colors.brown },
+  list: { paddingHorizontal: spacing.lg, paddingBottom: spacing.lg, flexGrow: 1 },
   card: {
     marginBottom: spacing.md,
   },

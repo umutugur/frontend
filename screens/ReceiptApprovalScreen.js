@@ -6,8 +6,8 @@ import {
 import axios from 'axios';
 import { AuthContext } from '../context/AuthContext';
 import { useAlert } from '../context/AlertContext';
-import { Screen, Card, Badge, GradientButton, EmptyState } from '../components/ui';
-import { colors, radii, spacing, typography } from '../theme/tokens';
+import { Screen, ScreenHeader, Card, Badge, GradientButton, EmptyState } from '../components/ui';
+import { colors, fonts, radii, spacing, typography } from '../theme/tokens';
 import iller from '../assets/data/sehirler.json';
 import ilceler from '../assets/data/ilceler.json';
 import mahalleler1 from '../assets/data/mahalleler-1.json';
@@ -93,7 +93,7 @@ const getMahalleName = (id) => mahalleler.find(m => m.mahalle_id === String(id))
           <GradientButton
             title="Onayla"
             icon="checkmark-circle-outline"
-            variant="primary"
+            variant="gold"
             onPress={() => handleApproval(item._id, true)}
             style={styles.actionBtn}
           />
@@ -133,8 +133,8 @@ const getMahalleName = (id) => mahalleler.find(m => m.mahalle_id === String(id))
 
 
   return (
-    <Screen contentContainerStyle={styles.container}>
-      <Text style={styles.header}>Bekleyen Dekontlar</Text>
+    <Screen>
+      <ScreenHeader variant="plain" title="Bekleyen Dekontlar" />
       <FlatList
         data={receipts}
         keyExtractor={(item) => item._id}
@@ -176,16 +176,8 @@ const getMahalleName = (id) => mahalleler.find(m => m.mahalle_id === String(id))
 }
 
 const styles = StyleSheet.create({
-  container: {
-    paddingHorizontal: spacing.lg,
-    paddingTop: spacing.md,
-  },
-  header: {
-    ...typography.h1,
-    color: colors.brownDark,
-    marginBottom: spacing.md,
-  },
   list: {
+    paddingHorizontal: spacing.lg,
     paddingBottom: spacing.lg,
     flexGrow: 1,
   },
@@ -236,7 +228,8 @@ const styles = StyleSheet.create({
     color: colors.brownDark,
   },
   bold: {
-    fontWeight: 'bold',
+    fontFamily: fonts.bold,
+    color: colors.brownDark,
   },
   addressBox: {
     maxHeight: 100,

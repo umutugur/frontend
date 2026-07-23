@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, FlatList, StyleSheet, Modal } from 'react-native';
 import axios from 'axios';
 import { useAlert } from '../context/AlertContext';
-import { Screen, Card, Input, GradientButton, EmptyState } from '../components/ui';
+import { Screen, ScreenHeader, Card, Input, GradientButton, EmptyState } from '../components/ui';
 import { colors, radii, shadows, spacing, typography } from '../theme/tokens';
 
 export default function ManageAuctionsScreen() {
@@ -61,8 +61,8 @@ export default function ManageAuctionsScreen() {
   );
 
   return (
-    <Screen contentContainerStyle={styles.container}>
-      <Text style={styles.header}>Mezat Yönetimi</Text>
+    <Screen>
+      <ScreenHeader variant="plain" title="Mezat Yönetimi" />
       <FlatList
         data={auctions}
         renderItem={renderItem}
@@ -83,7 +83,10 @@ export default function ManageAuctionsScreen() {
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Silme Sebebi</Text>
+            <Text style={styles.modalSub}>Bu sebep satıcıya bildirilecek.</Text>
             <Input
+              variant="underline"
+              leftIcon="alert-circle-outline"
               value={reason}
               onChangeText={setReason}
               placeholder="Sebep giriniz..."
@@ -110,9 +113,7 @@ export default function ManageAuctionsScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { paddingHorizontal: spacing.md, paddingTop: spacing.md },
-  header: { ...typography.h1, color: colors.brownDark, marginBottom: spacing.md },
-  list: { paddingBottom: spacing.lg, flexGrow: 1 },
+  list: { paddingHorizontal: spacing.md, paddingTop: spacing.xs, paddingBottom: spacing.lg, flexGrow: 1 },
   card: { marginBottom: spacing.md },
   title: { ...typography.h3, color: colors.brownDark },
   desc: { ...typography.body, color: colors.muted, marginVertical: spacing.xs },
@@ -132,7 +133,8 @@ const styles = StyleSheet.create({
     padding: spacing.xl,
     ...shadows.raised,
   },
-  modalTitle: { ...typography.h2, color: colors.brownDark, marginBottom: spacing.md },
-  modalActions: { flexDirection: 'row', marginTop: spacing.sm },
+  modalTitle: { ...typography.h2, color: colors.brownDark, marginBottom: spacing.xs },
+  modalSub: { ...typography.small, color: colors.muted, marginBottom: spacing.md },
+  modalActions: { flexDirection: 'row', marginTop: spacing.md },
   modalBtn: { flex: 1, marginHorizontal: spacing.xs },
 });
