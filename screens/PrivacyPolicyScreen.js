@@ -1,10 +1,12 @@
 // screens/PrivacyPolicyScreen.js
 import React from 'react';
-import { ScrollView, Text, StyleSheet } from 'react-native';
+import { Text, StyleSheet } from 'react-native';
+import { Screen } from '../components/ui';
+import { colors, spacing, typography } from '../theme/tokens';
 
 export default function PrivacyPolicyScreen() {
   return (
-    <ScrollView style={styles.container}>
+    <Screen scroll contentContainerStyle={styles.container}>
       <Text style={styles.title}>Gizlilik Politikası</Text>
       <Text style={styles.text}>
         Gizliliğiniz Bizim İçin Önemlidir{"\n\n"}
@@ -61,23 +63,22 @@ export default function PrivacyPolicyScreen() {
         Her türlü soru ve talepleriniz için: info@imameapp.com{"\n\n"}
         Bu gizlilik politikası 01.07.2024 tarihinde güncellenmiştir.
       </Text>
-    </ScrollView>
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F9F6F2', padding: 24 },
-  title: { 
-    fontSize: 22, 
-    fontWeight: 'bold', 
-    marginBottom: 20, 
-    color: '#7B1421', // Bordo başlık
+  container: { padding: spacing.xxl, flexGrow: 1 },
+  title: {
+    ...typography.h1,
+    marginBottom: spacing.xl,
+    color: colors.brownDark,
     letterSpacing: 0.5,
   },
-  text: { 
-    fontSize: 16, 
-    lineHeight: 22, 
-    color: '#2C2C2C',
+  text: {
+    ...typography.body,
+    fontSize: 16,
+    lineHeight: 22,
+    color: colors.brownDark,
   },
 });
-

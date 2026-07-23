@@ -1,9 +1,11 @@
 import React from 'react';
-import { View, Text, ScrollView, StyleSheet } from 'react-native';
+import { Text, StyleSheet } from 'react-native';
+import { Screen } from '../components/ui';
+import { colors, spacing, typography } from '../theme/tokens';
 
 const TermsScreen = () => {
   return (
-    <ScrollView contentContainerStyle={styles.container}>
+    <Screen scroll contentContainerStyle={styles.container}>
       <Text style={styles.header}>Kullanım Koşulları</Text>
 
       <Text style={styles.paragraph}>
@@ -35,36 +37,34 @@ const TermsScreen = () => {
       <Text style={styles.paragraph}>
         Herhangi bir sorunuz varsa bizimle iletişime geçebilirsiniz: destek@imame.app
       </Text>
-    </ScrollView>
+    </Screen>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    padding: 20,
-    backgroundColor: '#fff8e1',
+    padding: spacing.xl,
     flexGrow: 1,
   },
   header: {
-      marginTop:30,
-    fontSize: 22,
-    fontWeight: 'bold',
-    color: '#4e342e',
-    marginBottom: 16,
+    marginTop: spacing.xxxl,
+    ...typography.h1,
+    color: colors.brownDark,
+    marginBottom: spacing.lg,
     textAlign: 'center',
   },
   subheader: {
+    ...typography.h3,
     fontSize: 18,
-    fontWeight: 'bold',
-    color: '#6d4c41',
-    marginTop: 16,
-    marginBottom: 6,
+    color: colors.brown,
+    marginTop: spacing.lg,
+    marginBottom: spacing.sm,
   },
   paragraph: {
-    fontSize: 14,
+    ...typography.body,
     color: '#3e2723',
     lineHeight: 22,
-    marginBottom: 10,
+    marginBottom: spacing.sm,
   },
 });
 
