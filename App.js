@@ -1,11 +1,14 @@
 // App.js
+import 'react-native-gesture-handler';
 import React, { useContext, useEffect, useRef } from 'react';
 import { ActivityIndicator, View, Platform } from 'react-native';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import * as Notifications from 'expo-notifications';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import Toast from 'react-native-toast-message';
 import { AuthProvider, AuthContext } from './context/AuthContext';
+import { AlertProvider } from './context/AlertContext';
 import OfflineNotice from './components/OfflineNotice';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { requestTrackingPermissionsAsync, getTrackingPermissionsAsync } from 'expo-tracking-transparency';
@@ -163,14 +166,20 @@ export default function App() {
   }, []);
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: '#F9F6F2' }}>
-      <AuthProvider>
-        <NavigationContainer ref={navigationRef}>
-          <OfflineNotice />
-          <MainNavigator />
-          <Toast />
-        </NavigationContainer>
-      </AuthProvider>
-    </SafeAreaView>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <SafeAreaView style={{ flex: 1, backgroundColor: '#F9F6F2' }}>
+        {/* AlertProvider, AuthProvider'ın DIŞINDA: singleton köprü (alertBridge)
+            AuthContext ilk render'da kullanmadan önce kurulmuş olmalı. */}
+        <AlertProvider>
+          <AuthProvider>
+            <NavigationContainer ref={navigationRef}>
+              <OfflineNotice />
+              <MainNavigator />
+              <Toast />
+            </NavigationContainer>
+          </AuthProvider>
+        </AlertProvider>
+      </SafeAreaView>
+    </GestureHandlerRootView>
   );
 }
