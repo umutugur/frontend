@@ -128,8 +128,10 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.gold,
   },
+  // AuctionCard ile aynı görsel yüksekliği (grid hizası). AdMob kuralı: video
+  // gösteren MediaView >= 120x120 pt — hücre ~173x158, fazlasıyla üstünde.
   imageWrap: { width: '100%', height: 158, position: 'relative', backgroundColor: '#efe3cd' },
-  media: { width: '100%', height: '100%' },
+  media: { ...StyleSheet.absoluteFillObject },
   scrim: { position: 'absolute', left: 0, right: 0, bottom: 0, height: '45%' },
   sponsor: {
     position: 'absolute',
