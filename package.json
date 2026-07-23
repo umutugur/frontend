@@ -29,6 +29,7 @@
     "expo-dev-client": "~5.2.4",
     "expo-device": "~7.1.4",
     "expo-image-picker": "~16.1.4",
+    "expo-linear-gradient": "~14.1.5",
     "expo-notifications": "~0.31.4",
     "expo-random": "^14.0.1",
     "expo-status-bar": "~2.2.3",
