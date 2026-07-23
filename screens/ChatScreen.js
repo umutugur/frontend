@@ -11,7 +11,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { AuthContext } from '../context/AuthContext';
 import * as Notifications from 'expo-notifications';
 
-import { Screen, Input, PressableScale } from '../components/ui';
+import { Screen, ScreenHeader, Input, PressableScale } from '../components/ui';
 import { colors, gradients, radii, shadows, spacing, typography } from '../theme/tokens';
 
 export default function ChatScreen({ route, navigation }) {
@@ -21,13 +21,6 @@ export default function ChatScreen({ route, navigation }) {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    navigation.setOptions({
-      headerShown: true,
-      title: otherUserName || 'Sohbet',
-    });
-  }, [otherUserName]);
 
   const fetchMessages = async () => {
     try {
@@ -110,6 +103,7 @@ export default function ChatScreen({ route, navigation }) {
   if (loading) {
     return (
       <Screen>
+        <ScreenHeader variant="plain" title={otherUserName || 'Sohbet'} />
         <View style={styles.center}>
           <ActivityIndicator size="large" color={colors.brown} />
         </View>
@@ -119,6 +113,7 @@ export default function ChatScreen({ route, navigation }) {
 
   return (
     <Screen keyboardOffset={90} contentContainerStyle={styles.container}>
+      <ScreenHeader variant="plain" title={otherUserName || 'Sohbet'} />
       <FlatList
         data={messages}
         renderItem={renderItem}
