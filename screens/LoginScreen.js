@@ -1,18 +1,12 @@
 // screens/LoginScreen.js
 import React, { useState, useContext, useEffect } from 'react';
-import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  StyleSheet,
-  Image,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  Alert,
-} from 'react-native';
+import { View, Text, StyleSheet, Image, Platform } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
 import { AuthContext } from '../context/AuthContext';
+import { useAlert } from '../context/AlertContext';
+import { Screen, Input, GradientButton, PressableScale } from '../components/ui';
+import { colors, gradients, spacing, radii, typography, shadows } from '../theme/tokens';
 import * as AppleAuthentication from 'expo-apple-authentication';
 
 const LoginScreen = ({ navigation }) => {
@@ -23,6 +17,7 @@ const LoginScreen = ({ navigation }) => {
     loginWithApple,
     signInGuest, // 👈 misafir girişi
   } = useContext(AuthContext);
+  const { showAlert } = useAlert();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -65,160 +60,167 @@ const LoginScreen = ({ navigation }) => {
   };
 
   return (
-  <KeyboardAvoidingView
-    style={{ flex: 1, backgroundColor: '#fff8e1' }}
-    behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-  >
-    <View style={{ flex: 1 }}>
-      <ScrollView contentContainerStyle={styles.scrollContainer}>
-        <View style={styles.container}>
+    <Screen scroll contentContainerStyle={styles.scrollContent}>
+      <View style={styles.container}>
+        <LinearGradient
+          colors={gradients.goldToBrown}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.logoBadge}
+        >
           <Image source={require('../assets/logo.png')} style={styles.logo} />
-          <Text style={styles.title}>Giriş Yap</Text>
+        </LinearGradient>
 
-          {!!error && (
-            <View style={[styles.errorBox, banned ? styles.banBox : null]}>
-              <Text style={styles.errorText}>{error}</Text>
-            </View>
-          )}
+        <Text style={styles.title}>Giriş Yap</Text>
+        <Text style={styles.subtitle}>Hesabınıza erişmek için giriş yapın</Text>
 
-          <TextInput
-            placeholder="Email"
-            placeholderTextColor="#B5A16B"
-            value={email}
-            onChangeText={setEmail}
-            style={styles.input}
-            keyboardType="email-address"
-            autoCapitalize="none"
-          />
-          <TextInput
-            placeholder="Şifre"
-            placeholderTextColor="#B5A16B"
-            value={password}
-            onChangeText={setPassword}
-            secureTextEntry
-            style={styles.input}
-          />
+        {!!error && (
+          <View style={[styles.errorBox, banned ? styles.banBox : null]}>
+            <Text style={styles.errorText}>{error}</Text>
+          </View>
+        )}
 
-          <TouchableOpacity style={styles.button} onPress={handleLogin}>
-            <Text style={styles.buttonText}>Giriş Yap</Text>
-          </TouchableOpacity>
+        <Input
+          placeholder="Email"
+          value={email}
+          onChangeText={setEmail}
+          keyboardType="email-address"
+          autoCapitalize="none"
+        />
+        <Input
+          placeholder="Şifre"
+          value={password}
+          onChangeText={setPassword}
+          secureTextEntry
+        />
 
-          <TouchableOpacity style={styles.googleButton} onPress={() => promptGoogle()}>
-            <Image source={require('../assets/google-icon.png')} style={styles.googleIcon} />
-            <Text style={styles.googleButtonText}>Google ile Giriş Yap</Text>
-          </TouchableOpacity>
+        <GradientButton
+          title="Giriş Yap"
+          icon="log-in-outline"
+          onPress={handleLogin}
+          style={styles.primaryButton}
+        />
 
-          {Platform.OS === 'ios' && isAppleAvailable && (
-            <AppleAuthentication.AppleAuthenticationButton
-              buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN}
-              buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.BLACK}
-              cornerRadius={5}
-              style={{ width: '100%', height: 50, marginBottom: 15 }}
-              onPress={async () => {
-                try {
-                  await loginWithApple();
-                } catch (err) {
-                  if (err.code !== 'ERR_CANCELED') {
-                    Alert.alert('Apple Girişi Hatası', err.message || 'Bir hata oluştu.');
-                  }
+        <PressableScale style={styles.socialButton} onPress={() => promptGoogle()}>
+          <Image source={require('../assets/google-icon.png')} style={styles.googleIcon} />
+          <Text style={styles.socialButtonText}>Google ile Giriş Yap</Text>
+        </PressableScale>
+
+        {Platform.OS === 'ios' && isAppleAvailable && (
+          <AppleAuthentication.AppleAuthenticationButton
+            buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN}
+            buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.BLACK}
+            cornerRadius={radii.md}
+            style={styles.appleButton}
+            onPress={async () => {
+              try {
+                await loginWithApple();
+              } catch (err) {
+                if (err.code !== 'ERR_CANCELED') {
+                  showAlert({
+                    title: 'Apple Girişi Hatası',
+                    message: err.message || 'Bir hata oluştu.',
+                  });
                 }
-              }}
-            />
-          )}
-        </View>
-      </ScrollView>
+              }
+            }}
+          />
+        )}
 
-      {/* 👇 Alt sabit buton */}
-      <View style={styles.footer}>
-        <TouchableOpacity style={styles.guestButton} onPress={signInGuest}>
+        <PressableScale style={styles.guestButton} onPress={signInGuest}>
+          <Ionicons name="person-outline" size={18} color={colors.brown} style={styles.guestIcon} />
           <Text style={styles.guestButtonText}>Üye Olmadan Devam Et</Text>
-        </TouchableOpacity>
+        </PressableScale>
       </View>
-    </View>
-  </KeyboardAvoidingView>
-);
+    </Screen>
+  );
 };
 
 export default LoginScreen;
 
 const styles = StyleSheet.create({
-  scrollContainer: { flexGrow: 1, justifyContent: 'center' },
-  container: {
-    flex: 1,
-    backgroundColor: '#fff8e1',
+  scrollContent: {
     justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
+    padding: spacing.xl,
   },
-  logo: { width: 260, height: 130, marginBottom: 10, resizeMode: 'contain' },
-  title: { fontSize: 26, fontWeight: 'bold', color: '#4e342e', marginBottom: 20, letterSpacing: 0.4 },
+  container: {
+    alignItems: 'center',
+  },
+  logoBadge: {
+    width: 200,
+    height: 120,
+    borderRadius: radii.xl,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: spacing.xl,
+    ...shadows.raised,
+  },
+  logo: { width: 170, height: 90, resizeMode: 'contain' },
+  title: {
+    ...typography.h1,
+    color: colors.brownDark,
+    marginBottom: spacing.xs,
+  },
+  subtitle: {
+    ...typography.body,
+    color: colors.muted,
+    marginBottom: spacing.xl,
+  },
   errorBox: {
     width: '100%',
     backgroundColor: '#fff3cd',
-    borderColor: '#b5a16b',
+    borderColor: colors.muted,
     borderWidth: 1,
-    borderRadius: 10,
-    padding: 12,
-    marginBottom: 16,
+    borderRadius: radii.md,
+    padding: spacing.md,
+    marginBottom: spacing.lg,
   },
-  banBox: { backgroundColor: '#f8d7da', borderColor: '#7B1421' },
-  errorText: { color: '#7B1421', fontSize: 15, textAlign: 'center', fontWeight: '600' },
-  input: {
+  banBox: { backgroundColor: '#f8d7da', borderColor: colors.danger },
+  errorText: {
+    color: colors.danger,
+    fontSize: 15,
+    textAlign: 'center',
+    fontWeight: '600',
+  },
+  primaryButton: {
     width: '100%',
-    height: 50,
-    borderWidth: 1,
-    borderColor: '#b5a16b',
-    borderRadius: 10,
-    paddingHorizontal: 14,
-    marginBottom: 15,
-    backgroundColor: '#fff',
-    color: '#4e342e',
-    fontSize: 16,
+    marginTop: spacing.xs,
+    marginBottom: spacing.lg,
   },
-  button: {
-    width: '100%',
-    height: 50,
-    backgroundColor: '#6d4c41',
-    borderRadius: 10,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 15,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOpacity: 0.08,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 3,
-  },
-  buttonText: { color: '#fff', fontWeight: 'bold', fontSize: 16, letterSpacing: 0.3 },
-  googleButton: {
+  socialButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    width: '100%',
-    height: 50,
-    backgroundColor: '#fff',
-    borderWidth: 1,
-    borderColor: '#b5a16b',
-    borderRadius: 10,
     justifyContent: 'center',
-    marginBottom: 20,
-  },
-  googleIcon: { width: 22, height: 22, marginRight: 10 },
-  googleButtonText: { color: '#4e342e', fontWeight: 'bold', fontSize: 15 },
-
-  // Üye olmadan devam et
-  guestButton: {
     width: '100%',
-    height: 50,
+    minHeight: 50,
+    backgroundColor: colors.white,
+    borderWidth: 1.5,
+    borderColor: colors.line,
+    borderRadius: radii.md,
+    marginBottom: spacing.md,
+    ...shadows.soft,
+  },
+  googleIcon: { width: 22, height: 22, marginRight: spacing.sm },
+  socialButtonText: {
+    ...typography.h3,
+    color: colors.brownDark,
+  },
+  appleButton: { width: '100%', height: 50, marginBottom: spacing.md },
+  guestButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: '100%',
+    minHeight: 50,
     borderWidth: 1,
     borderStyle: 'dashed',
-    borderColor: '#6d4c41',
-    borderRadius: 10,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: 10,
+    borderColor: colors.brown,
+    borderRadius: radii.md,
+    marginTop: spacing.sm,
   },
+  guestIcon: { marginRight: spacing.sm },
   guestButtonText: {
-    color: '#6d4c41',
+    color: colors.brown,
     fontWeight: '700',
     fontSize: 15,
   },
