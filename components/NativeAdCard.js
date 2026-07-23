@@ -4,7 +4,6 @@
 // listeye slot olarak eklenir → feed'de asla boş hücre kalmaz.
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import {
   NativeAd,
   NativeAdView,
@@ -13,7 +12,7 @@ import {
   NativeMediaView,
   TestIds,
 } from 'react-native-google-mobile-ads';
-import { colors, gradients, radii, shadows, spacing, typography, fonts } from '../theme/tokens';
+import { colors, radii, shadows, spacing, typography, fonts } from '../theme/tokens';
 
 // TODO: AdMob'da "Yerel gelişmiş" birimi oluşturunca gerçek ID'yi buraya yaz.
 const NATIVE_AD_UNIT_ID = 'ca-app-pub-4306778139267554/XXXXXXXXXX';
@@ -87,7 +86,6 @@ export default function NativeAdCard({ nativeAd }) {
       <NativeAdView nativeAd={nativeAd} style={styles.card}>
         <View style={styles.imageWrap}>
           <NativeMediaView resizeMode="cover" style={styles.media} />
-          <LinearGradient colors={gradients.scrim} style={styles.scrim} />
           <View style={styles.sponsor}>
             <Text style={styles.sponsorText}>SPONSORLU</Text>
           </View>
@@ -128,11 +126,19 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.gold,
   },
-  // AuctionCard ile aynı görsel yüksekliği (grid hizası). AdMob kuralı: video
-  // gösteren MediaView >= 120x120 pt — hücre ~173x158, fazlasıyla üstünde.
-  imageWrap: { width: '100%', height: 158, position: 'relative', backgroundColor: '#efe3cd' },
-  media: { ...StyleSheet.absoluteFillObject },
-  scrim: { position: 'absolute', left: 0, right: 0, bottom: 0, height: '45%' },
+  // AuctionCard ile aynı görsel yüksekliği (grid hizası). AdMob kuralları:
+  // (1) video gösteren MediaView >= 120x120 pt — hücre ~173x158, üstünde.
+  // (2) tüm asset sınırları NativeAdView içinde kalmalı → overflow:'hidden' ile kırpılır.
+  imageWrap: {
+    width: '100%',
+    height: 158,
+    position: 'relative',
+    overflow: 'hidden',
+    backgroundColor: '#efe3cd',
+  },
+  // Açık sayısal yükseklik + tam genişlik: NativeMediaView'ın kendi aspectRatio'su
+  // devreye girip taşmasın diye iki boyut da veriliyor.
+  media: { width: '100%', height: 158 },
   sponsor: {
     position: 'absolute',
     top: spacing.sm,
