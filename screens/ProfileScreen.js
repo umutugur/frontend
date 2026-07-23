@@ -4,7 +4,6 @@ import {
   View,
   Text,
   StyleSheet,
-  TouchableOpacity,
   ActivityIndicator,
   Platform,
 } from 'react-native';
@@ -19,7 +18,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import * as AppleAuthentication from 'expo-apple-authentication';
 
-import { Screen, Card, GradientButton } from '../components/ui';
+import { Screen, Card, GradientButton, MenuTile } from '../components/ui';
 import { colors, gradients, radii, shadows, spacing, typography } from '../theme/tokens';
 
 const API = 'https://imame-backend.onrender.com';
@@ -27,48 +26,6 @@ const API = 'https://imame-backend.onrender.com';
 /* ---------- Yardımcı Bileşenler (function deklarasyonu → hoisted) ---------- */
 function SectionTitle({ children }) {
   return <Text style={styles.sectionTitle}>{children}</Text>;
-}
-
-function RowButton({
-  title,
-  subtitle,
-  icon,
-  onPress,
-  variant = 'solid', // 'solid' | 'outline' | 'danger'
-  disabled = false,
-  rightChevron = true,
-}) {
-  const base = [styles.row, disabled && { opacity: 0.6 }];
-  if (variant === 'outline') base.push(styles.rowOutline);
-  if (variant === 'danger') base.push(styles.rowDanger);
-
-  const iconColor =
-    variant === 'solid' ? colors.brown : variant === 'danger' ? colors.danger : colors.brown;
-  const textColor =
-    variant === 'solid' ? colors.brownDark : variant === 'danger' ? colors.danger : colors.brownDark;
-
-  return (
-    <TouchableOpacity onPress={onPress} disabled={disabled} style={base} activeOpacity={0.85}>
-      <View style={styles.rowLeft}>
-        {!!icon && (
-          <View style={[styles.rowIconWrap, variant === 'danger' && styles.rowIconWrapDanger]}>
-            <Ionicons name={icon} size={18} color={iconColor} />
-          </View>
-        )}
-        <View>
-          <Text style={[styles.rowTitle, { color: textColor }]}>{title}</Text>
-          {subtitle ? <Text style={styles.rowSubtitle}>{subtitle}</Text> : null}
-        </View>
-      </View>
-      {rightChevron && (
-        <Ionicons
-          name="chevron-forward"
-          size={18}
-          color={variant === 'danger' ? colors.danger : colors.muted}
-        />
-      )}
-    </TouchableOpacity>
-  );
 }
 
 function InfoLine({ label, value }) {
@@ -272,9 +229,9 @@ export default function ProfileScreen() {
         {isOwnProfile && isLoggedIn && profile?.role === 'buyer' && (
           <>
             <SectionTitle>Hesabım</SectionTitle>
-            <RowButton title="Tekliflerim" icon="pricetag-outline" onPress={() => navigation.navigate('MyBids')} />
-            <RowButton title="Biten Mezatlar" icon="checkmark-done-outline" onPress={() => navigation.navigate('CompletedAuctions')} />
-            <RowButton title="Profili Düzenle" icon="create-outline" variant="outline" onPress={() => navigation.navigate('EditProfile')} />
+            <MenuTile title="Tekliflerim" icon="pricetag-outline" onPress={() => navigation.navigate('MyBids')} />
+            <MenuTile title="Biten Mezatlar" icon="checkmark-done-outline" onPress={() => navigation.navigate('CompletedAuctions')} />
+            <MenuTile title="Profili Düzenle" icon="create-outline" onPress={() => navigation.navigate('EditProfile')} />
           </>
         )}
 
@@ -282,9 +239,9 @@ export default function ProfileScreen() {
         {isOwnProfile && isLoggedIn && profile?.role === 'seller' && (
           <>
             <SectionTitle>Satıcı Araçları</SectionTitle>
-            <RowButton title="Mezat Ekle" icon="add-circle-outline" onPress={() => navigation.navigate('AddAuction')} />
-            <RowButton title="Dekont Onayla" icon="receipt-outline" onPress={() => navigation.navigate('ReceiptApproval')} />
-            <RowButton title="Mezatlarım" icon="cube-outline" onPress={() => navigation.navigate('MyAuctions')} />
+            <MenuTile title="Mezat Ekle" icon="add-circle-outline" onPress={() => navigation.navigate('AddAuction')} />
+            <MenuTile title="Dekont Onayla" icon="receipt-outline" onPress={() => navigation.navigate('ReceiptApproval')} />
+            <MenuTile title="Mezatlarım" icon="cube-outline" onPress={() => navigation.navigate('MyAuctions')} />
           </>
         )}
 
@@ -292,7 +249,7 @@ export default function ProfileScreen() {
         {isOwnProfile && isLoggedIn && profile?.role === 'admin' && (
           <>
             <SectionTitle>Yönetim</SectionTitle>
-            <RowButton title="Admin Panel" icon="lock-closed-outline" onPress={() => navigation.navigate('AdminPanel')} />
+            <MenuTile title="Admin Panel" icon="lock-closed-outline" onPress={() => navigation.navigate('AdminPanel')} />
           </>
         )}
 
@@ -310,15 +267,13 @@ export default function ProfileScreen() {
 
             {wonFromThisSeller && (
               <>
-                <RowButton
+                <MenuTile
                   title={isFavorite ? 'Favorilerden Çıkar' : 'Favorilere Ekle'}
                   icon={isFavorite ? 'star' : 'star-outline'}
-                  variant={isFavorite ? 'outline' : 'solid'}
-                  onPress={toggleFavorite}
-                  disabled={favBusy}
+                  onPress={() => { if (!favBusy) toggleFavorite(); }}
                 />
-                <RowButton title="Satıcıyı Puanla" icon="thumbs-up-outline" variant="outline" onPress={() => setShowRate(true)} />
-                <RowButton title="Satıcıyı Şikayet Et" icon="flag-outline" variant="outline" onPress={() => setShowReport(true)} />
+                <MenuTile title="Satıcıyı Puanla" icon="thumbs-up-outline" onPress={() => setShowRate(true)} />
+                <MenuTile title="Satıcıyı Şikayet Et" icon="flag-outline" tone="danger" onPress={() => setShowReport(true)} />
               </>
             )}
           </>
@@ -326,9 +281,9 @@ export default function ProfileScreen() {
 
         {/* Genel */}
         <SectionTitle>Genel</SectionTitle>
-        <RowButton title="Kullanım Koşulları" icon="document-text-outline" variant="outline" onPress={() => navigation.navigate('Terms')} />
-        <RowButton title="Gizlilik Politikası" icon="shield-checkmark-outline" variant="outline" onPress={() => navigation.navigate('PrivacyPolicy')} />
-        <RowButton title="Yardım & Destek" icon="help-circle-outline" variant="outline" onPress={() => navigation.navigate('HelpAndSupport')} />
+        <MenuTile title="Kullanım Koşulları" icon="document-text-outline" onPress={() => navigation.navigate('Terms')} />
+        <MenuTile title="Gizlilik Politikası" icon="shield-checkmark-outline" onPress={() => navigation.navigate('PrivacyPolicy')} />
+        <MenuTile title="Yardım & Destek" icon="help-circle-outline" onPress={() => navigation.navigate('HelpAndSupport')} />
 
         {/* Giriş CTA (misafir) */}
         {isOwnProfile && !isLoggedIn && (
@@ -402,8 +357,8 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
   },
   avatarText: {
+    ...typography.hero,
     fontSize: 36,
-    fontWeight: '800',
     color: colors.white,
   },
   headerTitle: {
@@ -421,7 +376,6 @@ const styles = StyleSheet.create({
   rolePillText: {
     ...typography.label,
     color: colors.cream,
-    fontWeight: '700',
     textTransform: 'uppercase',
   },
   container: {
@@ -445,55 +399,16 @@ const styles = StyleSheet.create({
     borderBottomColor: colors.line,
     paddingBottom: spacing.sm,
   },
-  infoLabel: { ...typography.label, fontWeight: '600', color: colors.brown },
-  infoValue: { fontSize: 16, color: colors.brownDark, marginTop: 2 },
+  infoLabel: { ...typography.label, color: colors.brown },
+  infoValue: { ...typography.bodyStrong, color: colors.brownDark, marginTop: 2 },
 
   sectionTitle: {
     ...typography.label,
-    fontWeight: '700',
     color: colors.muted,
     marginTop: spacing.sm,
     marginBottom: spacing.sm,
     textTransform: 'uppercase',
   },
-
-  row: {
-    minHeight: 52,
-    borderRadius: radii.md,
-    backgroundColor: colors.white,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    marginBottom: spacing.sm,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    ...shadows.soft,
-  },
-  rowOutline: {
-    backgroundColor: colors.white,
-    borderWidth: 1,
-    borderColor: colors.line,
-  },
-  rowDanger: {
-    backgroundColor: '#fff',
-    borderWidth: 1,
-    borderColor: 'rgba(198,40,40,0.25)',
-  },
-  rowLeft: { flexDirection: 'row', alignItems: 'center', flex: 1 },
-  rowIconWrap: {
-    width: 34,
-    height: 34,
-    borderRadius: radii.sm,
-    backgroundColor: 'rgba(78,52,46,0.08)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: spacing.md,
-  },
-  rowIconWrapDanger: {
-    backgroundColor: 'rgba(198,40,40,0.10)',
-  },
-  rowTitle: { fontSize: 15, fontWeight: '600' },
-  rowSubtitle: { ...typography.label, color: colors.muted, marginTop: 2 },
 
   ratingBox: {
     flexDirection: 'row',
@@ -505,8 +420,8 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
     marginBottom: spacing.sm,
   },
-  ratingText: { color: colors.brown, fontWeight: '700' },
-  ratingCount: { marginLeft: 6, color: colors.muted, fontWeight: '600' },
+  ratingText: { ...typography.bodyStrong, color: colors.brown },
+  ratingCount: { ...typography.small, marginLeft: 6, color: colors.muted },
 
   ctaButton: {
     marginBottom: spacing.md,
