@@ -94,8 +94,10 @@ export default function NativeAdCard({ nativeAd }) {
           style={styles.imageWrap}
           onLayout={(e) => setMediaW(e.nativeEvent.layout.width)}
         >
+          {/* contain: kreatif KIRPILMAZ (cover, reklamın başlığını kesiyordu).
+              Artan boşluk kart yüzeyiyle aynı renk olduğu için bant gibi durmaz. */}
           <NativeMediaView
-            resizeMode="cover"
+            resizeMode="contain"
             style={{ width: mediaW || '100%', height: MEDIA_H }}
           />
           <View style={styles.sponsor}>
@@ -146,7 +148,8 @@ const styles = StyleSheet.create({
     height: MEDIA_H,
     position: 'relative',
     overflow: 'hidden',
-    backgroundColor: '#efe3cd',
+    // Kart yüzeyiyle aynı renk: contain'den artan boşluk "bant" gibi görünmesin.
+    backgroundColor: colors.creamHi,
   },
   // Not: medyanın boyutu inline veriliyor (ölçülen sayısal genişlik + MEDIA_H).
   sponsor: {
