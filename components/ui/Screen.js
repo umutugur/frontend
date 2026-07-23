@@ -23,6 +23,8 @@ export default function Screen({
   contentContainerStyle,
   edges = ['top', 'left', 'right'],
   keyboardOffset = 0,
+  bgColors = gradients.page,
+  glow = true,
 }) {
   const Body = scroll ? (
     <ScrollView
@@ -40,17 +42,19 @@ export default function Screen({
   return (
     <View style={styles.flex}>
       <LinearGradient
-        colors={gradients.page}
+        colors={bgColors}
         style={StyleSheet.absoluteFill}
         start={{ x: 0.1, y: 0 }}
         end={{ x: 0.9, y: 1 }}
       />
       {/* üstte ince altın ışıma — sayfaya derinlik */}
-      <LinearGradient
-        colors={['rgba(201,162,75,0.16)', 'transparent']}
-        style={styles.topGlow}
-        pointerEvents="none"
-      />
+      {glow ? (
+        <LinearGradient
+          colors={['rgba(201,162,75,0.16)', 'transparent']}
+          style={styles.topGlow}
+          pointerEvents="none"
+        />
+      ) : null}
       <SafeAreaView style={[styles.safe, style]} edges={edges}>
         <KeyboardAvoidingView
           style={styles.flex}

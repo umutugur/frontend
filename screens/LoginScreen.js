@@ -1,13 +1,32 @@
 // screens/LoginScreen.js
-import React, { useState, useContext, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, Image, Platform, Animated } from 'react-native';
+import React, { useState, useContext, useEffect, useRef, useCallback } from 'react';
+import { View, Text, StyleSheet, Image, Platform, Animated, TextInput, StatusBar } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
+import { useFocusEffect } from '@react-navigation/native';
 import { AuthContext } from '../context/AuthContext';
 import { useAlert } from '../context/AlertContext';
-import { Screen, Input, GradientButton, PressableScale } from '../components/ui';
+import { Screen, GradientButton, PressableScale } from '../components/ui';
 import { colors, gradients, spacing, radii, typography, shadows } from '../theme/tokens';
 import * as AppleAuthentication from 'expo-apple-authentication';
+
+// Alt-çizgili input (Heritage yön için)
+function UnderlineField({ icon, right, ...props }) {
+  const [focused, setFocused] = useState(false);
+  return (
+    <View style={[styles.field, focused && styles.fieldFocused]}>
+      <Ionicons name={icon} size={19} color={focused ? colors.gold : colors.muted} />
+      <TextInput
+        placeholderTextColor={colors.muted}
+        style={styles.input}
+        onFocus={() => setFocused(true)}
+        onBlur={() => setFocused(false)}
+        {...props}
+      />
+      {right}
+    </View>
+  );
+}
 
 const LoginScreen = ({ navigation }) => {
   const { user, login, promptGoogle, loginWithApple, signInGuest } = useContext(AuthContext);
@@ -22,8 +41,16 @@ const LoginScreen = ({ navigation }) => {
 
   const enter = useRef(new Animated.Value(0)).current;
   useEffect(() => {
-    Animated.timing(enter, { toValue: 1, duration: 550, useNativeDriver: true }).start();
+    Animated.timing(enter, { toValue: 1, duration: 600, useNativeDriver: true }).start();
   }, [enter]);
+
+  // Hero koyu → açık status bar; ayrılırken geri al.
+  useFocusEffect(
+    useCallback(() => {
+      StatusBar.setBarStyle('light-content');
+      return () => StatusBar.setBarStyle('dark-content');
+    }, [])
+  );
 
   useEffect(() => {
     if (Platform.OS === 'ios') {
@@ -61,26 +88,33 @@ const LoginScreen = ({ navigation }) => {
   const translateY = enter.interpolate({ inputRange: [0, 1], outputRange: [18, 0] });
 
   return (
-    <Screen scroll edges={['left', 'right']} contentContainerStyle={styles.scroll}>
-      {/* ── Hero bandı ── */}
+    <Screen scroll glow={false} edges={['left', 'right']} contentContainerStyle={styles.scroll}>
+      {/* ── Hero (mihrap) ── */}
       <LinearGradient
-        colors={gradients.heroDark}
-        start={{ x: 0.1, y: 0 }}
-        end={{ x: 0.9, y: 1 }}
+        colors={['#4a2f22', '#2c1810']}
+        start={{ x: 0.5, y: 0 }}
+        end={{ x: 0.5, y: 1 }}
         style={styles.hero}
       >
-        <LinearGradient colors={gradients.sheen} style={styles.heroSheen} pointerEvents="none" />
-        <View style={styles.plaque}>
-          <LinearGradient
-            colors={gradients.creamSurface}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={styles.plaqueFill}
-          >
+        {/* 8 köşeli yıldız (khatim) motifi */}
+        <View style={styles.starWrap} pointerEvents="none">
+          <View style={styles.star} />
+          <View style={[styles.star, styles.starRot]} />
+        </View>
+
+        {/* mihrap nişi + logo */}
+        <View style={styles.niche}>
+          <LinearGradient colors={gradients.creamSurface} style={styles.nicheFill}>
             <Image source={require('../assets/logo.png')} style={styles.logo} />
           </LinearGradient>
         </View>
-        <Text style={styles.kicker}>· EL YAPIMI TESPİH MEZATI ·</Text>
+
+        {/* süsleme ayıracı */}
+        <View style={styles.heroOrn}>
+          <View style={styles.heroLine} />
+          <View style={styles.heroDiamond} />
+          <View style={styles.heroLine} />
+        </View>
       </LinearGradient>
 
       {/* ── Form ── */}
@@ -94,47 +128,48 @@ const LoginScreen = ({ navigation }) => {
               name={banned ? 'alert-circle' : 'information-circle'}
               size={18}
               color={colors.danger}
-              style={styles.errorIcon}
+              style={{ marginRight: spacing.sm }}
             />
             <Text style={styles.errorText}>{error}</Text>
           </View>
         )}
 
-        <View style={styles.card}>
-          <Input
-            placeholder="E-posta"
-            value={email}
-            onChangeText={setEmail}
-            keyboardType="email-address"
-            autoCapitalize="none"
-            leftIcon="mail-outline"
-          />
-          <Input
-            placeholder="Şifre"
-            value={password}
-            onChangeText={setPassword}
-            secureTextEntry={!showPassword}
-            leftIcon="lock-closed-outline"
-            rightElement={
-              <PressableScale onPress={() => setShowPassword((s) => !s)}>
-                <Ionicons
-                  name={showPassword ? 'eye-off-outline' : 'eye-outline'}
-                  size={20}
-                  color={colors.muted}
-                />
-              </PressableScale>
-            }
-          />
-          <GradientButton title="Giriş Yap" icon="log-in-outline" onPress={handleLogin} style={styles.fullBtn} />
+        <UnderlineField
+          icon="mail-outline"
+          value={email}
+          onChangeText={setEmail}
+          placeholder="E-posta"
+          keyboardType="email-address"
+          autoCapitalize="none"
+        />
+        <UnderlineField
+          icon="lock-closed-outline"
+          value={password}
+          onChangeText={setPassword}
+          placeholder="Şifre"
+          secureTextEntry={!showPassword}
+          right={
+            <PressableScale onPress={() => setShowPassword((s) => !s)}>
+              <Ionicons name={showPassword ? 'eye-off-outline' : 'eye-outline'} size={20} color={colors.muted} />
+            </PressableScale>
+          }
+        />
+
+        <GradientButton
+          title="Giriş Yap"
+          icon="log-in-outline"
+          variant="gold"
+          onPress={handleLogin}
+          style={styles.fullBtn}
+        />
+
+        <View style={styles.orn}>
+          <View style={styles.ornLine} />
+          <View style={styles.ornDiamond} />
+          <View style={styles.ornLine} />
         </View>
 
-        <View style={styles.divider}>
-          <View style={styles.line} />
-          <Text style={styles.dividerText}>veya</Text>
-          <View style={styles.line} />
-        </View>
-
-        <PressableScale style={styles.socialButton} onPress={() => promptGoogle()}>
+        <PressableScale style={styles.social} onPress={() => promptGoogle()}>
           <Image source={require('../assets/google-icon.png')} style={styles.googleIcon} />
           <Text style={styles.socialText}>Google ile Giriş Yap</Text>
         </PressableScale>
@@ -168,37 +203,70 @@ const LoginScreen = ({ navigation }) => {
 
 export default LoginScreen;
 
+const NICHE_W = 208;
+const NICHE_H = 194;
+
 const styles = StyleSheet.create({
   scroll: { flexGrow: 1, paddingBottom: spacing.xxxl },
 
   hero: {
-    paddingTop: spacing.huge,
-    paddingBottom: spacing.xxl,
+    paddingTop: 78,
+    paddingBottom: spacing.xl,
     alignItems: 'center',
-    borderBottomLeftRadius: radii.xxl + 6,
-    borderBottomRightRadius: radii.xxl + 6,
+    borderBottomLeftRadius: radii.xxl + 8,
+    borderBottomRightRadius: radii.xxl + 8,
     overflow: 'hidden',
   },
-  heroSheen: { position: 'absolute', top: 0, left: 0, right: 0, height: '50%' },
-  plaque: {
-    borderRadius: radii.xl,
-    padding: 2,
-    backgroundColor: 'rgba(201,162,75,0.55)',
-    ...shadows.raised,
-  },
-  plaqueFill: {
-    width: 172,
-    height: 112,
-    borderRadius: radii.xl - 2,
+  starWrap: {
+    position: 'absolute',
+    top: 78,
+    left: 0,
+    right: 0,
+    height: NICHE_H,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  logo: { width: 140, height: 78, resizeMode: 'contain' },
-  kicker: {
-    ...typography.label,
-    color: colors.goldLight,
-    marginTop: spacing.lg,
-    letterSpacing: 1.6,
+  star: {
+    position: 'absolute',
+    width: 288,
+    height: 288,
+    borderWidth: 1.5,
+    borderColor: 'rgba(216,178,90,0.16)',
+    borderRadius: 8,
+  },
+  starRot: { transform: [{ rotate: '45deg' }] },
+
+  niche: {
+    width: NICHE_W,
+    height: NICHE_H,
+    borderTopLeftRadius: NICHE_W / 2,
+    borderTopRightRadius: NICHE_W / 2,
+    borderBottomLeftRadius: radii.md,
+    borderBottomRightRadius: radii.md,
+    padding: 2,
+    backgroundColor: 'rgba(216,178,90,0.6)',
+    ...shadows.raised,
+  },
+  nicheFill: {
+    flex: 1,
+    borderTopLeftRadius: NICHE_W / 2 - 2,
+    borderTopRightRadius: NICHE_W / 2 - 2,
+    borderBottomLeftRadius: radii.md - 2,
+    borderBottomRightRadius: radii.md - 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  logo: { width: 300, height: 220, resizeMode: 'contain', marginTop: 22 },
+
+  heroOrn: { flexDirection: 'row', alignItems: 'center', marginTop: spacing.lg, opacity: 0.9 },
+  heroLine: { width: 34, height: 1, backgroundColor: 'rgba(216,178,90,0.5)' },
+  heroDiamond: {
+    width: 7,
+    height: 7,
+    backgroundColor: colors.goldLight,
+    transform: [{ rotate: '45deg' }],
+    marginHorizontal: spacing.sm,
   },
 
   body: { paddingHorizontal: spacing.xl, paddingTop: spacing.xl },
@@ -208,8 +276,9 @@ const styles = StyleSheet.create({
     color: colors.muted,
     textAlign: 'center',
     marginTop: spacing.xs,
-    marginBottom: spacing.xl,
+    marginBottom: spacing.xxl,
   },
+
   errorBox: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -221,24 +290,37 @@ const styles = StyleSheet.create({
     marginBottom: spacing.lg,
   },
   banBox: { backgroundColor: colors.dangerBg, borderColor: 'rgba(192,57,43,0.35)' },
-  errorIcon: { marginRight: spacing.sm },
   errorText: { ...typography.bodyStrong, color: colors.danger, flex: 1 },
-  card: {
-    backgroundColor: colors.creamHi,
-    borderRadius: radii.xl,
-    borderWidth: 1,
-    borderColor: colors.line,
-    padding: spacing.lg,
-    ...shadows.card,
+
+  field: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    borderBottomWidth: 1.6,
+    borderBottomColor: colors.line,
+    paddingVertical: spacing.md,
+    marginBottom: spacing.lg,
   },
-  fullBtn: { width: '100%', marginTop: spacing.xs },
-  divider: { flexDirection: 'row', alignItems: 'center', marginVertical: spacing.xl },
-  line: { flex: 1, height: 1, backgroundColor: colors.lineStrong },
-  dividerText: { ...typography.label, color: colors.muted, marginHorizontal: spacing.md },
-  socialButton: {
+  fieldFocused: { borderBottomColor: colors.gold },
+  input: { flex: 1, ...typography.body, color: colors.brownDark, paddingVertical: 2 },
+
+  fullBtn: { width: '100%', marginTop: spacing.sm },
+
+  orn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginVertical: spacing.xl },
+  ornLine: { width: 48, height: 1, backgroundColor: colors.lineStrong },
+  ornDiamond: {
+    width: 7,
+    height: 7,
+    backgroundColor: colors.gold,
+    transform: [{ rotate: '45deg' }],
+    marginHorizontal: spacing.md,
+  },
+
+  social: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    gap: spacing.sm,
     width: '100%',
     minHeight: 54,
     backgroundColor: colors.white,
@@ -248,16 +330,17 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
     ...shadows.soft,
   },
-  googleIcon: { width: 20, height: 20, marginRight: spacing.sm },
+  googleIcon: { width: 20, height: 20 },
   socialText: { ...typography.button, color: colors.brownDark },
   appleButton: { width: '100%', height: 54, marginBottom: spacing.md },
+
   guest: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    gap: spacing.xs,
     alignSelf: 'center',
     paddingVertical: spacing.md,
-    gap: spacing.xs,
   },
   guestText: { ...typography.bodyStrong, color: colors.brown, textDecorationLine: 'underline' },
 });

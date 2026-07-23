@@ -12,6 +12,7 @@ import { colors, gradients, radii, spacing, typography, shadows } from '../../th
  */
 const VARIANTS = {
   primary: { grad: gradients.goldToBrown, shadow: shadows.gold },
+  gold: { grad: gradients.gold, shadow: shadows.gold },
   secondary: { grad: gradients.heroDark, shadow: shadows.card },
   danger: { grad: ['#d0503f', '#a5271a'], shadow: shadows.card },
 };
