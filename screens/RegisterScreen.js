@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { Picker } from '@react-native-picker/picker';
 import { AuthContext } from '../context/AuthContext';
 import { useAlert } from '../context/AlertContext';
-import { Screen, Input, GradientButton } from '../components/ui';
-import { colors, spacing, radii, typography, shadows } from '../theme/tokens';
+import { Screen, ScreenHeader, Input, GradientButton, OrnamentDivider } from '../components/ui';
+import { colors, spacing, radii, typography } from '../theme/tokens';
 
 import iller from '../assets/data/sehirler.json';
 import ilceler from '../assets/data/ilceler.json';
@@ -113,119 +114,150 @@ const RegisterScreen = () => {
   };
 
   return (
-    <Screen scroll contentContainerStyle={styles.container}>
-      <Text style={styles.title}>Kayıt Ol</Text>
-
-      <Input
-        placeholder="Ad Soyad"
-        value={name}
-        onChangeText={setName}
+    <Screen>
+      <ScreenHeader
+        variant="plain"
+        title="Kayıt Ol"
+        subtitle="Yeni bir hesap oluşturun"
       />
+      <ScrollView
+        contentContainerStyle={styles.container}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
+        <Input
+          variant="underline"
+          leftIcon="person-outline"
+          placeholder="Ad Soyad"
+          value={name}
+          onChangeText={setName}
+        />
 
-      <Input
-        placeholder="E-posta"
-        value={email}
-        onChangeText={setEmail}
-        autoCapitalize="none"
-        keyboardType="email-address"
-      />
+        <Input
+          variant="underline"
+          leftIcon="mail-outline"
+          placeholder="E-posta"
+          value={email}
+          onChangeText={setEmail}
+          autoCapitalize="none"
+          keyboardType="email-address"
+        />
 
-      <Input
-        placeholder="Şifre"
-        value={password}
-        onChangeText={setPassword}
-        secureTextEntry
-      />
+        <Input
+          variant="underline"
+          leftIcon="lock-closed-outline"
+          placeholder="Şifre"
+          value={password}
+          onChangeText={setPassword}
+          secureTextEntry
+        />
 
-      <Text style={styles.label}>İl</Text>
-      <View style={styles.pickerWrapper}>
-        <Picker
-          selectedValue={selectedIlId}
-          onValueChange={setSelectedIlId}
-          style={styles.picker}
-        >
-          <Picker.Item label="İl seçiniz" value={null} />
-          {iller.map(il => (
-            <Picker.Item key={il.sehir_id} label={il.sehir_adi} value={il.sehir_id} />
-          ))}
-        </Picker>
-      </View>
+        <View style={styles.sectionRow}>
+          <Ionicons name="location-outline" size={16} color={colors.gold} />
+          <Text style={styles.sectionLabel}>Adres Bilgileri</Text>
+        </View>
 
-      <Text style={styles.label}>İlçe</Text>
-      <View style={styles.pickerWrapper}>
-        <Picker
-          selectedValue={selectedIlceId}
-          onValueChange={setSelectedIlceId}
-          enabled={filteredIlceler.length > 0}
-          style={styles.picker}
-        >
-          <Picker.Item label="İlçe seçiniz" value={null} />
-          {filteredIlceler.map(ilce => (
-            <Picker.Item key={ilce.ilce_id} label={ilce.ilce_adi} value={ilce.ilce_id} />
-          ))}
-        </Picker>
-      </View>
+        <Text style={styles.label}>İl</Text>
+        <View style={styles.pickerWrapper}>
+          <Picker
+            selectedValue={selectedIlId}
+            onValueChange={setSelectedIlId}
+            style={styles.picker}
+          >
+            <Picker.Item label="İl seçiniz" value={null} />
+            {iller.map(il => (
+              <Picker.Item key={il.sehir_id} label={il.sehir_adi} value={il.sehir_id} />
+            ))}
+          </Picker>
+        </View>
 
-      <Text style={styles.label}>Mahalle</Text>
-      <View style={styles.pickerWrapper}>
-        <Picker
-          selectedValue={selectedMahalleId}
-          onValueChange={setSelectedMahalleId}
-          enabled={filteredMahalleler.length > 0}
-          style={styles.picker}
-        >
-          <Picker.Item label="Mahalle seçiniz" value={null} />
-          {filteredMahalleler.map(mahalle => (
-            <Picker.Item key={mahalle.mahalle_id} label={mahalle.mahalle_adi} value={mahalle.mahalle_id} />
-          ))}
-        </Picker>
-      </View>
+        <Text style={styles.label}>İlçe</Text>
+        <View style={styles.pickerWrapper}>
+          <Picker
+            selectedValue={selectedIlceId}
+            onValueChange={setSelectedIlceId}
+            enabled={filteredIlceler.length > 0}
+            style={styles.picker}
+          >
+            <Picker.Item label="İlçe seçiniz" value={null} />
+            {filteredIlceler.map(ilce => (
+              <Picker.Item key={ilce.ilce_id} label={ilce.ilce_adi} value={ilce.ilce_id} />
+            ))}
+          </Picker>
+        </View>
 
-      <Input
-        placeholder="Sokak"
-        value={sokak}
-        onChangeText={setSokak}
-      />
-      <Input
-        placeholder="Apartman No"
-        value={apartmanNo}
-        onChangeText={setApartmanNo}
-      />
-      <Input
-        placeholder="Daire No"
-        value={daireNo}
-        onChangeText={setDaireNo}
-      />
+        <Text style={styles.label}>Mahalle</Text>
+        <View style={styles.pickerWrapper}>
+          <Picker
+            selectedValue={selectedMahalleId}
+            onValueChange={setSelectedMahalleId}
+            enabled={filteredMahalleler.length > 0}
+            style={styles.picker}
+          >
+            <Picker.Item label="Mahalle seçiniz" value={null} />
+            {filteredMahalleler.map(mahalle => (
+              <Picker.Item key={mahalle.mahalle_id} label={mahalle.mahalle_adi} value={mahalle.mahalle_id} />
+            ))}
+          </Picker>
+        </View>
 
-      {error ? <Text style={styles.error}>{error}</Text> : null}
+        <Input
+          variant="underline"
+          leftIcon="trail-sign-outline"
+          placeholder="Sokak"
+          value={sokak}
+          onChangeText={setSokak}
+        />
+        <Input
+          variant="underline"
+          leftIcon="business-outline"
+          placeholder="Apartman No"
+          value={apartmanNo}
+          onChangeText={setApartmanNo}
+        />
+        <Input
+          variant="underline"
+          leftIcon="home-outline"
+          placeholder="Daire No"
+          value={daireNo}
+          onChangeText={setDaireNo}
+        />
 
-      <GradientButton
-        title={loading ? 'Kayıt olunuyor...' : 'Kayıt Ol'}
-        icon="person-add-outline"
-        onPress={handleRegister}
-        loading={loading}
-        disabled={loading}
-        style={styles.button}
-      />
+        {error ? <Text style={styles.error}>{error}</Text> : null}
+
+        <OrnamentDivider />
+
+        <GradientButton
+          title={loading ? 'Kayıt olunuyor...' : 'Kayıt Ol'}
+          icon="person-add-outline"
+          variant="gold"
+          onPress={handleRegister}
+          loading={loading}
+          disabled={loading}
+          style={styles.button}
+        />
+      </ScrollView>
     </Screen>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    padding: spacing.xxl,
-    justifyContent: 'center',
+    paddingHorizontal: spacing.xxl,
+    paddingBottom: spacing.huge,
   },
-  title: {
-    ...typography.h1,
-    fontSize: 28,
-    color: colors.brownDark,
-    marginBottom: spacing.xxxl,
-    textAlign: 'center',
-    letterSpacing: 0.5,
+  sectionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    marginTop: spacing.lg,
+    marginBottom: spacing.md,
+  },
+  sectionLabel: {
+    ...typography.label,
   },
   pickerWrapper: {
-    backgroundColor: colors.white,
+    backgroundColor: colors.creamHi,
     borderWidth: 1.5,
     borderColor: colors.line,
     borderRadius: radii.md,
@@ -236,22 +268,19 @@ const styles = StyleSheet.create({
     color: colors.brownDark,
   },
   label: {
+    ...typography.bodyStrong,
     color: colors.brown,
-    fontWeight: 'bold',
     marginBottom: spacing.xs,
     marginLeft: 2,
-    fontSize: 15,
-    letterSpacing: 0.2,
   },
   button: {
-    marginTop: spacing.sm,
-    marginBottom: spacing.xxxl,
+    marginTop: spacing.xs,
   },
   error: {
+    ...typography.bodyStrong,
     color: colors.danger,
     textAlign: 'center',
-    marginBottom: spacing.sm,
-    fontWeight: 'bold',
+    marginTop: spacing.md,
   },
 });
 
