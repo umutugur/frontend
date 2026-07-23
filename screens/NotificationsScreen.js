@@ -1,7 +1,10 @@
 import React, { useContext } from 'react';
-import { View, Text, FlatList, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, FlatList, StyleSheet } from 'react-native';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import axios from 'axios';
 import { AuthContext } from '../context/AuthContext';
+import { Screen, Card, EmptyState } from '../components/ui';
+import { colors, spacing, radii, typography } from '../theme/tokens';
 
 export default function NotificationsScreen() {
   const { notifications, setNotifications } = useContext(AuthContext);
@@ -29,71 +32,95 @@ export default function NotificationsScreen() {
     });
 
     return (
-      <TouchableOpacity onPress={() => markAsRead(item._id)}>
-        <View
-          style={[
-            styles.notification,
-            !item.isRead && styles.unreadNotification,
-          ]}
-        >
-          <Text style={[styles.title, !item.isRead && styles.unreadTitle]}>
+      <Card
+        style={[styles.notification, !item.isRead && styles.unreadNotification]}
+        onPress={() => markAsRead(item._id)}
+      >
+        <View style={styles.titleRow}>
+          {!item.isRead && <View style={styles.unreadDot} />}
+          <MaterialCommunityIcons
+            name="bell-outline"
+            size={18}
+            color={colors.brown}
+            style={styles.bellIcon}
+          />
+          <Text
+            style={[styles.title, !item.isRead && styles.unreadTitle]}
+            numberOfLines={2}
+          >
             {item.title}
           </Text>
-          <Text style={styles.body}>{item.message}</Text>
-          <Text style={styles.date}>{formattedDate}</Text>
         </View>
-      </TouchableOpacity>
+        <Text style={styles.body}>{item.message}</Text>
+        <Text style={styles.date}>{formattedDate}</Text>
+      </Card>
     );
   };
 
   return (
-    <View style={styles.container}>
+    <Screen>
       <FlatList
         data={notifications}
         keyExtractor={(item) => item._id}
         renderItem={renderItem}
-        contentContainerStyle={{ paddingBottom: 20 }}
+        contentContainerStyle={styles.listContent}
+        showsVerticalScrollIndicator={false}
+        ListEmptyComponent={
+          <EmptyState
+            icon="bell-off-outline"
+            title="Bildirim yok"
+            message="Yeni bildirimleriniz burada görünecek."
+          />
+        }
       />
-    </View>
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fefefe',
-    padding: 16,
+  listContent: {
+    padding: spacing.lg,
+    paddingBottom: spacing.xl,
+    flexGrow: 1,
   },
   notification: {
-    backgroundColor: '#ffffff',
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
+    marginBottom: spacing.md,
   },
   unreadNotification: {
     backgroundColor: '#fff3e0',
   },
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  unreadDot: {
+    width: 8,
+    height: 8,
+    borderRadius: radii.pill,
+    backgroundColor: colors.danger,
+    marginRight: spacing.sm,
+  },
+  bellIcon: {
+    marginRight: spacing.xs,
+  },
   title: {
-    fontSize: 16,
-    color: '#4e342e',
+    ...typography.h3,
+    fontWeight: '500',
+    color: colors.brownDark,
+    flex: 1,
   },
   unreadTitle: {
-    fontWeight: 'bold',
+    fontWeight: '800',
   },
   body: {
-    fontSize: 14,
-    color: '#5d4037',
-    marginTop: 6,
+    ...typography.body,
+    color: colors.brown,
+    marginTop: spacing.sm,
   },
   date: {
-    fontSize: 12,
-    color: '#8d6e63',
-    marginTop: 8,
+    ...typography.label,
+    color: colors.muted,
+    marginTop: spacing.sm,
     textAlign: 'right',
   },
 });

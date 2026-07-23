@@ -1,12 +1,16 @@
 import React, { useEffect, useState, useContext } from 'react';
 import {
-  View, Text, FlatList, StyleSheet, TouchableOpacity, Image, ActivityIndicator, Alert
+  View, Text, FlatList, StyleSheet, Image, ActivityIndicator
 } from 'react-native';
 import axios from 'axios';
 import { AuthContext } from '../context/AuthContext';
+import { useAlert } from '../context/AlertContext';
+import { Screen, Card, Badge, EmptyState } from '../components/ui';
+import { colors, spacing, radii, typography } from '../theme/tokens';
 
 export default function MyBidsScreen({ navigation }) {
   const { user } = useContext(AuthContext);
+  const { showAlert } = useAlert();
   const [bids, setBids] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -22,7 +26,10 @@ export default function MyBidsScreen({ navigation }) {
       const res = await axios.get(`https://imame-backend.onrender.com/api/bids/user/${user._id}`);
       setBids(res.data || []);
     } catch (err) {
-      Alert.alert('Teklifler alınamadı:', err?.response?.data?.message || err.message);
+      showAlert({
+        title: 'Teklifler alınamadı',
+        message: err?.response?.data?.message || err.message,
+      });
     } finally {
       setLoading(false);
     }
@@ -37,111 +44,123 @@ export default function MyBidsScreen({ navigation }) {
     const showRed = item.statusText === 'Sizden sonra teklif verildi';
 
     return (
-      <TouchableOpacity
+      <Card
         style={styles.bidItem}
         onPress={() =>
           navigation.navigate('AuctionDetail', { auctionId: item.auction._id })
         }
       >
-        {auctionImage && (
-          <Image source={{ uri: auctionImage }} style={styles.auctionImage} />
-        )}
-        <View style={styles.rightContainer}>
-          <Text style={[styles.title, { marginTop: 6 }]}>
-            {item.auction.title}
-          </Text>
-          <Text style={[styles.amount, { marginTop: 6 }]}>
-            {showRed ? item.auctionCurrentPrice : item.amount} TL
-          </Text>
-          <Text
-            style={[
-              styles.status,
-              showRed
-                ? { color: '#d32f2f', fontWeight: 'bold' }
-                : { color: '#00796b' },
-            ]}
-          >
-            {item.statusText}
-          </Text>
-          {showRed && (
-            <Text style={styles.redWarning}>
-              Dikkat: Sizden sonra teklif verildi!
-            </Text>
+        <View style={styles.row}>
+          {auctionImage && (
+            <Image source={{ uri: auctionImage }} style={styles.auctionImage} />
           )}
+          <View style={styles.rightContainer}>
+            <Text style={styles.title} numberOfLines={2}>
+              {item.auction.title}
+            </Text>
+            <Text style={styles.amount}>
+              {showRed ? item.auctionCurrentPrice : item.amount} TL
+            </Text>
+            <View style={styles.badgeRow}>
+              <Badge
+                label={item.statusText}
+                tone={showRed ? 'rejected' : 'approved'}
+              />
+            </View>
+            {showRed && (
+              <Text style={styles.redWarning}>
+                Dikkat: Sizden sonra teklif verildi!
+              </Text>
+            )}
+          </View>
         </View>
-      </TouchableOpacity>
+      </Card>
     );
   };
 
   if (loading) {
     return (
-      <View style={styles.loading}>
-        <ActivityIndicator size="large" color="#6d4c41" />
-        <Text>Teklifler yükleniyor...</Text>
-      </View>
+      <Screen>
+        <View style={styles.loading}>
+          <ActivityIndicator size="large" color={colors.brown} />
+          <Text style={styles.loadingText}>Teklifler yükleniyor...</Text>
+        </View>
+      </Screen>
     );
   }
 
   if (bids.length === 0) {
     return (
-      <View style={styles.emptyContainer}>
-        <Text style={styles.emptyText}>Henüz teklif vermediniz.</Text>
-      </View>
+      <Screen>
+        <Text style={styles.header}>Tekliflerim</Text>
+        <EmptyState
+          icon="gavel"
+          title="Henüz teklif vermediniz"
+          message="Verdiğiniz teklifler burada görünecek."
+        />
+      </Screen>
     );
   }
 
   return (
-    <View style={styles.container}>
+    <Screen>
       <Text style={styles.header}>Tekliflerim</Text>
       <FlatList
         data={bids}
         keyExtractor={(item) => item._id}
         renderItem={renderItem}
+        contentContainerStyle={styles.listContent}
+        showsVerticalScrollIndicator={false}
       />
-    </View>
+    </Screen>
   );
 }
 
-// ...styles burada olacak, kısaltıyorum...
-
-
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fff8e1', padding: 16 },
   header: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    color: '#4e342e',
-    marginBottom: 10,
-    marginTop: 30,
+    ...typography.h2,
+    color: colors.brownDark,
+    marginBottom: spacing.md,
+    marginTop: spacing.md,
+    paddingHorizontal: spacing.lg,
+  },
+  listContent: {
+    paddingHorizontal: spacing.lg,
+    paddingBottom: spacing.xl,
   },
   bidItem: {
+    marginBottom: spacing.md,
+  },
+  row: {
     flexDirection: 'row',
-    backgroundColor: '#fff',
-    padding: 12,
-    marginBottom: 10,
-    borderRadius: 10,
-    elevation: 2,
     alignItems: 'center',
   },
   auctionImage: {
     width: 100,
     height: 70,
-    borderRadius: 8,
-    marginRight: 12,
+    borderRadius: radii.md,
+    marginRight: spacing.md,
+    backgroundColor: colors.line,
   },
   rightContainer: {
     flex: 1,
   },
-  title: { fontSize: 16, fontWeight: 'bold', color: '#3e2723' },
-  amount: { fontSize: 14, color: '#6d4c41' },
-  status: { fontSize: 14 },
+  title: { ...typography.h3, color: colors.brownDark },
+  amount: {
+    ...typography.body,
+    color: colors.brown,
+    marginTop: spacing.xs,
+    marginBottom: spacing.sm,
+  },
+  badgeRow: {
+    flexDirection: 'row',
+  },
   redWarning: {
-    color: '#d32f2f',
+    color: colors.danger,
     fontWeight: 'bold',
-    marginTop: 4,
+    marginTop: spacing.xs,
     fontSize: 13,
   },
   loading: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  emptyContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  emptyText: { fontSize: 16, color: '#999' },
+  loadingText: { color: colors.brown, marginTop: spacing.sm },
 });
