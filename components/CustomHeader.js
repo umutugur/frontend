@@ -24,6 +24,9 @@ export default function CustomHeader() {
       end={{ x: 1, y: 1 }}
       style={styles.container}
     >
+      {/* alt kenarda ince altın çizgi — heritage vurgu */}
+      <View style={styles.goldRule} pointerEvents="none" />
+
       <View style={styles.sideSpacer} />
 
       {/* Logo */}
@@ -63,6 +66,14 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 2,
   },
+  goldRule: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    height: 1.5,
+    backgroundColor: 'rgba(201,162,75,0.35)',
+  },
   logo: {
     width: 150,
     height: 45,
@@ -91,6 +102,6 @@ const styles = StyleSheet.create({
     ...typography.label,
     color: colors.white,
     fontSize: 10,
-    fontWeight: 'bold',
+    letterSpacing: 0,
   },
 });

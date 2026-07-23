@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import NetInfo from '@react-native-community/netinfo';
-import { colors, spacing, typography } from '../theme/tokens';
+import { colors, shadows, spacing, typography } from '../theme/tokens';
 
 export default function OfflineNotice() {
   const [isConnected, setIsConnected] = useState(true);
@@ -36,13 +36,16 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     zIndex: 9999,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(216,178,90,0.4)',
+    ...shadows.card,
   },
   icon: {
     marginRight: spacing.sm,
   },
   text: {
-    ...typography.body,
+    ...typography.bodyStrong,
     color: colors.white,
-    fontWeight: 'bold',
+    letterSpacing: 0.3,
   },
 });

@@ -35,6 +35,11 @@ export default function ReportSellerModal({ visible, onClose, sellerId, reporter
       <View style={styles.modalBackground}>
         <View style={styles.modalContent}>
           <Text style={styles.title}>Satıcıyı Şikayet Et</Text>
+          <View style={styles.orn}>
+            <View style={styles.ornLine} />
+            <View style={styles.ornDiamond} />
+            <View style={styles.ornLine} />
+          </View>
           <Input
             value={message}
             onChangeText={setMessage}
@@ -71,19 +76,34 @@ const styles = StyleSheet.create({
     padding: spacing.xl,
   },
   modalContent: {
-    backgroundColor: colors.white,
+    backgroundColor: colors.creamHi,
     borderRadius: radii.xl,
+    borderWidth: 1,
+    borderColor: colors.line,
     padding: spacing.xxl,
     width: '90%',
     maxWidth: 400,
     ...shadows.raised,
   },
   title: {
-    ...typography.h3,
-    fontSize: 18,
-    marginBottom: spacing.md,
+    ...typography.h2,
     color: colors.brownDark,
     textAlign: 'center',
+  },
+  orn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: spacing.sm,
+    marginBottom: spacing.lg,
+  },
+  ornLine: { width: 34, height: 1, backgroundColor: colors.lineStrong },
+  ornDiamond: {
+    width: 6,
+    height: 6,
+    backgroundColor: colors.gold,
+    transform: [{ rotate: '45deg' }],
+    marginHorizontal: spacing.sm,
   },
   input: {
     height: 80,

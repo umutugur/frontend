@@ -49,6 +49,11 @@ export default function RateSellerModal({ visible, onClose, sellerId, auctionId,
       <View style={styles.modalBackground}>
         <View style={styles.modalContent}>
           <Text style={styles.title}>Satıcıyı Puanla</Text>
+          <View style={styles.orn}>
+            <View style={styles.ornLine} />
+            <View style={styles.ornDiamond} />
+            <View style={styles.ornLine} />
+          </View>
 
           <View style={styles.starContainer}>
             {[1, 2, 3, 4, 5].map((value) => (
@@ -56,7 +61,7 @@ export default function RateSellerModal({ visible, onClose, sellerId, auctionId,
                 <FontAwesome
                   name={value <= score ? 'star' : 'star-o'}
                   size={32}
-                  color="#fbc02d"
+                  color={colors.goldLight}
                   style={{ marginHorizontal: 4 }}
                 />
               </TouchableOpacity>
@@ -80,6 +85,7 @@ export default function RateSellerModal({ visible, onClose, sellerId, auctionId,
             />
             <GradientButton
               title="Puanla"
+              variant="gold"
               onPress={submitRating}
               style={styles.button}
             />
@@ -99,19 +105,34 @@ const styles = StyleSheet.create({
     padding: spacing.xl,
   },
   modalContent: {
-    backgroundColor: colors.white,
+    backgroundColor: colors.creamHi,
     borderRadius: radii.xl,
+    borderWidth: 1,
+    borderColor: colors.line,
     padding: spacing.xxl,
     width: '90%',
     maxWidth: 400,
     ...shadows.raised,
   },
   title: {
-    ...typography.h3,
-    fontSize: 18,
-    marginBottom: spacing.md,
+    ...typography.h2,
     color: colors.brownDark,
     textAlign: 'center',
+  },
+  orn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: spacing.sm,
+    marginBottom: spacing.lg,
+  },
+  ornLine: { width: 34, height: 1, backgroundColor: colors.lineStrong },
+  ornDiamond: {
+    width: 6,
+    height: 6,
+    backgroundColor: colors.gold,
+    transform: [{ rotate: '45deg' }],
+    marginHorizontal: spacing.sm,
   },
   starContainer: {
     flexDirection: 'row',
