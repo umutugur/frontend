@@ -1,69 +1,78 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { Screen, Card, Input, GradientButton } from '../components/ui';
+import { useAlert } from '../context/AlertContext';
+import { colors, spacing, typography } from '../theme/tokens';
 
 export default function BanUserScreen() {
+  const { showAlert } = useAlert();
   const [email, setEmail] = useState('');
 
   const handleBan = () => {
     if (!email.trim()) {
-      Alert.alert('Hata', 'Lütfen bir email adresi girin.');
+      showAlert({ title: 'Hata', message: 'Lütfen bir email adresi girin.' });
       return;
     }
 
     // Burada backend’e gönderilecek (şu anda sadece simülasyon)
-    Alert.alert('Kullanıcı Engellendi', `${email} adresli kullanıcı sistemden engellendi.`);
+    showAlert({
+      title: 'Kullanıcı Engellendi',
+      message: `${email} adresli kullanıcı sistemden engellendi.`,
+    });
     setEmail('');
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Kullanıcı Engelle</Text>
-      <TextInput
-        placeholder="Kullanıcının e-posta adresi"
-        value={email}
-        onChangeText={setEmail}
-        style={styles.input}
-        keyboardType="email-address"
-        autoCapitalize="none"
-      />
-      <TouchableOpacity style={styles.button} onPress={handleBan}>
-        <Text style={styles.buttonText}>Engelle</Text>
-      </TouchableOpacity>
-    </View>
+    <Screen>
+      <View style={styles.container}>
+        <Card style={styles.card}>
+          <View style={styles.iconWrap}>
+            <Ionicons name="ban-outline" size={30} color={colors.danger} />
+          </View>
+          <Text style={styles.title}>Kullanıcı Engelle</Text>
+          <Input
+            placeholder="Kullanıcının e-posta adresi"
+            value={email}
+            onChangeText={setEmail}
+            keyboardType="email-address"
+            autoCapitalize="none"
+          />
+          <GradientButton
+            title="Engelle"
+            variant="danger"
+            icon="ban-outline"
+            onPress={handleBan}
+          />
+        </Card>
+      </View>
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff8e1',
-    padding: 20,
+    padding: spacing.xl,
     justifyContent: 'center',
   },
-  title: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    color: '#4e342e',
-    marginBottom: 20,
-    textAlign: 'center',
+  card: {
+    alignItems: 'stretch',
   },
-  input: {
-    backgroundColor: '#fff',
-    borderColor: '#ccc',
-    borderWidth: 1,
-    borderRadius: 10,
-    padding: 15,
-    marginBottom: 20,
-  },
-  button: {
-    backgroundColor: '#b71c1c',
-    padding: 15,
-    borderRadius: 10,
+  iconWrap: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: 'rgba(198,40,40,0.10)',
     alignItems: 'center',
+    justifyContent: 'center',
+    alignSelf: 'center',
+    marginBottom: spacing.md,
   },
-  buttonText: {
-    color: '#fff',
-    fontWeight: 'bold',
-    fontSize: 16,
+  title: {
+    ...typography.h2,
+    color: colors.brownDark,
+    marginBottom: spacing.lg,
+    textAlign: 'center',
   },
 });
