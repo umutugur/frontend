@@ -11,3 +11,5 @@ export { default as Skeleton } from './Skeleton';
 export { default as AuctionCard } from './AuctionCard';
 export { default as CountdownHero } from './CountdownHero';
 export { default as MenuTile } from './MenuTile';
+export { default as ScreenHeader } from './ScreenHeader';
+export { default as OrnamentDivider } from './OrnamentDivider';

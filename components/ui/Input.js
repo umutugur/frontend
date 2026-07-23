@@ -17,20 +17,22 @@ export default function Input({
   error,
   leftIcon,
   rightElement,
+  variant = 'box',
   style,
   onFocus,
   onBlur,
   ...rest
 }) {
   const [focused, setFocused] = useState(false);
+  const underline = variant === 'underline';
 
   return (
     <View style={styles.wrapper}>
       <View
         style={[
-          styles.field,
-          focused && styles.focused,
-          !!error && styles.errored,
+          underline ? styles.underline : styles.field,
+          focused && (underline ? styles.underlineFocused : styles.focused),
+          !!error && (underline ? styles.underlineErrored : styles.errored),
         ]}
       >
         {leftIcon ? (
@@ -78,6 +80,16 @@ const styles = StyleSheet.create({
   },
   focused: { borderColor: colors.gold, backgroundColor: colors.white },
   errored: { borderColor: colors.danger },
+  underline: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderBottomWidth: 1.6,
+    borderBottomColor: colors.line,
+    paddingVertical: spacing.md,
+    minHeight: 52,
+  },
+  underlineFocused: { borderBottomColor: colors.gold },
+  underlineErrored: { borderBottomColor: colors.danger },
   leftIcon: { marginRight: spacing.sm },
   right: { marginLeft: spacing.sm },
   input: {
