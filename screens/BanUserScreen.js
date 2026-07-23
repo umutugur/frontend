@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Screen, Card, Input, GradientButton } from '../components/ui';
+import { Screen, ScreenHeader, Card, Input, GradientButton } from '../components/ui';
 import { useAlert } from '../context/AlertContext';
 import { colors, spacing, typography } from '../theme/tokens';
 
@@ -25,13 +25,18 @@ export default function BanUserScreen() {
 
   return (
     <Screen>
+      <ScreenHeader title="Kullanıcı Banla" subtitle="Hesap askıya alma" />
       <View style={styles.container}>
         <Card style={styles.card}>
           <View style={styles.iconWrap}>
             <Ionicons name="ban-outline" size={30} color={colors.danger} />
           </View>
           <Text style={styles.title}>Kullanıcı Engelle</Text>
+          <Text style={styles.hint}>
+            Engellenecek kullanıcının e-posta adresini girin. Bu işlem hesabı geçici olarak askıya alır.
+          </Text>
           <Input
+            leftIcon="mail-outline"
             placeholder="Kullanıcının e-posta adresi"
             value={email}
             onChangeText={setEmail}
@@ -72,7 +77,13 @@ const styles = StyleSheet.create({
   title: {
     ...typography.h2,
     color: colors.brownDark,
-    marginBottom: spacing.lg,
+    marginBottom: spacing.sm,
     textAlign: 'center',
+  },
+  hint: {
+    ...typography.body,
+    color: colors.muted,
+    textAlign: 'center',
+    marginBottom: spacing.lg,
   },
 });

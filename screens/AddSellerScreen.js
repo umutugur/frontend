@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
-import { Screen, Input, GradientButton } from '../components/ui';
+import { Screen, ScreenHeader, Input, GradientButton, OrnamentDivider } from '../components/ui';
 import { useAlert } from '../context/AlertContext';
 import { colors, radii, spacing, typography } from '../theme/tokens';
 
@@ -128,26 +128,34 @@ export default function AddSellerScreen() {
 
   return (
     <Screen scroll contentContainerStyle={styles.container}>
-      <Text style={styles.title}>Yeni Satıcı Ekle</Text>
+      <ScreenHeader title="Yeni Satıcı Ekle" subtitle="Satıcı hesabı oluştur" />
+
+      <View style={styles.body}>
+      <Text style={styles.sectionLabel}>Firma Bilgileri</Text>
 
       {[
-        { label: 'Firma Adı', key: 'companyName' },
-        { label: 'Yetkili Adı Soyadı', key: 'name' },
-        { label: 'E-posta', key: 'email' },
-        { label: 'Şifre', key: 'password' },
-        { label: 'Telefon Numarası', key: 'phone' },
-        { label: 'IBAN', key: 'iban' },
-        { label: 'IBAN Sahibi', key: 'ibanName' },
-        { label: 'Banka Adı', key: 'bankName' },
-      ].map(({ label, key }) => (
+        { label: 'Firma Adı', key: 'companyName', icon: 'business-outline' },
+        { label: 'Yetkili Adı Soyadı', key: 'name', icon: 'person-outline' },
+        { label: 'E-posta', key: 'email', icon: 'mail-outline' },
+        { label: 'Şifre', key: 'password', icon: 'lock-closed-outline' },
+        { label: 'Telefon Numarası', key: 'phone', icon: 'call-outline' },
+        { label: 'IBAN', key: 'iban', icon: 'card-outline' },
+        { label: 'IBAN Sahibi', key: 'ibanName', icon: 'person-circle-outline' },
+        { label: 'Banka Adı', key: 'bankName', icon: 'wallet-outline' },
+      ].map(({ label, key, icon }) => (
         <Input
           key={key}
+          variant="underline"
+          leftIcon={icon}
           placeholder={label}
           value={seller[key]}
           onChangeText={(text) => handleChange(key, text)}
           secureTextEntry={key === 'password'}
         />
       ))}
+
+      <OrnamentDivider />
+      <Text style={styles.sectionLabel}>Adres Bilgileri</Text>
 
       <Text style={styles.addressLabel}>İl</Text>
       <View style={styles.pickerWrap}>
@@ -193,34 +201,40 @@ export default function AddSellerScreen() {
         </Picker>
       </View>
 
-      <Input placeholder="Sokak" value={sokak} onChangeText={setSokak} />
-      <Input placeholder="Apartman No" value={apartmanNo} onChangeText={setApartmanNo} />
-      <Input placeholder="Daire No" value={daireNo} onChangeText={setDaireNo} />
+      <Input variant="underline" leftIcon="navigate-outline" placeholder="Sokak" value={sokak} onChangeText={setSokak} />
+      <Input variant="underline" leftIcon="home-outline" placeholder="Apartman No" value={apartmanNo} onChangeText={setApartmanNo} />
+      <Input variant="underline" leftIcon="keypad-outline" placeholder="Daire No" value={daireNo} onChangeText={setDaireNo} />
 
       <GradientButton
         title="Satıcıyı Kaydet"
+        variant="gold"
         icon="checkmark-circle-outline"
         onPress={handleSubmit}
         style={styles.button}
       />
+      </View>
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    padding: spacing.xl,
+    paddingBottom: spacing.xxxl,
   },
-  title: {
-    ...typography.h1,
-    color: colors.brownDark,
-    marginBottom: spacing.xl,
-    alignSelf: 'center',
+  body: {
+    paddingHorizontal: spacing.xl,
+    paddingTop: spacing.md,
+  },
+  sectionLabel: {
+    ...typography.label,
+    color: colors.gold,
+    marginBottom: spacing.lg,
   },
   addressLabel: {
     ...typography.h3,
     color: colors.brownDark,
     marginBottom: spacing.sm,
+    marginTop: spacing.xs,
   },
   pickerWrap: {
     backgroundColor: colors.white,

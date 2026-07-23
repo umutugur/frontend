@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import CheckBox from '@react-native-community/checkbox';
 import axios from 'axios';
-import { Screen, Input, GradientButton } from '../components/ui';
+import { Screen, ScreenHeader, Input, GradientButton } from '../components/ui';
 import { useAlert } from '../context/AlertContext';
 import { colors, spacing, typography } from '../theme/tokens';
 
@@ -58,27 +58,36 @@ export default function SendNotificationScreen() {
 
   return (
     <Screen scroll contentContainerStyle={styles.container}>
-      <Text style={styles.title}>Bildirim Gönder</Text>
+      <ScreenHeader title="Bildirim Gönder" subtitle="Toplu push bildirimi" />
 
+      <View style={styles.body}>
       <Input
+        variant="underline"
+        leftIcon="text-outline"
         placeholder="Başlık"
         value={title}
         onChangeText={setTitle}
       />
 
       <Input
+        variant="underline"
+        leftIcon="chatbox-ellipses-outline"
         placeholder="Mesaj"
         value={message}
         onChangeText={setMessage}
       />
 
       <Input
+        variant="underline"
+        leftIcon="mail-outline"
         placeholder="Tek bir kullanıcıya göndermek için e-posta"
         value={email}
         onChangeText={setEmail}
         autoCapitalize="none"
         keyboardType="email-address"
       />
+
+      <Text style={styles.groupLabel}>Alıcı Grupları</Text>
 
       <View style={styles.checkboxRow}>
         <CheckBox value={toAllBuyers} onValueChange={setToAllBuyers} />
@@ -97,12 +106,14 @@ export default function SendNotificationScreen() {
 
       <GradientButton
         title="Gönder"
+        variant="gold"
         icon="send-outline"
         onPress={handleSend}
         loading={busy}
         disabled={busy}
         style={styles.button}
       />
+      </View>
     </Screen>
   );
 }
@@ -110,12 +121,17 @@ export default function SendNotificationScreen() {
 // stiller
 const styles = StyleSheet.create({
   container: {
-    padding: spacing.xl,
+    paddingBottom: spacing.xxxl,
   },
-  title: {
-    ...typography.h1,
-    color: colors.brownDark,
-    marginBottom: spacing.xl,
+  body: {
+    paddingHorizontal: spacing.xl,
+    paddingTop: spacing.md,
+  },
+  groupLabel: {
+    ...typography.label,
+    color: colors.gold,
+    marginTop: spacing.lg,
+    marginBottom: spacing.md,
   },
   checkboxRow: {
     flexDirection: 'row',
