@@ -5,19 +5,22 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  ScrollView,
   ActivityIndicator,
-  Alert,
   Platform,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { AuthContext } from '../context/AuthContext';
+import { useAlert } from '../context/AlertContext';
 import axios from 'axios';
 import RateSellerModal from '../components/RateSellerModal';
 import ReportSellerModal from '../components/ReportSellerModal';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import * as AppleAuthentication from 'expo-apple-authentication';
+
+import { Screen, Card, GradientButton } from '../components/ui';
+import { colors, gradients, radii, shadows, spacing, typography } from '../theme/tokens';
 
 const API = 'https://imame-backend.onrender.com';
 
@@ -40,14 +43,18 @@ function RowButton({
   if (variant === 'danger') base.push(styles.rowDanger);
 
   const iconColor =
-    variant === 'solid' ? '#fff' : variant === 'danger' ? '#c62828' : '#6d4c41';
+    variant === 'solid' ? colors.brown : variant === 'danger' ? colors.danger : colors.brown;
   const textColor =
-    variant === 'solid' ? '#fff' : variant === 'danger' ? '#c62828' : '#4e342e';
+    variant === 'solid' ? colors.brownDark : variant === 'danger' ? colors.danger : colors.brownDark;
 
   return (
-    <TouchableOpacity onPress={onPress} disabled={disabled} style={base}>
+    <TouchableOpacity onPress={onPress} disabled={disabled} style={base} activeOpacity={0.85}>
       <View style={styles.rowLeft}>
-        {!!icon && <Ionicons name={icon} size={20} color={iconColor} style={{ marginRight: 10 }} />}
+        {!!icon && (
+          <View style={[styles.rowIconWrap, variant === 'danger' && styles.rowIconWrapDanger]}>
+            <Ionicons name={icon} size={18} color={iconColor} />
+          </View>
+        )}
         <View>
           <Text style={[styles.rowTitle, { color: textColor }]}>{title}</Text>
           {subtitle ? <Text style={styles.rowSubtitle}>{subtitle}</Text> : null}
@@ -57,7 +64,7 @@ function RowButton({
         <Ionicons
           name="chevron-forward"
           size={18}
-          color={variant === 'solid' ? '#fff' : '#8d6e63'}
+          color={variant === 'danger' ? colors.danger : colors.muted}
         />
       )}
     </TouchableOpacity>
@@ -76,6 +83,7 @@ function InfoLine({ label, value }) {
 
 export default function ProfileScreen() {
   const navigation = useNavigation();
+  const { showAlert } = useAlert();
 
   // Kök stack'teki LoginModal'ı aç
   const openLogin = () => {
@@ -134,7 +142,7 @@ export default function ProfileScreen() {
           if (mounted) setProfile(res.data);
         }
       } catch {
-        Alert.alert('Hata', 'Kullanıcı profili alınamadı.');
+        showAlert({ title: 'Hata', message: 'Kullanıcı profili alınamadı.' });
       } finally {
         if (mounted) setLoading(false);
       }
@@ -183,21 +191,21 @@ export default function ProfileScreen() {
       await AsyncStorage.setItem('user', JSON.stringify(newMe));
       setIsFavorite(status === 'added');
     } catch {
-      Alert.alert('Hata', 'Favori işlemi başarısız.');
+      showAlert({ title: 'Hata', message: 'Favori işlemi başarısız.' });
     } finally {
       setFavBusy(false);
     }
   };
 
   const confirmDelete = () =>
-    Alert.alert(
-      'Hesabı Sil',
-      'Hesabınızı ve verilerinizi kalıcı olarak sileceğiz. Bu işlem geri alınamaz.',
-      [
+    showAlert({
+      title: 'Hesabı Sil',
+      message: 'Hesabınızı ve verilerinizi kalıcı olarak sileceğiz. Bu işlem geri alınamaz.',
+      buttons: [
         { text: 'Vazgeç', style: 'cancel' },
         { text: 'Evet, Sil', style: 'destructive', onPress: async () => { await deleteMyAccount().catch(() => {}); } },
-      ]
-    );
+      ],
+    });
 
   const headerTitle = useMemo(
     () => (isOwnProfile ? 'Profilim' : profile?.companyName || 'Profil'),
@@ -206,18 +214,47 @@ export default function ProfileScreen() {
 
   if (loading || !profile) {
     return (
-      <View style={[styles.full, { justifyContent: 'center', alignItems: 'center' }]}>
-        <ActivityIndicator size="large" color="#6d4c41" />
-        <Text style={{ marginTop: 8, color: '#6d4c41' }}>Profil yükleniyor…</Text>
-      </View>
+      <Screen>
+        <View style={styles.loadingWrap}>
+          <ActivityIndicator size="large" color={colors.brown} />
+          <Text style={styles.loadingText}>Profil yükleniyor…</Text>
+        </View>
+      </Screen>
     );
   }
 
+  const roleLabel =
+    profile?.role === 'seller'
+      ? 'Satıcı'
+      : profile?.role === 'admin'
+      ? 'Yönetici'
+      : profile?.role === 'buyer'
+      ? 'Alıcı'
+      : 'Misafir';
+  const avatarLetter =
+    (profile?.companyName || profile?.name || 'İ')?.[0]?.toUpperCase() || 'İ';
+
   return (
-    <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
+    <Screen scroll contentContainerStyle={styles.scroll}>
+      {/* Gradient profil başlığı */}
+      <LinearGradient
+        colors={gradients.goldToBrown}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.header}
+      >
+        <View style={styles.avatar}>
+          <Text style={styles.avatarText}>{avatarLetter}</Text>
+        </View>
+        <Text style={styles.headerTitle}>{headerTitle}</Text>
+        {isLoggedIn ? (
+          <View style={styles.rolePill}>
+            <Text style={styles.rolePillText}>{roleLabel}</Text>
+          </View>
+        ) : null}
+      </LinearGradient>
+
       <View style={styles.container}>
-        {/* Başlık */}
-        <Text style={styles.title}>{headerTitle}</Text>
         {!isLoggedIn && isOwnProfile && (
           <Text style={styles.subtitle}>
             Misafir olarak geziniyorsunuz. Teklif vermek, favori eklemek gibi özellikler için giriş yapın.
@@ -225,11 +262,11 @@ export default function ProfileScreen() {
         )}
 
         {/* Profil bilgileri */}
-        <View style={styles.card}>
+        <Card style={styles.infoCard}>
           <InfoLine label="Ad Soyad" value={profile?.name} />
           <InfoLine label="E-posta" value={profile?.email} />
           <InfoLine label="Telefon" value={profile?.phone} />
-        </View>
+        </Card>
 
         {/* Alıcı */}
         {isOwnProfile && isLoggedIn && profile?.role === 'buyer' && (
@@ -264,8 +301,9 @@ export default function ProfileScreen() {
           <>
             <SectionTitle>Satıcı Bilgisi</SectionTitle>
             <View style={styles.ratingBox}>
+              <Ionicons name="star" size={16} color={colors.brown} style={{ marginRight: 6 }} />
               <Text style={styles.ratingText}>
-                {avgRating === null ? 'Puanlanmamış' : `Puan: ${avgRating.toFixed(1)} / 5`}
+                {avgRating === null ? 'Puanlanmamış' : `${avgRating.toFixed(1)} / 5`}
               </Text>
               {totalRatings > 0 && <Text style={styles.ratingCount}>({totalRatings})</Text>}
             </View>
@@ -296,10 +334,10 @@ export default function ProfileScreen() {
         {isOwnProfile && !isLoggedIn && (
           <>
             <SectionTitle>Giriş</SectionTitle>
-            <RowButton title="Giriş / Kayıt Yap" icon="log-in-outline" variant="outline" onPress={logout}/>
-            <RowButton title="Google ile Giriş Yap" icon="logo-google" variant="outline" onPress={() => promptGoogle && promptGoogle()} />
+            <GradientButton title="Giriş / Kayıt Yap" icon="log-in-outline" onPress={logout} style={styles.ctaButton} />
+            <GradientButton title="Google ile Giriş Yap" icon="logo-google" variant="secondary" onPress={() => promptGoogle && promptGoogle()} style={styles.ctaButton} />
             {appleAvail && (
-              <RowButton title="Apple ile Giriş Yap" icon="logo-apple" variant="outline" onPress={() => loginWithApple && loginWithApple()} />
+              <GradientButton title="Apple ile Giriş Yap" icon="logo-apple" variant="secondary" onPress={() => loginWithApple && loginWithApple()} style={styles.ctaButton} />
             )}
           </>
         )}
@@ -308,13 +346,13 @@ export default function ProfileScreen() {
         {isOwnProfile && isLoggedIn && (
           <>
             <SectionTitle>Hesap</SectionTitle>
-            <RowButton title="Çıkış Yap" icon="exit-outline" variant="outline" onPress={logout} />
+            <GradientButton title="Çıkış Yap" icon="exit-outline" variant="secondary" onPress={logout} style={styles.ctaButton} />
             <View style={styles.dangerCard}>
               <Text style={styles.dangerTitle}>Hesabımı Sil</Text>
               <Text style={styles.dangerDesc}>
                 Bu işlem geri alınamaz ve tüm verileriniz kalıcı olarak silinir.
               </Text>
-              <RowButton title="Hesabımı Sil" icon="trash-outline" variant="danger" onPress={confirmDelete} rightChevron={false} />
+              <GradientButton title="Hesabımı Sil" icon="trash-outline" variant="danger" onPress={confirmDelete} style={styles.ctaButton} />
             </View>
           </>
         )}
@@ -323,116 +361,165 @@ export default function ProfileScreen() {
       {/* Modallar */}
       <RateSellerModal visible={showRate} onClose={() => setShowRate(false)} sellerId={profile?._id} buyerId={me?._id} />
       <ReportSellerModal visible={showReport} onClose={() => setShowReport(false)} sellerId={profile?._id} reporterId={me?._id} />
-    </ScrollView>
+    </Screen>
   );
 }
 
 /* ---------- Stiller ---------- */
 const styles = StyleSheet.create({
-  full: { flex: 1, backgroundColor: '#fff8e1' },
   scroll: {
     flexGrow: 1,
-    backgroundColor: '#fff8e1',
-    paddingVertical: 16,
+    paddingBottom: spacing.xxxl,
+  },
+  loadingWrap: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    ...typography.body,
+    marginTop: spacing.sm,
+    color: colors.brown,
+  },
+  header: {
+    alignItems: 'center',
+    paddingTop: spacing.xl,
+    paddingBottom: spacing.xxl,
+    paddingHorizontal: spacing.lg,
+    borderBottomLeftRadius: radii.xl,
+    borderBottomRightRadius: radii.xl,
+    ...shadows.raised,
+  },
+  avatar: {
+    width: 84,
+    height: 84,
+    borderRadius: 42,
+    backgroundColor: 'rgba(255,255,255,0.18)',
+    borderWidth: 2,
+    borderColor: 'rgba(255,255,255,0.5)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: spacing.md,
+  },
+  avatarText: {
+    fontSize: 36,
+    fontWeight: '800',
+    color: colors.white,
+  },
+  headerTitle: {
+    ...typography.h1,
+    color: colors.white,
+    textAlign: 'center',
+  },
+  rolePill: {
+    marginTop: spacing.sm,
+    backgroundColor: 'rgba(255,255,255,0.18)',
+    paddingVertical: spacing.xs,
+    paddingHorizontal: spacing.md,
+    borderRadius: radii.pill,
+  },
+  rolePillText: {
+    ...typography.label,
+    color: colors.cream,
+    fontWeight: '700',
+    textTransform: 'uppercase',
   },
   container: {
     width: '100%',
     maxWidth: 720,
     alignSelf: 'center',
-    paddingHorizontal: 16,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: '700',
-    color: '#4e342e',
-    marginBottom: 8,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.lg,
   },
   subtitle: {
-    color: '#8d6e63',
-    marginBottom: 12,
+    color: colors.muted,
+    marginBottom: spacing.md,
+    ...typography.body,
   },
-
-  card: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 14,
-    marginBottom: 16,
-    shadowColor: '#000',
-    shadowOpacity: 0.08,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 6,
-    elevation: 2,
+  infoCard: {
+    marginBottom: spacing.lg,
   },
   infoLine: {
-    marginBottom: 10,
+    marginBottom: spacing.sm,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0e6d6',
-    paddingBottom: 8,
+    borderBottomColor: colors.line,
+    paddingBottom: spacing.sm,
   },
-  infoLabel: { fontSize: 13, fontWeight: '600', color: '#6d4c41' },
-  infoValue: { fontSize: 16, color: '#3e2723', marginTop: 2 },
+  infoLabel: { ...typography.label, fontWeight: '600', color: colors.brown },
+  infoValue: { fontSize: 16, color: colors.brownDark, marginTop: 2 },
 
   sectionTitle: {
-    fontSize: 12,
-    letterSpacing: 0.6,
+    ...typography.label,
     fontWeight: '700',
-    color: '#8d6e63',
-    marginTop: 8,
-    marginBottom: 8,
+    color: colors.muted,
+    marginTop: spacing.sm,
+    marginBottom: spacing.sm,
     textTransform: 'uppercase',
   },
 
   row: {
-    height: 48,
-    borderRadius: 12,
-    backgroundColor: '#6d4c41',
-    paddingHorizontal: 14,
-    marginBottom: 10,
+    minHeight: 52,
+    borderRadius: radii.md,
+    backgroundColor: colors.white,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    marginBottom: spacing.sm,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    shadowColor: '#000',
-    shadowOpacity: 0.06,
-    shadowOffset: { width: 0, height: 1 },
-    shadowRadius: 3,
-    elevation: 1,
+    ...shadows.soft,
   },
   rowOutline: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.white,
     borderWidth: 1,
-    borderColor: '#b5a16b',
+    borderColor: colors.line,
   },
   rowDanger: {
-    backgroundColor: '#ffebee',
+    backgroundColor: '#fff',
     borderWidth: 1,
-    borderColor: '#ef9a9a',
+    borderColor: 'rgba(198,40,40,0.25)',
   },
-  rowLeft: { flexDirection: 'row', alignItems: 'center' },
-  rowTitle: { fontSize: 16, fontWeight: '600' },
-  rowSubtitle: { fontSize: 12, color: '#8d6e63', marginTop: 2 },
+  rowLeft: { flexDirection: 'row', alignItems: 'center', flex: 1 },
+  rowIconWrap: {
+    width: 34,
+    height: 34,
+    borderRadius: radii.sm,
+    backgroundColor: 'rgba(78,52,46,0.08)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: spacing.md,
+  },
+  rowIconWrapDanger: {
+    backgroundColor: 'rgba(198,40,40,0.10)',
+  },
+  rowTitle: { fontSize: 15, fontWeight: '600' },
+  rowSubtitle: { ...typography.label, color: colors.muted, marginTop: 2 },
 
   ratingBox: {
     flexDirection: 'row',
     alignItems: 'center',
     alignSelf: 'flex-start',
-    backgroundColor: '#f5eee6',
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    marginBottom: 10,
+    backgroundColor: colors.surface,
+    borderRadius: radii.md,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    marginBottom: spacing.sm,
   },
-  ratingText: { color: '#6d4c41', fontWeight: '700' },
-  ratingCount: { marginLeft: 6, color: '#8d6e63', fontWeight: '600' },
+  ratingText: { color: colors.brown, fontWeight: '700' },
+  ratingCount: { marginLeft: 6, color: colors.muted, fontWeight: '600' },
 
-  dangerCard: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 14,
-    marginTop: 8,
-    marginBottom: 24,
-    borderWidth: 1,
-    borderColor: '#fde0e0',
+  ctaButton: {
+    marginBottom: spacing.md,
   },
-  dangerTitle: { color: '#c62828', fontWeight: '700', marginBottom: 6 },
-  dangerDesc: { color: '#8d6e63', fontSize: 12, marginBottom: 10 },
+  dangerCard: {
+    backgroundColor: colors.white,
+    borderRadius: radii.lg,
+    padding: spacing.lg,
+    marginTop: spacing.sm,
+    marginBottom: spacing.xxl,
+    borderWidth: 1,
+    borderColor: 'rgba(198,40,40,0.2)',
+  },
+  dangerTitle: { ...typography.h3, color: colors.danger, marginBottom: spacing.xs },
+  dangerDesc: { color: colors.muted, ...typography.label, marginBottom: spacing.md },
 });
