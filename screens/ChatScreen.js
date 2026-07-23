@@ -2,16 +2,17 @@ import React, { useState, useEffect, useContext } from 'react';
 import {
   View,
   Text,
-  TextInput,
-  TouchableOpacity,
   FlatList,
   StyleSheet,
   ActivityIndicator,
-  KeyboardAvoidingView,
-  Platform,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
 import { AuthContext } from '../context/AuthContext';
 import * as Notifications from 'expo-notifications';
+
+import { Screen, Input, PressableScale } from '../components/ui';
+import { colors, gradients, radii, shadows, spacing, typography } from '../theme/tokens';
 
 export default function ChatScreen({ route, navigation }) {
   const { chatId, otherUserName } = route.params;
@@ -81,100 +82,153 @@ export default function ChatScreen({ route, navigation }) {
     }
   };
 
-  const renderItem = ({ item }) => (
-    <View
-      style={[
-        styles.message,
-        item.sender === user._id ? styles.myMessage : styles.theirMessage,
-      ]}
-    >
-      <Text style={styles.messageText}>{item.text}</Text>
-    </View>
-  );
+  const renderItem = ({ item }) => {
+    const mine = item.sender === user._id;
+    if (mine) {
+      return (
+        <View style={styles.myRow}>
+          <LinearGradient
+            colors={gradients.goldToBrown}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={[styles.bubble, styles.myBubble]}
+          >
+            <Text style={styles.myText}>{item.text}</Text>
+          </LinearGradient>
+        </View>
+      );
+    }
+    return (
+      <View style={styles.theirRow}>
+        <View style={[styles.bubble, styles.theirBubble]}>
+          <Text style={styles.theirText}>{item.text}</Text>
+        </View>
+      </View>
+    );
+  };
 
   if (loading) {
     return (
-      <View style={styles.center}>
-        <ActivityIndicator size="large" color="#6d4c41" />
-      </View>
+      <Screen>
+        <View style={styles.center}>
+          <ActivityIndicator size="large" color={colors.brown} />
+        </View>
+      </Screen>
     );
   }
 
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      keyboardVerticalOffset={90}
-    >
+    <Screen keyboardOffset={90} contentContainerStyle={styles.container}>
       <FlatList
         data={messages}
         renderItem={renderItem}
         keyExtractor={(item) => item._id}
         style={styles.chatArea}
+        contentContainerStyle={styles.chatContent}
         inverted
+        showsVerticalScrollIndicator={false}
       />
 
       <View style={styles.inputArea}>
-        <TextInput
-          style={styles.input}
-          placeholder="Mesaj yaz..."
-          placeholderTextColor="#999"
-          value={input}
-          onChangeText={setInput}
-        />
-        <TouchableOpacity style={styles.sendButton} onPress={handleSend}>
-          <Text style={styles.sendButtonText}>Gönder</Text>
-        </TouchableOpacity>
+        <View style={styles.inputWrap}>
+          <Input
+            placeholder="Mesaj yaz..."
+            value={input}
+            onChangeText={setInput}
+            style={styles.input}
+          />
+        </View>
+        <PressableScale onPress={handleSend} style={styles.sendButton}>
+          <LinearGradient
+            colors={gradients.goldToBrown}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.sendGradient}
+          >
+            <Ionicons name="send" size={20} color={colors.white} />
+          </LinearGradient>
+        </PressableScale>
       </View>
-    </KeyboardAvoidingView>
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fff' },
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  chatArea: { flex: 1, padding: 10 },
-  message: {
-    maxWidth: '75%',
-    padding: 10,
-    marginVertical: 5,
-    borderRadius: 10,
+  container: {
+    backgroundColor: colors.cream,
   },
-  myMessage: {
-    backgroundColor: '#dcedc8',
-    alignSelf: 'flex-end',
+  center: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  theirMessage: {
-    backgroundColor: '#ffe0b2',
-    alignSelf: 'flex-start',
+  chatArea: {
+    flex: 1,
   },
-  messageText: {
-    fontSize: 16,
+  chatContent: {
+    padding: spacing.md,
+  },
+  myRow: {
+    alignItems: 'flex-end',
+    marginVertical: spacing.xs,
+  },
+  theirRow: {
+    alignItems: 'flex-start',
+    marginVertical: spacing.xs,
+  },
+  bubble: {
+    maxWidth: '78%',
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    ...shadows.soft,
+  },
+  myBubble: {
+    borderRadius: radii.lg,
+    borderBottomRightRadius: radii.xs || 4,
+  },
+  theirBubble: {
+    backgroundColor: colors.white,
+    borderRadius: radii.lg,
+    borderBottomLeftRadius: 4,
+  },
+  myText: {
+    ...typography.body,
+    fontSize: 15,
+    color: colors.white,
+  },
+  theirText: {
+    ...typography.body,
+    fontSize: 15,
+    color: colors.brownDark,
   },
   inputArea: {
     flexDirection: 'row',
-    padding: 10,
-    borderTopWidth: 1,
-    borderColor: '#ccc',
     alignItems: 'center',
+    paddingHorizontal: spacing.md,
+    paddingTop: spacing.sm,
+    paddingBottom: spacing.sm,
+    borderTopWidth: 1,
+    borderTopColor: colors.line,
+    backgroundColor: colors.cream,
+  },
+  inputWrap: {
+    flex: 1,
+    marginRight: spacing.sm,
   },
   input: {
-    flex: 1,
-    backgroundColor: '#f5f5f5',
-    borderRadius: 20,
-    paddingHorizontal: 15,
-    height: 40,
-    marginRight: 10,
-    color: '#000',
+    marginBottom: 0,
+    borderRadius: radii.pill,
   },
   sendButton: {
-    backgroundColor: '#6d4c41',
-    paddingHorizontal: 15,
-    paddingVertical: 10,
-    borderRadius: 20,
+    borderRadius: radii.pill,
+    overflow: 'hidden',
+    ...shadows.card,
   },
-  sendButtonText: {
-    color: '#fff',
-    fontWeight: 'bold',
+  sendGradient: {
+    width: 48,
+    height: 48,
+    borderRadius: radii.pill,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });
