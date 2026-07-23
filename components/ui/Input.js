@@ -4,10 +4,8 @@ import { View, Text, TextInput, StyleSheet } from 'react-native';
 import { colors, radii, spacing, typography } from '../../theme/tokens';
 
 /**
- * Input — tema uyumlu metin girişi (odak durumu, hata metni).
- * Props: { value, onChangeText, placeholder, error, ...rest }
- *   ...rest → altta yatan TextInput'e olduğu gibi geçirilir
- *            (secureTextEntry, keyboardType, multiline, autoCapitalize vb.).
+ * Input — tema uyumlu metin girişi (odak halkası, hata metni).
+ * Props: { value, onChangeText, placeholder, error, ...rest → TextInput }
  */
 export default function Input({
   value,
@@ -50,29 +48,25 @@ export default function Input({
 }
 
 const styles = StyleSheet.create({
-  wrapper: {
-    width: '100%',
-    marginBottom: spacing.md,
-  },
+  wrapper: { width: '100%', marginBottom: spacing.md },
   input: {
     ...typography.body,
     color: colors.brownDark,
-    backgroundColor: colors.white,
+    backgroundColor: colors.creamHi,
     borderWidth: 1.5,
     borderColor: colors.line,
     borderRadius: radii.md,
-    paddingVertical: spacing.md,
+    paddingVertical: spacing.md + 2,
     paddingHorizontal: spacing.lg,
-    minHeight: 48,
+    minHeight: 52,
   },
   focused: {
-    borderColor: colors.brown,
+    borderColor: colors.gold,
+    backgroundColor: colors.white,
   },
-  errored: {
-    borderColor: colors.danger,
-  },
+  errored: { borderColor: colors.danger },
   error: {
-    ...typography.label,
+    ...typography.small,
     color: colors.danger,
     marginTop: spacing.xs,
     marginLeft: spacing.xs,

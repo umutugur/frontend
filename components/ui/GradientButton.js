@@ -4,18 +4,16 @@ import { Text, StyleSheet, ActivityIndicator, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import PressableScale from './PressableScale';
-import { colors, gradients, radii, spacing, typography } from '../../theme/tokens';
+import { colors, gradients, radii, spacing, typography, shadows } from '../../theme/tokens';
 
 /**
- * GradientButton — gradient dolgulu, press-scale animasyonlu, loading destekli buton.
- * Props: { title, onPress, loading, disabled, variant='primary', icon, style }
- *   variant: 'primary' (goldToBrown) | 'secondary' (heroDark) | 'danger' (düz danger)
- *   icon: Ionicons adı (string) — opsiyonel, başlığın soluna yerleşir.
+ * GradientButton — gradient dolgulu, üst sheen'li, gölgeli buton.
+ * Props: { title, onPress, loading, disabled, variant='primary'|'secondary'|'danger', icon, style }
  */
-const VARIANT_GRADIENTS = {
-  primary: gradients.goldToBrown,
-  secondary: gradients.heroDark,
-  danger: [colors.danger, '#8e1c1c'],
+const VARIANTS = {
+  primary: { grad: gradients.goldToBrown, shadow: shadows.gold },
+  secondary: { grad: gradients.heroDark, shadow: shadows.card },
+  danger: { grad: ['#d0503f', '#a5271a'], shadow: shadows.card },
 };
 
 export default function GradientButton({
@@ -27,32 +25,28 @@ export default function GradientButton({
   icon,
   style,
 }) {
-  const isDisabled = disabled || loading;
-  const gradientColors = VARIANT_GRADIENTS[variant] || VARIANT_GRADIENTS.primary;
+  const v = VARIANTS[variant] || VARIANTS.primary;
+  const isOff = disabled || loading;
 
   return (
     <PressableScale
       onPress={onPress}
-      disabled={isDisabled}
-      style={[styles.wrapper, isDisabled && styles.disabled, style]}
+      disabled={isOff}
+      style={[!isOff && v.shadow, style]}
     >
       <LinearGradient
-        colors={gradientColors}
+        colors={isOff ? [colors.muted, colors.brown] : v.grad}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={styles.gradient}
       >
+        <LinearGradient colors={gradients.sheen} style={styles.sheen} pointerEvents="none" />
         {loading ? (
           <ActivityIndicator color={colors.white} />
         ) : (
           <View style={styles.content}>
             {icon ? (
-              <Ionicons
-                name={icon}
-                size={18}
-                color={colors.white}
-                style={styles.icon}
-              />
+              <Ionicons name={icon} size={18} color={colors.white} style={styles.icon} />
             ) : null}
             <Text style={styles.title} numberOfLines={1}>
               {title}
@@ -65,30 +59,17 @@ export default function GradientButton({
 }
 
 const styles = StyleSheet.create({
-  wrapper: {
-    borderRadius: radii.pill,
-    overflow: 'hidden',
-  },
-  disabled: {
-    opacity: 0.6,
-  },
   gradient: {
-    minHeight: 50,
+    minHeight: 54,
+    borderRadius: radii.pill,
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.xl,
     alignItems: 'center',
     justifyContent: 'center',
+    overflow: 'hidden',
   },
-  content: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  icon: {
-    marginRight: spacing.sm,
-  },
-  title: {
-    ...typography.h3,
-    color: colors.white,
-  },
+  sheen: { position: 'absolute', top: 0, left: 0, right: 0, height: '55%' },
+  content: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
+  icon: { marginRight: spacing.sm },
+  title: { ...typography.button },
 });

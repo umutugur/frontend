@@ -12,6 +12,20 @@ import { AlertProvider } from './context/AlertContext';
 import OfflineNotice from './components/OfflineNotice';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { requestTrackingPermissionsAsync, getTrackingPermissionsAsync } from 'expo-tracking-transparency';
+import {
+  useFonts,
+  Fraunces_600SemiBold,
+  Fraunces_700Bold,
+  Fraunces_900Black,
+  Fraunces_600SemiBold_Italic,
+} from '@expo-google-fonts/fraunces';
+import {
+  Manrope_400Regular,
+  Manrope_500Medium,
+  Manrope_600SemiBold,
+  Manrope_700Bold,
+  Manrope_800ExtraBold,
+} from '@expo-google-fonts/manrope';
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -112,6 +126,18 @@ function MainNavigator() {
 export default function App() {
   const navigationRef = useRef();
 
+  const [fontsLoaded] = useFonts({
+    Fraunces_600SemiBold,
+    Fraunces_700Bold,
+    Fraunces_900Black,
+    Fraunces_600SemiBold_Italic,
+    Manrope_400Regular,
+    Manrope_500Medium,
+    Manrope_600SemiBold,
+    Manrope_700Bold,
+    Manrope_800ExtraBold,
+  });
+
   useEffect(() => {
     const askATT = async () => {
       if (Platform.OS !== 'ios') return;
@@ -164,6 +190,14 @@ export default function App() {
     });
     return () => sub.remove();
   }, []);
+
+  if (!fontsLoaded) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#FDF6E3' }}>
+        <ActivityIndicator size="large" color="#a1743b" />
+      </View>
+    );
+  }
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>

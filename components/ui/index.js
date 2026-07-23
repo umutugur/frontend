@@ -10,3 +10,4 @@ export { default as EmptyState } from './EmptyState';
 export { default as Skeleton } from './Skeleton';
 export { default as AuctionCard } from './AuctionCard';
 export { default as CountdownHero } from './CountdownHero';
+export { default as MenuTile } from './MenuTile';

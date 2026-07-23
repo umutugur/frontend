@@ -8,17 +8,13 @@ import {
   StyleSheet,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { colors } from '../../theme/tokens';
+import { LinearGradient } from 'expo-linear-gradient';
+import { colors, gradients } from '../../theme/tokens';
 
 /**
  * Screen — tüm ekranların kökü.
- * SafeArea + KeyboardAvoidingView + krem zemin gömülüdür.
+ * Atmosferik sayfa gradyanı + SafeArea + KeyboardAvoidingView gömülüdür.
  * Props: { children, scroll=false, style, contentContainerStyle, edges, keyboardOffset=0 }
- *   scroll: true → içerik ScrollView içinde; false → düz View.
- *   style: SafeAreaView'a uygulanan stil.
- *   contentContainerStyle: scroll ise ScrollView contentContainerStyle, değilse iç View stili.
- *   edges: SafeAreaView edges (varsayılan ['top','left','right']).
- *   keyboardOffset: KeyboardAvoidingView keyboardVerticalOffset.
  */
 export default function Screen({
   children,
@@ -42,27 +38,35 @@ export default function Screen({
   );
 
   return (
-    <SafeAreaView style={[styles.safe, style]} edges={edges}>
-      <KeyboardAvoidingView
-        style={styles.flex}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        keyboardVerticalOffset={keyboardOffset}
-      >
-        {Body}
-      </KeyboardAvoidingView>
-    </SafeAreaView>
+    <View style={styles.flex}>
+      <LinearGradient
+        colors={gradients.page}
+        style={StyleSheet.absoluteFill}
+        start={{ x: 0.1, y: 0 }}
+        end={{ x: 0.9, y: 1 }}
+      />
+      {/* üstte ince altın ışıma — sayfaya derinlik */}
+      <LinearGradient
+        colors={['rgba(201,162,75,0.16)', 'transparent']}
+        style={styles.topGlow}
+        pointerEvents="none"
+      />
+      <SafeAreaView style={[styles.safe, style]} edges={edges}>
+        <KeyboardAvoidingView
+          style={styles.flex}
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          keyboardVerticalOffset={keyboardOffset}
+        >
+          {Body}
+        </KeyboardAvoidingView>
+      </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  safe: {
-    flex: 1,
-    backgroundColor: colors.cream,
-  },
-  flex: {
-    flex: 1,
-  },
-  scrollContent: {
-    flexGrow: 1,
-  },
+  safe: { flex: 1, backgroundColor: 'transparent' },
+  flex: { flex: 1 },
+  scrollContent: { flexGrow: 1 },
+  topGlow: { position: 'absolute', top: 0, left: 0, right: 0, height: 220 },
 });

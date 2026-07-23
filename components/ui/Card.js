@@ -6,25 +6,21 @@ import PressableScale from './PressableScale';
 import { colors, gradients, radii, shadows, spacing } from '../../theme/tokens';
 
 /**
- * Card — derinlikli yüzey (gölge + radius). Opsiyonel gradient kenar ve dokunma.
+ * Card — sıcak yüzey + ince hairline kenar + yumuşak gölge.
  * Props: { children, style, gradientBorder=false, onPress }
  */
 export default function Card({ children, style, gradientBorder = false, onPress }) {
-  const inner = (
-    <View style={[styles.card, style]}>{children}</View>
-  );
-
   const content = gradientBorder ? (
     <LinearGradient
-      colors={gradients.goldToBrown}
+      colors={gradients.gold}
       start={{ x: 0, y: 0 }}
       end={{ x: 1, y: 1 }}
       style={styles.border}
     >
-      <View style={[styles.card, styles.innerOnBorder, style]}>{children}</View>
+      <View style={[styles.card, style]}>{children}</View>
     </LinearGradient>
   ) : (
-    inner
+    <View style={[styles.card, styles.hairline, style]}>{children}</View>
   );
 
   if (onPress) {
@@ -34,24 +30,22 @@ export default function Card({ children, style, gradientBorder = false, onPress 
       </PressableScale>
     );
   }
-
   return <View style={styles.shadow}>{content}</View>;
 }
 
 const styles = StyleSheet.create({
-  shadow: {
-    ...shadows.card,
-  },
+  shadow: { ...shadows.card, borderRadius: radii.lg },
   card: {
-    backgroundColor: colors.white,
+    backgroundColor: colors.creamHi,
     borderRadius: radii.lg,
     padding: spacing.lg,
   },
+  hairline: {
+    borderWidth: 1,
+    borderColor: colors.line,
+  },
   border: {
     borderRadius: radii.lg + 2,
-    padding: 2,
-  },
-  innerOnBorder: {
-    borderRadius: radii.lg,
+    padding: 1.5,
   },
 });
