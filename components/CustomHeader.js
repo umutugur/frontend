@@ -1,9 +1,11 @@
 // components/CustomHeader.js
 import React, { useContext } from 'react';
 import { View, Image, TouchableOpacity, StyleSheet, Dimensions, Platform, StatusBar, Text } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { AuthContext } from '../context/AuthContext';
+import { colors, gradients, spacing, typography } from '../theme/tokens';
 
 const screenWidth = Dimensions.get('window').width;
 const statusBarH = Platform.OS === 'android' ? StatusBar.currentHeight || 0 : 0;
@@ -16,7 +18,12 @@ export default function CustomHeader() {
   const unreadCount = notifications.filter((n) => !n.isRead).length;
 
   return (
-    <View style={styles.container}>
+    <LinearGradient
+      colors={gradients.creamSurface}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 1 }}
+      style={styles.container}
+    >
       <View style={styles.sideSpacer} />
 
       {/* Logo */}
@@ -28,14 +35,14 @@ export default function CustomHeader() {
         onPress={() => navigation.navigate('Notifications')}
         hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
       >
-        <Ionicons name="notifications-outline" size={26} color="#4e342e" />
+        <Ionicons name="notifications-outline" size={26} color={colors.brownDark} />
         {unreadCount > 0 && (
           <View style={styles.badge}>
             <Text style={styles.badgeText}>{unreadCount}</Text>
           </View>
         )}
       </TouchableOpacity>
-    </View>
+    </LinearGradient>
   );
 }
 
@@ -44,13 +51,14 @@ const styles = StyleSheet.create({
     width: screenWidth,
     height: 40 + statusBarH,
     paddingTop: statusBarH,
-    backgroundColor: '#fff',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
+    paddingHorizontal: spacing.lg,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.line,
     elevation: 3,
-    shadowColor: '#000',
+    shadowColor: colors.brownDark,
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
     shadowRadius: 2,
@@ -71,7 +79,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     right: -6,
     top: -4,
-    backgroundColor: '#e53935',
+    backgroundColor: colors.danger,
     borderRadius: 8,
     minWidth: 16,
     height: 16,
@@ -80,7 +88,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 2,
   },
   badgeText: {
-    color: '#fff',
+    ...typography.label,
+    color: colors.white,
     fontSize: 10,
     fontWeight: 'bold',
   },
