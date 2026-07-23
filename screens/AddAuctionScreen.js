@@ -2,21 +2,22 @@ import React, { useContext, useState } from 'react';
 import {
   View,
   Text,
-  TextInput,
   StyleSheet,
   TouchableOpacity,
   Image,
-  Alert,
   Switch,
-  KeyboardAvoidingView,
-  ScrollView,
-  Platform,
 } from 'react-native';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { AuthContext } from '../context/AuthContext';
+import { useAlert } from '../context/AlertContext';
+import { Screen, Input, GradientButton, Card } from '../components/ui';
+import { colors, gradients, radii, spacing, typography, shadows } from '../theme/tokens';
+import { LinearGradient } from 'expo-linear-gradient';
 
 export default function AddAuctionScreen() {
   const { user } = useContext(AuthContext);
+  const { showAlert } = useAlert();
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [startingPrice, setStartingPrice] = useState('');
@@ -25,7 +26,7 @@ export default function AddAuctionScreen() {
 
   const pickImage = async () => {
     if (images.length >= 5) {
-      Alert.alert('Uyarı', 'En fazla 5 fotoğraf yükleyebilirsiniz.');
+      showAlert({ title: 'Uyarı', message: 'En fazla 5 fotoğraf yükleyebilirsiniz.' });
       return;
     }
 
@@ -47,7 +48,7 @@ export default function AddAuctionScreen() {
 
   const handleSubmit = async () => {
     if (!title || !startingPrice || !user || !user._id) {
-      Alert.alert('Eksik bilgi', 'Lütfen gerekli tüm alanları doldurun.');
+      showAlert({ title: 'Eksik bilgi', message: 'Lütfen gerekli tüm alanları doldurun.' });
       return;
     }
 
@@ -78,143 +79,178 @@ export default function AddAuctionScreen() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || 'Mezat oluşturulamadı');
 
-      Alert.alert('Başarılı', 'Mezat başarıyla oluşturuldu.');
+      showAlert({ title: 'Başarılı', message: 'Mezat başarıyla oluşturuldu.' });
       setTitle('');
       setDescription('');
       setStartingPrice('');
       setImages([]);
       setIsSigned(false);
     } catch (err) {
-      Alert.alert('Hata', err.message);
+      showAlert({ title: 'Hata', message: err.message });
     }
   };
 
   return (
-    <KeyboardAvoidingView
-      style={{ flex: 1, backgroundColor: '#fff8e1' }}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-    >
-      <ScrollView contentContainerStyle={styles.container}>
+    <Screen scroll contentContainerStyle={styles.container}>
+      <View style={styles.headerRow}>
+        <LinearGradient
+          colors={gradients.goldToBrown}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.headerIcon}
+        >
+          <MaterialCommunityIcons name="gavel" size={22} color={colors.white} />
+        </LinearGradient>
         <Text style={styles.title}>Mezat Oluştur</Text>
+      </View>
 
-        <TextInput
+      <Card style={styles.formCard}>
+        <Text style={styles.fieldLabel}>Tesbih Başlığı</Text>
+        <Input
           placeholder="Tesbih Başlığı"
-          placeholderTextColor="#4e342e"
-          style={styles.input}
           value={title}
           onChangeText={setTitle}
         />
 
-        <TextInput
+        <Text style={styles.fieldLabel}>Açıklama</Text>
+        <Input
           placeholder="Açıklama"
-          placeholderTextColor="#4e342e"
-          style={[styles.input, { height: 100 }]}
           value={description}
           onChangeText={setDescription}
           multiline
+          style={styles.multiline}
         />
 
-        <TextInput
+        <Text style={styles.fieldLabel}>Başlangıç Fiyatı</Text>
+        <Input
           placeholder="Başlangıç Fiyatı"
-          placeholderTextColor="#4e342e"
-          style={styles.input}
           value={startingPrice}
           onChangeText={setStartingPrice}
           keyboardType="numeric"
         />
 
         <View style={styles.switchRow}>
-          <Text style={styles.switchLabel}>Usta İmzalı</Text>
-          <Switch value={isSigned} onValueChange={setIsSigned} />
+          <View style={styles.switchLabelWrap}>
+            <MaterialCommunityIcons name="seal-variant" size={18} color={colors.brown} />
+            <Text style={styles.switchLabel}>Usta İmzalı</Text>
+          </View>
+          <Switch
+            value={isSigned}
+            onValueChange={setIsSigned}
+            trackColor={{ true: colors.brown, false: colors.line }}
+            thumbColor={colors.white}
+          />
         </View>
+      </Card>
 
-        <TouchableOpacity style={styles.pickButton} onPress={pickImage}>
-          <Text style={styles.pickButtonText}>Fotoğraf Ekle ({images.length}/5)</Text>
-        </TouchableOpacity>
+      <Text style={styles.sectionLabel}>Fotoğraflar ({images.length}/5)</Text>
+      <View style={styles.imagePreviewContainer}>
+        {images.map((img, idx) => (
+          <View key={idx} style={styles.imageWrapper}>
+            <Image source={{ uri: img.uri }} style={styles.previewImage} />
+            <TouchableOpacity
+              style={styles.removeButton}
+              onPress={() => handleRemoveImage(idx)}
+            >
+              <MaterialCommunityIcons name="close" size={15} color={colors.white} />
+            </TouchableOpacity>
+          </View>
+        ))}
+        {images.length < 5 ? (
+          <TouchableOpacity style={styles.addTile} onPress={pickImage} activeOpacity={0.85}>
+            <MaterialCommunityIcons name="camera-plus-outline" size={26} color={colors.brown} />
+            <Text style={styles.addTileText}>Ekle</Text>
+          </TouchableOpacity>
+        ) : null}
+      </View>
 
-        <View style={styles.imagePreviewContainer}>
-          {images.map((img, idx) => (
-            <View key={idx} style={styles.imageWrapper}>
-              <Image source={{ uri: img.uri }} style={styles.previewImage} />
-              <TouchableOpacity
-                style={styles.removeButton}
-                onPress={() => handleRemoveImage(idx)}
-              >
-                <Text style={styles.removeButtonText}>✖</Text>
-              </TouchableOpacity>
-            </View>
-          ))}
-        </View>
-
-        <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
-          <Text style={styles.submitButtonText}>Mezatı Kaydet</Text>
-        </TouchableOpacity>
-      </ScrollView>
-    </KeyboardAvoidingView>
+      <GradientButton
+        title="Mezatı Kaydet"
+        icon="checkmark-circle-outline"
+        onPress={handleSubmit}
+        style={styles.submitButton}
+      />
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    padding: 20,
-    backgroundColor: '#fff8e1',
+    padding: spacing.xl,
+    paddingBottom: spacing.xxxl,
+  },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: spacing.xl,
+  },
+  headerIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: radii.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: spacing.md,
   },
   title: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    color: '#4e342e',
-    marginBottom: 16,
+    ...typography.h1,
+    color: colors.brownDark,
   },
-  input: {
-    backgroundColor: '#fff',
-    borderColor: '#ccc',
-    borderWidth: 1,
-    borderRadius: 10,
-    padding: 12,
-    marginBottom: 12,
-    color: '#4e342e',
+  formCard: {
+    marginBottom: spacing.xl,
+  },
+  fieldLabel: {
+    ...typography.label,
+    color: colors.brown,
+    fontWeight: '700',
+    marginBottom: spacing.xs,
+  },
+  multiline: {
+    minHeight: 100,
+    textAlignVertical: 'top',
+    paddingTop: spacing.md,
   },
   switchRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 16,
     justifyContent: 'space-between',
+    marginTop: spacing.xs,
+  },
+  switchLabelWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   switchLabel: {
-    fontSize: 16,
-    color: '#4e342e',
+    ...typography.h3,
+    color: colors.brownDark,
+    marginLeft: spacing.sm,
   },
-  pickButton: {
-    backgroundColor: '#d7ccc8',
-    padding: 12,
-    borderRadius: 10,
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  pickButtonText: {
-    color: '#4e342e',
-    fontWeight: 'bold',
+  sectionLabel: {
+    ...typography.h3,
+    color: colors.brownDark,
+    marginBottom: spacing.md,
   },
   imagePreviewContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    marginBottom: 16,
+    marginBottom: spacing.xl,
   },
   imageWrapper: {
     position: 'relative',
-    marginRight: 8,
-    marginBottom: 8,
+    marginRight: spacing.md,
+    marginBottom: spacing.md,
+    ...shadows.soft,
   },
   previewImage: {
-    width: 70,
-    height: 70,
-    borderRadius: 8,
+    width: 76,
+    height: 76,
+    borderRadius: radii.md,
   },
   removeButton: {
     position: 'absolute',
-    top: -6,
-    right: -6,
-    backgroundColor: '#d32f2f',
+    top: -8,
+    right: -8,
+    backgroundColor: colors.danger,
     borderRadius: 12,
     width: 24,
     height: 24,
@@ -223,21 +259,23 @@ const styles = StyleSheet.create({
     zIndex: 1,
     elevation: 2,
   },
-  removeButtonText: {
-    color: '#fff',
-    fontWeight: 'bold',
-    fontSize: 15,
-    lineHeight: 20,
+  addTile: {
+    width: 76,
+    height: 76,
+    borderRadius: radii.md,
+    borderWidth: 1.5,
+    borderColor: colors.line,
+    borderStyle: 'dashed',
+    backgroundColor: colors.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  addTileText: {
+    ...typography.label,
+    color: colors.brown,
+    marginTop: 2,
   },
   submitButton: {
-    backgroundColor: '#6d4c41',
-    padding: 16,
-    borderRadius: 12,
-    alignItems: 'center',
-  },
-  submitButtonText: {
-    color: '#fff',
-    fontWeight: 'bold',
-    fontSize: 16,
+    marginTop: spacing.sm,
   },
 });
