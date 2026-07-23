@@ -14,6 +14,7 @@ import * as AppleAuthentication from 'expo-apple-authentication';
 import { BannerAd, BannerAdSize, TestIds } from 'react-native-google-mobile-ads';
 
 import { Screen, AuctionCard, EmptyState, GradientButton } from '../components/ui';
+import NativeAdCard, { useNativeAds, interleaveAds } from '../components/NativeAdCard';
 import { colors, spacing, typography } from '../theme/tokens';
 
 export default function FavoritesScreen() {
@@ -22,6 +23,7 @@ export default function FavoritesScreen() {
   const [auctions, setAuctions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [appleAvail, setAppleAvail] = useState(false);
+  const ads = useNativeAds(3);
 
   const adUnitId = __DEV__
     ? TestIds.BANNER
@@ -120,40 +122,35 @@ export default function FavoritesScreen() {
           </View>
         </View>
       ) : (
-        <>
-          <FlatList
-            data={auctions}
-            renderItem={({ item }) => (
-              <View style={styles.cardCol}>
+        <FlatList
+          data={interleaveAds(auctions, ads, 6)}
+          renderItem={({ item }) => (
+            <View style={styles.cardCol}>
+              {item.type === 'ad' ? (
+                <NativeAdCard nativeAd={item.nativeAd} />
+              ) : (
                 <AuctionCard
                   item={item}
                   onPress={() =>
                     navigation.navigate('AuctionDetail', { auctionId: item._id })
                   }
                 />
-              </View>
-            )}
-            keyExtractor={(item) => item._id}
-            numColumns={2}
-            columnWrapperStyle={styles.column}
-            contentContainerStyle={styles.list}
-            showsVerticalScrollIndicator={false}
-            ListEmptyComponent={
-              <EmptyState
-                icon="heart-off-outline"
-                title="Favori mezat yok"
-                message="Favori satıcıların şu an aktif mezatı bulunmuyor."
-              />
-            }
-          />
-          <View style={styles.adContainer}>
-            <BannerAd
-              unitId={adUnitId}
-              size={BannerAdSize.ANCHORED_ADAPTIVE_BANNER}
-              requestOptions={{ requestNonPersonalizedAdsOnly: true }}
+              )}
+            </View>
+          )}
+          keyExtractor={(item) => item._id}
+          numColumns={2}
+          columnWrapperStyle={styles.column}
+          contentContainerStyle={styles.list}
+          showsVerticalScrollIndicator={false}
+          ListEmptyComponent={
+            <EmptyState
+              icon="heart-off-outline"
+              title="Favori mezat yok"
+              message="Favori satıcıların şu an aktif mezatı bulunmuyor."
             />
-          </View>
-        </>
+          }
+        />
       )}
     </Screen>
   );

@@ -1,18 +1,19 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { View, FlatList, StyleSheet } from 'react-native';
 import { useNavigation, useIsFocused } from '@react-navigation/native';
 import axios from 'axios';
 
-// ✅ AdMob bileşenleri eklendi
-import { BannerAd, BannerAdSize, TestIds } from 'react-native-google-mobile-ads';
-
 import { Screen, AuctionCard, CountdownHero, EmptyState } from '../components/ui';
-import { colors, spacing } from '../theme/tokens';
+import NativeAdCard, { useNativeAds, interleaveAds } from '../components/NativeAdCard';
+import { spacing } from '../theme/tokens';
+
+const ADS_PRELOAD = 3; // kaç native reklam ön-yüklensin
 
 export default function HomeScreen() {
   const navigation = useNavigation();
   const isFocused = useIsFocused();
   const [auctions, setAuctions] = useState([]);
+  const ads = useNativeAds(ADS_PRELOAD);
 
   const fetchAuctions = async () => {
     try {
@@ -29,24 +30,25 @@ export default function HomeScreen() {
     }
   }, [isFocused]);
 
+  const data = useMemo(() => interleaveAds(auctions, ads, 6), [auctions, ads]);
+
   const renderItem = ({ item }) => (
     <View style={styles.cardCol}>
-      <AuctionCard
-        item={item}
-        onPress={() => navigation.navigate('AuctionDetail', { auctionId: item._id })}
-      />
+      {item.type === 'ad' ? (
+        <NativeAdCard nativeAd={item.nativeAd} />
+      ) : (
+        <AuctionCard
+          item={item}
+          onPress={() => navigation.navigate('AuctionDetail', { auctionId: item._id })}
+        />
+      )}
     </View>
   );
-
-  // ✅ Banner reklam birimi
-  const adUnitId = __DEV__
-    ? TestIds.BANNER
-    : 'ca-app-pub-4306778139267554/1985701713';
 
   return (
     <Screen>
       <FlatList
-        data={auctions}
+        data={data}
         renderItem={renderItem}
         keyExtractor={(item) => item._id}
         numColumns={2}
@@ -62,15 +64,6 @@ export default function HomeScreen() {
           />
         }
       />
-
-      {/* ✅ Reklam en alta */}
-      <View style={styles.adContainer}>
-        <BannerAd
-          unitId={adUnitId}
-          size={BannerAdSize.ANCHORED_ADAPTIVE_BANNER}
-          requestOptions={{ requestNonPersonalizedAdsOnly: true }}
-        />
-      </View>
     </Screen>
   );
 }
@@ -78,7 +71,7 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   list: {
     padding: spacing.lg,
-    paddingBottom: spacing.xxxl * 2.5,
+    paddingBottom: spacing.xxxl,
     flexGrow: 1,
   },
   column: {
@@ -87,12 +80,5 @@ const styles = StyleSheet.create({
   cardCol: {
     width: '48%',
     marginBottom: spacing.lg,
-  },
-  adContainer: {
-    width: '100%',
-    alignItems: 'center',
-    backgroundColor: colors.white,
-    paddingBottom: spacing.sm,
-    minHeight: 60,
   },
 });
