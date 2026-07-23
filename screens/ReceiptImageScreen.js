@@ -13,9 +13,9 @@ export default function ReceiptImageScreen({ route, navigation }) {
         {navigation ? (
           <PressableScale
             onPress={() => navigation.goBack()}
-            style={styles.closeButton}
+            style={styles.backButton}
           >
-            <Ionicons name="close" size={26} color={colors.white} />
+            <Ionicons name="chevron-back" size={26} color={colors.white} />
           </PressableScale>
         ) : null}
       </View>
@@ -37,14 +37,16 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
   },
-  closeButton: {
+  backButton: {
     position: 'absolute',
     top: spacing.md,
-    right: spacing.lg,
+    left: spacing.lg,
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    backgroundColor: 'rgba(20,14,10,0.55)',
+    borderWidth: 1,
+    borderColor: 'rgba(216,178,90,0.35)',
     alignItems: 'center',
     justifyContent: 'center',
   },
