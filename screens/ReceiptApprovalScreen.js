@@ -1,10 +1,13 @@
 import React, { useState, useEffect, useContext } from 'react';
 import {
   View, Text, FlatList, Image, TouchableOpacity,
-  StyleSheet, Alert, Modal, Pressable, ScrollView
+  StyleSheet, Modal, Pressable, ScrollView
 } from 'react-native';
 import axios from 'axios';
 import { AuthContext } from '../context/AuthContext';
+import { useAlert } from '../context/AlertContext';
+import { Screen, Card, Badge, GradientButton, EmptyState } from '../components/ui';
+import { colors, radii, spacing, typography } from '../theme/tokens';
 import iller from '../assets/data/sehirler.json';
 import ilceler from '../assets/data/ilceler.json';
 import mahalleler1 from '../assets/data/mahalleler-1.json';
@@ -15,6 +18,7 @@ const mahalleler = [...mahalleler1, ...mahalleler2, ...mahalleler3, ...mahallele
 
 export default function ReceiptApprovalScreen() {
   const { user } = useContext(AuthContext); // Satıcı bilgisi
+  const { showAlert } = useAlert();
   const [receipts, setReceipts] = useState([]);
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedImage, setSelectedImage] = useState(null);
@@ -41,11 +45,11 @@ const getMahalleName = (id) => mahalleler.find(m => m.mahalle_id === String(id))
     try {
       const url = `https://imame-backend.onrender.com/api/receipts/${id}/${approved ? 'approve' : 'reject'}`;
       await axios.patch(url);
-      Alert.alert('Başarılı', `Dekont ${approved ? 'onaylandı' : 'reddedildi'}.`);
+      showAlert({ title: 'Başarılı', message: `Dekont ${approved ? 'onaylandı' : 'reddedildi'}.` });
       fetchReceipts();
     } catch (err) {
       console.error('Dekont işlem hatası:', err);
-      Alert.alert('Hata', 'İşlem sırasında hata oluştu.');
+      showAlert({ title: 'Hata', message: 'İşlem sırasında hata oluştu.' });
     }
   };
 
@@ -59,31 +63,47 @@ const getMahalleName = (id) => mahalleler.find(m => m.mahalle_id === String(id))
     setSelectedImage(null);
   };
 
+  const statusMeta = (status) => {
+    if (status === 'approved') return { tone: 'approved', label: 'Onaylandı' };
+    if (status === 'rejected') return { tone: 'rejected', label: 'Reddedildi' };
+    return { tone: 'pending', label: 'Bekliyor' };
+  };
+
  const renderItem = ({ item }) => {
   const address = item.buyer?.address || {};
   const ilName = getIlName(address.ilId) || '';
   const ilceName = getIlceName(address.ilceId) || '';
   const mahalleName = getMahalleName(address.mahalleId) || '';
+  const meta = statusMeta(item.receiptStatus);
 
   return (
-    <View style={styles.card}>
-      <Text style={styles.title}>{item.title}</Text>
+    <Card style={styles.card}>
+      <View style={styles.cardHeader}>
+        <Text style={styles.title} numberOfLines={1}>{item.title}</Text>
+        <Badge label={meta.label} tone={meta.tone} />
+      </View>
       <Text style={styles.subtitle}>Kazanan: {item.buyer?.name || 'Bilinmiyor'}</Text>
 
-      <TouchableOpacity onPress={() => openImageModal(item.receiptUrl)}>
+      <TouchableOpacity onPress={() => openImageModal(item.receiptUrl)} activeOpacity={0.9}>
         <Image source={{ uri: item.receiptUrl }} style={styles.image} />
       </TouchableOpacity>
 
-      <Text style={styles.subtitle}>Durum: {item.receiptStatus}</Text>
-
       {item.receiptStatus === 'pending' ? (
         <View style={styles.buttonRow}>
-          <TouchableOpacity style={styles.approveButton} onPress={() => handleApproval(item._id, true)}>
-            <Text style={styles.buttonText}>Onayla</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.rejectButton} onPress={() => handleApproval(item._id, false)}>
-            <Text style={styles.buttonText}>Reddet</Text>
-          </TouchableOpacity>
+          <GradientButton
+            title="Onayla"
+            icon="checkmark-circle-outline"
+            variant="primary"
+            onPress={() => handleApproval(item._id, true)}
+            style={styles.actionBtn}
+          />
+          <GradientButton
+            title="Reddet"
+            icon="close-circle-outline"
+            variant="danger"
+            onPress={() => handleApproval(item._id, false)}
+            style={styles.actionBtn}
+          />
         </View>
       ) : (
         <View style={styles.buyerInfo}>
@@ -97,29 +117,37 @@ const getMahalleName = (id) => mahalleler.find(m => m.mahalle_id === String(id))
             <Text style={styles.bold}>Adres:</Text>
           </Text>
           <ScrollView style={styles.addressBox}>
-            <Text>
+            <Text style={styles.addressText}>
               {mahalleName || ''} {address.sokak || ''} Apartman no: {address.apartmanNo || '-'} Daire:{' '}
               {address.daireNo || '-'}
             </Text>
-            <Text>
+            <Text style={styles.addressText}>
               {ilceName || ''} / {ilName || ''}
             </Text>
           </ScrollView>
         </View>
       )}
-    </View>
+    </Card>
   );
 };
 
 
   return (
-    <View style={styles.container}>
+    <Screen contentContainerStyle={styles.container}>
       <Text style={styles.header}>Bekleyen Dekontlar</Text>
       <FlatList
         data={receipts}
         keyExtractor={(item) => item._id}
         renderItem={renderItem}
-        ListEmptyComponent={<Text>Onay bekleyen dekont bulunamadı.</Text>}
+        contentContainerStyle={styles.list}
+        showsVerticalScrollIndicator={false}
+        ListEmptyComponent={
+          <EmptyState
+            icon="receipt-text-outline"
+            title="Dekont yok"
+            message="Onay bekleyen dekont bulunamadı."
+          />
+        }
       />
 
       {/* Modal - Tam boy görsel */}
@@ -143,86 +171,79 @@ const getMahalleName = (id) => mahalleler.find(m => m.mahalle_id === String(id))
           <Pressable style={styles.modalCloseArea} onPress={closeImageModal} />
         </View>
       </Modal>
-    </View>
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
-    backgroundColor: '#fff8e1',
-    padding: 20,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.md,
   },
   header: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    color: '#4e342e',
-    marginBottom: 15,
+    ...typography.h1,
+    color: colors.brownDark,
+    marginBottom: spacing.md,
+  },
+  list: {
+    paddingBottom: spacing.lg,
+    flexGrow: 1,
   },
   card: {
-    backgroundColor: '#fff',
-    borderRadius: 10,
-    padding: 15,
-    marginBottom: 15,
-    borderColor: '#ccc',
-    borderWidth: 1,
+    marginBottom: spacing.md,
+  },
+  cardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: spacing.xs,
   },
   title: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#4e342e',
+    ...typography.h3,
+    color: colors.brownDark,
+    flex: 1,
+    marginRight: spacing.sm,
   },
   subtitle: {
-    fontSize: 14,
-    marginVertical: 4,
-    color: '#6d4c41',
+    ...typography.body,
+    marginBottom: spacing.sm,
+    color: colors.brown,
   },
   image: {
     width: '100%',
-    height: 150,
-    marginBottom: 10,
-    borderRadius: 6,
+    height: 160,
+    marginBottom: spacing.md,
+    borderRadius: radii.md,
+    backgroundColor: colors.line,
   },
   buttonRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
   },
-  approveButton: {
-    backgroundColor: '#388e3c',
-    padding: 10,
-    borderRadius: 8,
+  actionBtn: {
     flex: 1,
-    marginRight: 5,
-    alignItems: 'center',
-  },
-  rejectButton: {
-    backgroundColor: '#d32f2f',
-    padding: 10,
-    borderRadius: 8,
-    flex: 1,
-    marginLeft: 5,
-    alignItems: 'center',
-  },
-  buttonText: {
-    color: '#fff',
-    fontWeight: 'bold',
+    marginHorizontal: spacing.xs,
   },
   buyerInfo: {
-    marginTop: 10,
-    backgroundColor: '#f5f5dc',
-    padding: 12,
-    borderRadius: 8,
+    marginTop: spacing.sm,
+    backgroundColor: colors.surface,
+    padding: spacing.md,
+    borderRadius: radii.md,
   },
   infoText: {
-    fontSize: 14,
-    marginBottom: 4,
-    color: '#3e2723',
+    ...typography.body,
+    marginBottom: spacing.xs,
+    color: colors.brownDark,
   },
   bold: {
     fontWeight: 'bold',
   },
   addressBox: {
     maxHeight: 100,
+  },
+  addressText: {
+    ...typography.body,
+    color: colors.brownDark,
   },
   modalBackground: {
     flex: 1,
@@ -233,13 +254,13 @@ const styles = StyleSheet.create({
   modalContent: {
     width: '90%',
     height: '70%',
-    backgroundColor: '#fff',
-    borderRadius: 12,
+    backgroundColor: colors.white,
+    borderRadius: radii.md,
   },
   fullImage: {
     width: '100%',
     height: '100%',
-    borderRadius: 12,
+    borderRadius: radii.md,
   },
   modalCloseArea: {
     flex: 1,
