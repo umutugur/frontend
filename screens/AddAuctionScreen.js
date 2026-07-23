@@ -6,14 +6,14 @@ import {
   TouchableOpacity,
   Image,
   Switch,
+  ScrollView,
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { AuthContext } from '../context/AuthContext';
 import { useAlert } from '../context/AlertContext';
-import { Screen, Input, GradientButton, Card } from '../components/ui';
-import { colors, gradients, radii, spacing, typography, shadows } from '../theme/tokens';
-import { LinearGradient } from 'expo-linear-gradient';
+import { Screen, ScreenHeader, Input, GradientButton, Card } from '../components/ui';
+import { colors, radii, spacing, typography, shadows } from '../theme/tokens';
 
 export default function AddAuctionScreen() {
   const { user } = useContext(AuthContext);
@@ -91,85 +91,87 @@ export default function AddAuctionScreen() {
   };
 
   return (
-    <Screen scroll contentContainerStyle={styles.container}>
-      <View style={styles.headerRow}>
-        <LinearGradient
-          colors={gradients.goldToBrown}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.headerIcon}
-        >
-          <MaterialCommunityIcons name="gavel" size={22} color={colors.white} />
-        </LinearGradient>
-        <Text style={styles.title}>Mezat Oluştur</Text>
-      </View>
-
-      <Card style={styles.formCard}>
-        <Text style={styles.fieldLabel}>Tesbih Başlığı</Text>
-        <Input
-          placeholder="Tesbih Başlığı"
-          value={title}
-          onChangeText={setTitle}
-        />
-
-        <Text style={styles.fieldLabel}>Açıklama</Text>
-        <Input
-          placeholder="Açıklama"
-          value={description}
-          onChangeText={setDescription}
-          multiline
-          style={styles.multiline}
-        />
-
-        <Text style={styles.fieldLabel}>Başlangıç Fiyatı</Text>
-        <Input
-          placeholder="Başlangıç Fiyatı"
-          value={startingPrice}
-          onChangeText={setStartingPrice}
-          keyboardType="numeric"
-        />
-
-        <View style={styles.switchRow}>
-          <View style={styles.switchLabelWrap}>
-            <MaterialCommunityIcons name="seal-variant" size={18} color={colors.brown} />
-            <Text style={styles.switchLabel}>Usta İmzalı</Text>
-          </View>
-          <Switch
-            value={isSigned}
-            onValueChange={setIsSigned}
-            trackColor={{ true: colors.brown, false: colors.line }}
-            thumbColor={colors.white}
+    <Screen>
+      <ScreenHeader variant="plain" title="Mezat Oluştur" subtitle="Yeni tesbih mezatı" />
+      <ScrollView
+        contentContainerStyle={styles.container}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+      >
+        <Card style={styles.formCard}>
+          <Text style={styles.fieldLabel}>Tesbih Başlığı</Text>
+          <Input
+            variant="underline"
+            leftIcon="pricetag-outline"
+            placeholder="Tesbih Başlığı"
+            value={title}
+            onChangeText={setTitle}
           />
-        </View>
-      </Card>
 
-      <Text style={styles.sectionLabel}>Fotoğraflar ({images.length}/5)</Text>
-      <View style={styles.imagePreviewContainer}>
-        {images.map((img, idx) => (
-          <View key={idx} style={styles.imageWrapper}>
-            <Image source={{ uri: img.uri }} style={styles.previewImage} />
-            <TouchableOpacity
-              style={styles.removeButton}
-              onPress={() => handleRemoveImage(idx)}
-            >
-              <MaterialCommunityIcons name="close" size={15} color={colors.white} />
-            </TouchableOpacity>
+          <Text style={styles.fieldLabel}>Açıklama</Text>
+          <Input
+            variant="underline"
+            leftIcon="document-text-outline"
+            placeholder="Açıklama"
+            value={description}
+            onChangeText={setDescription}
+            multiline
+            style={styles.multiline}
+          />
+
+          <Text style={styles.fieldLabel}>Başlangıç Fiyatı</Text>
+          <Input
+            variant="underline"
+            leftIcon="cash-outline"
+            placeholder="Başlangıç Fiyatı"
+            value={startingPrice}
+            onChangeText={setStartingPrice}
+            keyboardType="numeric"
+          />
+
+          <View style={styles.switchRow}>
+            <View style={styles.switchLabelWrap}>
+              <MaterialCommunityIcons name="seal-variant" size={18} color={colors.brown} />
+              <Text style={styles.switchLabel}>Usta İmzalı</Text>
+            </View>
+            <Switch
+              value={isSigned}
+              onValueChange={setIsSigned}
+              trackColor={{ true: colors.brown, false: colors.line }}
+              thumbColor={colors.white}
+            />
           </View>
-        ))}
-        {images.length < 5 ? (
-          <TouchableOpacity style={styles.addTile} onPress={pickImage} activeOpacity={0.85}>
-            <MaterialCommunityIcons name="camera-plus-outline" size={26} color={colors.brown} />
-            <Text style={styles.addTileText}>Ekle</Text>
-          </TouchableOpacity>
-        ) : null}
-      </View>
+        </Card>
 
-      <GradientButton
-        title="Mezatı Kaydet"
-        icon="checkmark-circle-outline"
-        onPress={handleSubmit}
-        style={styles.submitButton}
-      />
+        <Text style={styles.sectionLabel}>Fotoğraflar ({images.length}/5)</Text>
+        <View style={styles.imagePreviewContainer}>
+          {images.map((img, idx) => (
+            <View key={idx} style={styles.imageWrapper}>
+              <Image source={{ uri: img.uri }} style={styles.previewImage} />
+              <TouchableOpacity
+                style={styles.removeButton}
+                onPress={() => handleRemoveImage(idx)}
+              >
+                <MaterialCommunityIcons name="close" size={15} color={colors.white} />
+              </TouchableOpacity>
+            </View>
+          ))}
+          {images.length < 5 ? (
+            <TouchableOpacity style={styles.addTile} onPress={pickImage} activeOpacity={0.85}>
+              <MaterialCommunityIcons name="camera-plus-outline" size={26} color={colors.brown} />
+              <Text style={styles.addTileText}>Ekle</Text>
+            </TouchableOpacity>
+          ) : null}
+        </View>
+
+        <GradientButton
+          title="Mezatı Kaydet"
+          icon="checkmark-circle-outline"
+          variant="gold"
+          onPress={handleSubmit}
+          style={styles.submitButton}
+        />
+      </ScrollView>
     </Screen>
   );
 }
@@ -177,24 +179,8 @@ export default function AddAuctionScreen() {
 const styles = StyleSheet.create({
   container: {
     padding: spacing.xl,
+    paddingTop: spacing.md,
     paddingBottom: spacing.xxxl,
-  },
-  headerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: spacing.xl,
-  },
-  headerIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: radii.md,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: spacing.md,
-  },
-  title: {
-    ...typography.h1,
-    color: colors.brownDark,
   },
   formCard: {
     marginBottom: spacing.xl,
@@ -202,8 +188,8 @@ const styles = StyleSheet.create({
   fieldLabel: {
     ...typography.label,
     color: colors.brown,
-    fontWeight: '700',
     marginBottom: spacing.xs,
+    marginTop: spacing.sm,
   },
   multiline: {
     minHeight: 100,
