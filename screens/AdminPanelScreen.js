@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import { Screen, MenuTile } from '../components/ui';
+import { Screen, MenuTile, PressableScale } from '../components/ui';
 import { colors, gradients, radii, spacing, typography, shadows } from '../theme/tokens';
 
 export default function AdminPanelScreen({ navigation }) {
@@ -25,6 +25,9 @@ export default function AdminPanelScreen({ navigation }) {
         style={[styles.header, shadows.raised]}
       >
         <LinearGradient colors={gradients.sheen} style={styles.headerSheen} pointerEvents="none" />
+        <PressableScale style={styles.backHero} onPress={() => navigation.goBack()}>
+          <Ionicons name="chevron-back" size={22} color={colors.creamHi} />
+        </PressableScale>
         <View style={styles.headerIcon}>
           <Ionicons name="shield-checkmark" size={24} color={colors.goldLight} />
         </View>
@@ -59,6 +62,19 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   headerSheen: { position: 'absolute', top: 0, left: 0, right: 0, height: '55%' },
+  backHero: {
+    position: 'absolute',
+    top: spacing.lg,
+    left: spacing.lg,
+    width: 42,
+    height: 42,
+    borderRadius: radii.pill,
+    backgroundColor: 'rgba(255,251,240,0.12)',
+    borderWidth: 1,
+    borderColor: 'rgba(216,178,90,0.35)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   headerIcon: {
     width: 54,
     height: 54,
