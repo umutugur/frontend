@@ -4,16 +4,36 @@ import { useNavigation, useIsFocused } from '@react-navigation/native';
 import axios from 'axios';
 
 import { Screen, AuctionCard, CountdownHero, EmptyState } from '../components/ui';
-import NativeAdCard, { useNativeAds, interleaveAds } from '../components/NativeAdCard';
+import InlineBannerAd from '../components/InlineBannerAd';
 import { spacing } from '../theme/tokens';
 
-const ADS_PRELOAD = 3; // kaç native reklam ön-yüklensin
+const COLUMNS = 2;
+const ROWS_BETWEEN_ADS = 3; // her 3 mezat satırından sonra bir banner
+
+/**
+ * Mezatları 2'şerli satırlara böler ve her ROWS_BETWEEN_ADS satırdan sonra
+ * tam genişlik bir reklam satırı ekler. (numColumns ile tam genişlik öğe
+ * karıştırılamadığı için satırları elle kuruyoruz.)
+ */
+export function buildFeed(auctions) {
+  const rows = [];
+  for (let i = 0; i < auctions.length; i += COLUMNS) {
+    rows.push(auctions.slice(i, i + COLUMNS));
+  }
+  const out = [];
+  rows.forEach((items, idx) => {
+    out.push({ type: 'row', _id: `row-${idx}`, items });
+    if ((idx + 1) % ROWS_BETWEEN_ADS === 0) {
+      out.push({ type: 'ad', _id: `ad-${idx}` });
+    }
+  });
+  return out;
+}
 
 export default function HomeScreen() {
   const navigation = useNavigation();
   const isFocused = useIsFocused();
   const [auctions, setAuctions] = useState([]);
-  const ads = useNativeAds(ADS_PRELOAD);
 
   const fetchAuctions = async () => {
     try {
@@ -30,25 +50,31 @@ export default function HomeScreen() {
     }
   }, [isFocused]);
 
-  const data = useMemo(() => interleaveAds(auctions, ads, 6), [auctions, ads]);
+  const feed = useMemo(() => buildFeed(auctions), [auctions]);
 
-  const renderItem = ({ item }) => (
-    <View style={styles.cardCol}>
-      {item.type === 'ad' ? (
-        <NativeAdCard nativeAd={item.nativeAd} />
-      ) : (
-        <AuctionCard
-          item={item}
-          onPress={() => navigation.navigate('AuctionDetail', { auctionId: item._id })}
-        />
-      )}
-    </View>
-  );
+  const renderItem = ({ item }) => {
+    if (item.type === 'ad') return <InlineBannerAd />;
+
+    return (
+      <View style={styles.row}>
+        {item.items.map((auction) => (
+          <View key={auction._id} style={styles.cardCol}>
+            <AuctionCard
+              item={auction}
+              onPress={() => navigation.navigate('AuctionDetail', { auctionId: auction._id })}
+            />
+          </View>
+        ))}
+        {/* tek kalan kart solda hizalı dursun */}
+        {item.items.length < COLUMNS ? <View style={styles.cardCol} /> : null}
+      </View>
+    );
+  };
 
   return (
     <Screen>
       <FlatList
-        data={data}
+        data={feed}
         renderItem={renderItem}
         keyExtractor={(item) => item._id}
         contentContainerStyle={styles.list}
@@ -72,8 +98,12 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.xxxl,
     flexGrow: 1,
   },
+  row: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
   cardCol: {
-    width: '100%',
+    width: '48%',
     marginBottom: spacing.lg,
   },
 });

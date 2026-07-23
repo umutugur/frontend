@@ -14,7 +14,8 @@ import * as AppleAuthentication from 'expo-apple-authentication';
 import { BannerAd, BannerAdSize, TestIds } from 'react-native-google-mobile-ads';
 
 import { Screen, AuctionCard, EmptyState, GradientButton } from '../components/ui';
-import NativeAdCard, { useNativeAds, interleaveAds } from '../components/NativeAdCard';
+import InlineBannerAd from '../components/InlineBannerAd';
+import { buildFeed } from './HomeScreen';
 import { colors, spacing, typography } from '../theme/tokens';
 
 export default function FavoritesScreen() {
@@ -23,7 +24,6 @@ export default function FavoritesScreen() {
   const [auctions, setAuctions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [appleAvail, setAppleAvail] = useState(false);
-  const ads = useNativeAds(3);
 
   const adUnitId = __DEV__
     ? TestIds.BANNER
@@ -123,21 +123,25 @@ export default function FavoritesScreen() {
         </View>
       ) : (
         <FlatList
-          data={interleaveAds(auctions, ads, 6)}
-          renderItem={({ item }) => (
-            <View style={styles.cardCol}>
-              {item.type === 'ad' ? (
-                <NativeAdCard nativeAd={item.nativeAd} />
-              ) : (
-                <AuctionCard
-                  item={item}
-                  onPress={() =>
-                    navigation.navigate('AuctionDetail', { auctionId: item._id })
-                  }
-                />
-              )}
-            </View>
-          )}
+          data={buildFeed(auctions)}
+          renderItem={({ item }) => {
+            if (item.type === 'ad') return <InlineBannerAd />;
+            return (
+              <View style={styles.row}>
+                {item.items.map((auction) => (
+                  <View key={auction._id} style={styles.cardCol}>
+                    <AuctionCard
+                      item={auction}
+                      onPress={() =>
+                        navigation.navigate('AuctionDetail', { auctionId: auction._id })
+                      }
+                    />
+                  </View>
+                ))}
+                {item.items.length < 2 ? <View style={styles.cardCol} /> : null}
+              </View>
+            );
+          }}
           keyExtractor={(item) => item._id}
           contentContainerStyle={styles.list}
           showsVerticalScrollIndicator={false}
@@ -181,8 +185,12 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.xxxl * 2.5,
     flexGrow: 1,
   },
+  row: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
   cardCol: {
-    width: '100%',
+    width: '48%',
     marginBottom: spacing.lg,
   },
   loading: {
