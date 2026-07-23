@@ -16,7 +16,7 @@ import { useAlert } from '../context/AlertContext';
 import { useNavigation } from '@react-navigation/native';
 import { BannerAd, BannerAdSize, TestIds } from 'react-native-google-mobile-ads';
 
-import { Screen, Card, Badge, GradientButton, PressableScale } from '../components/ui';
+import { Screen, ScreenHeader, Card, Badge, GradientButton, OrnamentDivider, PressableScale } from '../components/ui';
 import { colors, gradients, radii, shadows, spacing, typography } from '../theme/tokens';
 
 const screenWidth = Dimensions.get('window').width;
@@ -181,15 +181,6 @@ export default function AuctionDetailScreen({ route }) {
     if (!auction) return null;
     return (
       <View style={styles.headerWrap}>
-        {/* Logo */}
-        <View style={styles.logoContainer}>
-          <Image
-            source={require('../assets/logo.png')}
-            style={styles.logo}
-            resizeMode="contain"
-          />
-        </View>
-
         {/* Görsel Galerisi - yatay FlatList + gradient scrim başlık */}
         <View style={styles.galleryWrap}>
           <FlatList
@@ -231,6 +222,13 @@ export default function AuctionDetailScreen({ route }) {
               <MaterialCommunityIcons name="chevron-right" size={18} color={colors.muted} />
             </View>
           </PressableScale>
+          <View style={styles.statusRow}>
+            <Badge
+              label={auction.isEnded ? 'Sona Erdi' : 'Aktif Mezat'}
+              tone={auction.isEnded ? 'rejected' : 'approved'}
+            />
+            {auction.isSigned ? <Badge label="Usta İmzalı" tone="signed" /> : null}
+          </View>
           <Text style={styles.description}>{auction.description}</Text>
         </Card>
 
@@ -273,6 +271,7 @@ export default function AuctionDetailScreen({ route }) {
           <GradientButton
             title={isBidding ? 'Gönderiliyor...' : 'Teklif Ver'}
             icon="hammer"
+            variant="gold"
             onPress={handleBid}
             loading={isBidding}
             disabled={isBidding}
@@ -301,6 +300,7 @@ export default function AuctionDetailScreen({ route }) {
         )}
 
         {/* Liste başlığı */}
+        <OrnamentDivider />
         <Text style={styles.bidsTitle}>Önceki Teklifler</Text>
       </View>
     );
@@ -310,6 +310,7 @@ export default function AuctionDetailScreen({ route }) {
   if (loading || !auction) {
     return (
       <Screen>
+        <ScreenHeader variant="hero" title="Mezat" />
         <View style={styles.center}>
           <ActivityIndicator size="large" color={colors.brown} />
         </View>
@@ -319,6 +320,11 @@ export default function AuctionDetailScreen({ route }) {
 
   return (
     <Screen>
+      <ScreenHeader
+        variant="hero"
+        title={auction.title || 'Mezat'}
+        subtitle={auction.seller?.companyName || undefined}
+      />
       <FlatList
         data={bids}
         keyExtractor={(item) => item._id}
@@ -365,10 +371,7 @@ export default function AuctionDetailScreen({ route }) {
 const styles = StyleSheet.create({
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   listContent: { paddingBottom: spacing.sm },
-  headerWrap: { paddingHorizontal: spacing.lg },
-
-  logoContainer: { marginTop: -20, alignItems: 'center', marginBottom: spacing.sm },
-  logo: { width: 300, height: 100 },
+  headerWrap: { paddingHorizontal: spacing.lg, paddingTop: spacing.lg },
 
   galleryWrap: {
     borderRadius: radii.lg,
@@ -414,6 +417,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: spacing.sm,
   },
+  statusRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+    marginBottom: spacing.sm,
+  },
   sellerBtn: {
     ...typography.h3,
     color: colors.brown,
@@ -442,11 +452,10 @@ const styles = StyleSheet.create({
   priceLabel: {
     ...typography.label,
     color: colors.cream,
-    fontWeight: '600',
     marginLeft: spacing.sm,
     textTransform: 'uppercase',
   },
-  price: { fontSize: 30, fontWeight: '800', color: colors.white },
+  price: { ...typography.hero, fontSize: 30, color: colors.white },
 
   incrementContainer: {
     flexDirection: 'row',
@@ -466,7 +475,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.brown,
     borderColor: colors.brown,
   },
-  incrementText: { color: colors.brown, fontWeight: '700' },
+  incrementText: { ...typography.bodyStrong, color: colors.brown },
   incrementTextSelected: { color: colors.white },
 
   bidButton: {
@@ -500,8 +509,8 @@ const styles = StyleSheet.create({
     backgroundColor: colors.brown, alignItems: 'center', justifyContent: 'center',
     marginRight: spacing.md,
   },
-  avatarText: { fontWeight: '800', color: colors.white, fontSize: 18 },
-  bidUserModern: { fontWeight: '700', color: colors.brownDark, fontSize: 15 },
+  avatarText: { ...typography.h3, color: colors.white, fontSize: 18 },
+  bidUserModern: { ...typography.bodyStrong, color: colors.brownDark, fontSize: 15 },
   bidDate: { ...typography.label, color: colors.muted },
   amountBadge: {
     backgroundColor: colors.brownDark,
@@ -511,7 +520,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginLeft: spacing.sm,
   },
-  amountBadgeText: { color: colors.white, fontWeight: '800', fontSize: 15 },
+  amountBadgeText: { ...typography.button, color: colors.white, fontSize: 15 },
 
   adContainer: {
     marginTop: spacing.lg,
