@@ -5,7 +5,7 @@ import {
 import axios from 'axios';
 import { AuthContext } from '../context/AuthContext';
 import { useAlert } from '../context/AlertContext';
-import { Screen, Card, Badge, EmptyState } from '../components/ui';
+import { Screen, ScreenHeader, Card, Badge, EmptyState } from '../components/ui';
 import { colors, spacing, radii, typography } from '../theme/tokens';
 
 export default function MyBidsScreen({ navigation }) {
@@ -58,9 +58,12 @@ export default function MyBidsScreen({ navigation }) {
             <Text style={styles.title} numberOfLines={2}>
               {item.auction.title}
             </Text>
-            <Text style={styles.amount}>
-              {showRed ? item.auctionCurrentPrice : item.amount} TL
-            </Text>
+            <View style={styles.priceRow}>
+              <Text style={styles.priceLabel}>{showRed ? 'GÜNCEL' : 'TEKLİFİNİZ'}</Text>
+              <Text style={styles.amount}>
+                {Number(showRed ? item.auctionCurrentPrice : item.amount).toLocaleString('tr-TR')} TL
+              </Text>
+            </View>
             <View style={styles.badgeRow}>
               <Badge
                 label={item.statusText}
@@ -81,6 +84,7 @@ export default function MyBidsScreen({ navigation }) {
   if (loading) {
     return (
       <Screen>
+        <ScreenHeader variant="plain" title="Tekliflerim" />
         <View style={styles.loading}>
           <ActivityIndicator size="large" color={colors.brown} />
           <Text style={styles.loadingText}>Teklifler yükleniyor...</Text>
@@ -89,44 +93,32 @@ export default function MyBidsScreen({ navigation }) {
     );
   }
 
-  if (bids.length === 0) {
-    return (
-      <Screen>
-        <Text style={styles.header}>Tekliflerim</Text>
-        <EmptyState
-          icon="gavel"
-          title="Henüz teklif vermediniz"
-          message="Verdiğiniz teklifler burada görünecek."
-        />
-      </Screen>
-    );
-  }
-
   return (
     <Screen>
-      <Text style={styles.header}>Tekliflerim</Text>
+      <ScreenHeader variant="plain" title="Tekliflerim" />
       <FlatList
         data={bids}
         keyExtractor={(item) => item._id}
         renderItem={renderItem}
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
+        ListEmptyComponent={
+          <EmptyState
+            icon="gavel"
+            title="Henüz teklif vermediniz"
+            message="Verdiğiniz teklifler burada görünecek."
+          />
+        }
       />
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  header: {
-    ...typography.h2,
-    color: colors.brownDark,
-    marginBottom: spacing.md,
-    marginTop: spacing.md,
-    paddingHorizontal: spacing.lg,
-  },
   listContent: {
     paddingHorizontal: spacing.lg,
     paddingBottom: spacing.xl,
+    flexGrow: 1,
   },
   bidItem: {
     marginBottom: spacing.md,
@@ -137,7 +129,7 @@ const styles = StyleSheet.create({
   },
   auctionImage: {
     width: 100,
-    height: 70,
+    height: 74,
     borderRadius: radii.md,
     marginRight: spacing.md,
     backgroundColor: colors.line,
@@ -145,22 +137,29 @@ const styles = StyleSheet.create({
   rightContainer: {
     flex: 1,
   },
-  title: { ...typography.h3, color: colors.brownDark },
-  amount: {
-    ...typography.body,
-    color: colors.brown,
-    marginTop: spacing.xs,
+  title: { ...typography.title, color: colors.brownDark, marginBottom: spacing.xs },
+  priceRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
     marginBottom: spacing.sm,
+  },
+  priceLabel: {
+    ...typography.label,
+    color: colors.muted,
+    fontSize: 9,
+    marginRight: spacing.sm,
+  },
+  amount: {
+    ...typography.price,
   },
   badgeRow: {
     flexDirection: 'row',
   },
   redWarning: {
+    ...typography.bodyStrong,
     color: colors.danger,
-    fontWeight: 'bold',
     marginTop: spacing.xs,
-    fontSize: 13,
   },
   loading: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  loadingText: { color: colors.brown, marginTop: spacing.sm },
+  loadingText: { ...typography.body, color: colors.brown, marginTop: spacing.sm },
 });

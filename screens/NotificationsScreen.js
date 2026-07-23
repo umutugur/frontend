@@ -3,7 +3,7 @@ import { View, Text, FlatList, StyleSheet } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import axios from 'axios';
 import { AuthContext } from '../context/AuthContext';
-import { Screen, Card, EmptyState } from '../components/ui';
+import { Screen, ScreenHeader, Card, EmptyState } from '../components/ui';
 import { colors, spacing, radii, typography } from '../theme/tokens';
 
 export default function NotificationsScreen() {
@@ -36,20 +36,22 @@ export default function NotificationsScreen() {
         style={[styles.notification, !item.isRead && styles.unreadNotification]}
         onPress={() => markAsRead(item._id)}
       >
+        {!item.isRead ? <View style={styles.unreadAccent} /> : null}
         <View style={styles.titleRow}>
-          {!item.isRead && <View style={styles.unreadDot} />}
-          <MaterialCommunityIcons
-            name="bell-outline"
-            size={18}
-            color={colors.brown}
-            style={styles.bellIcon}
-          />
+          <View style={[styles.bellCircle, !item.isRead && styles.bellCircleUnread]}>
+            <MaterialCommunityIcons
+              name={item.isRead ? 'bell-outline' : 'bell-ring-outline'}
+              size={16}
+              color={item.isRead ? colors.brown : colors.gold}
+            />
+          </View>
           <Text
             style={[styles.title, !item.isRead && styles.unreadTitle]}
             numberOfLines={2}
           >
             {item.title}
           </Text>
+          {!item.isRead ? <View style={styles.unreadDot} /> : null}
         </View>
         <Text style={styles.body}>{item.message}</Text>
         <Text style={styles.date}>{formattedDate}</Text>
@@ -59,6 +61,7 @@ export default function NotificationsScreen() {
 
   return (
     <Screen>
+      <ScreenHeader variant="plain" title="Bildirimler" />
       <FlatList
         data={notifications}
         keyExtractor={(item) => item._id}
@@ -85,32 +88,49 @@ const styles = StyleSheet.create({
   },
   notification: {
     marginBottom: spacing.md,
+    overflow: 'hidden',
   },
   unreadNotification: {
-    backgroundColor: '#fff3e0',
+    backgroundColor: colors.cream,
+  },
+  unreadAccent: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    bottom: 0,
+    width: 3,
+    backgroundColor: colors.gold,
   },
   titleRow: {
     flexDirection: 'row',
     alignItems: 'center',
   },
+  bellCircle: {
+    width: 32,
+    height: 32,
+    borderRadius: radii.pill,
+    backgroundColor: 'rgba(78,52,46,0.06)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: spacing.sm,
+  },
+  bellCircleUnread: {
+    backgroundColor: 'rgba(201,162,75,0.16)',
+  },
   unreadDot: {
     width: 8,
     height: 8,
     borderRadius: radii.pill,
-    backgroundColor: colors.danger,
-    marginRight: spacing.sm,
-  },
-  bellIcon: {
-    marginRight: spacing.xs,
+    backgroundColor: colors.gold,
+    marginLeft: spacing.sm,
   },
   title: {
-    ...typography.h3,
-    fontWeight: '500',
+    ...typography.bodyStrong,
     color: colors.brownDark,
     flex: 1,
   },
   unreadTitle: {
-    fontWeight: '800',
+    ...typography.h3,
   },
   body: {
     ...typography.body,
@@ -118,7 +138,7 @@ const styles = StyleSheet.create({
     marginTop: spacing.sm,
   },
   date: {
-    ...typography.label,
+    ...typography.small,
     color: colors.muted,
     marginTop: spacing.sm,
     textAlign: 'right',

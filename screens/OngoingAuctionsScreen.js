@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, FlatList, StyleSheet } from 'react-native';
-import { Screen, Card, Badge } from '../components/ui';
+import { Screen, ScreenHeader, Card, Badge, EmptyState } from '../components/ui';
 import { colors, spacing, typography } from '../theme/tokens';
 
 const ongoingAuctions = [
@@ -14,6 +14,7 @@ export default function OngoingAuctionsScreen() {
 
     return (
       <Card style={[styles.auctionItem, highlight && styles.highlight]}>
+        {highlight ? <View style={styles.accent} /> : null}
         <View style={styles.titleRow}>
           <Text style={styles.title}>{item.title}</Text>
           {highlight && <Badge label="Yeni Teklif" tone="rejected" />}
@@ -28,35 +29,45 @@ export default function OngoingAuctionsScreen() {
 
   return (
     <Screen>
-      <Text style={styles.header}>Devam Eden Mezatlar</Text>
+      <ScreenHeader variant="plain" title="Devam Eden Mezatlar" />
       <FlatList
         data={ongoingAuctions}
         renderItem={renderItem}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
+        ListEmptyComponent={
+          <EmptyState
+            icon="gavel"
+            title="Devam eden mezat yok"
+            message="Teklif verdiğiniz mezatlar burada görünecek."
+          />
+        }
       />
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  header: {
-    ...typography.h2,
-    color: colors.brownDark,
-    marginBottom: spacing.md,
-    marginTop: spacing.md,
-    paddingHorizontal: spacing.lg,
-  },
   listContent: {
     paddingHorizontal: spacing.lg,
     paddingBottom: spacing.xl,
+    flexGrow: 1,
   },
   auctionItem: {
     marginBottom: spacing.md,
+    overflow: 'hidden',
   },
   highlight: {
-    backgroundColor: '#fff3e0',
+    backgroundColor: colors.cream,
+  },
+  accent: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    bottom: 0,
+    width: 3,
+    backgroundColor: colors.danger,
   },
   titleRow: {
     flexDirection: 'row',
@@ -65,5 +76,5 @@ const styles = StyleSheet.create({
   },
   title: { ...typography.h3, color: colors.brownDark, flex: 1, marginRight: spacing.sm },
   status: { ...typography.body, color: colors.brown, marginTop: spacing.xs },
-  warning: { fontSize: 13, color: colors.danger, marginTop: spacing.sm, fontWeight: '600' },
+  warning: { ...typography.bodyStrong, color: colors.danger, marginTop: spacing.sm },
 });

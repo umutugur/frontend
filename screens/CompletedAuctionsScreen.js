@@ -5,7 +5,7 @@ import axios from 'axios';
 import { AuthContext } from '../context/AuthContext';
 import * as Clipboard from 'expo-clipboard';
 import Toast from 'react-native-toast-message';
-import { Screen, Card, Badge, GradientButton, PressableScale, EmptyState } from '../components/ui';
+import { Screen, ScreenHeader, Card, Badge, GradientButton, PressableScale, EmptyState } from '../components/ui';
 import { colors, spacing, radii, typography } from '../theme/tokens';
 
 export default function CompletedAuctionsScreen({ navigation }) {
@@ -73,7 +73,12 @@ export default function CompletedAuctionsScreen({ navigation }) {
         onPress={() => navigation.navigate('AuctionDetail', { auctionId: item._id })}
       >
         <Text style={styles.title}>{item.title}</Text>
-        <Text style={styles.price}>Kazandığınız Fiyat: {item.currentPrice} TL</Text>
+        <View style={styles.wonRow}>
+          <MaterialCommunityIcons name="trophy-outline" size={16} color={colors.gold} />
+          <Text style={styles.price}>
+            Kazandığınız Fiyat: {Number(item.currentPrice).toLocaleString('tr-TR')} TL
+          </Text>
+        </View>
 
         <View style={styles.infoBox}>
           <View style={styles.infoLabelRow}>
@@ -94,7 +99,10 @@ export default function CompletedAuctionsScreen({ navigation }) {
           </View>
           <Text style={styles.infoText}>IBAN İsmi: {item.seller?.ibanName || '-'}</Text>
           <Text style={styles.infoText}>Banka: {item.seller?.bankName || '-'}</Text>
-          <Text style={styles.countdown}>⏳ {formatCountdown(item.paymentDeadline)}</Text>
+          <View style={styles.countdownRow}>
+            <MaterialCommunityIcons name="timer-sand" size={15} color={colors.danger} />
+            <Text style={styles.countdown}>{formatCountdown(item.paymentDeadline)}</Text>
+          </View>
         </View>
 
         {/* Dekont durumu */}
@@ -122,6 +130,7 @@ export default function CompletedAuctionsScreen({ navigation }) {
           <GradientButton
             title="Dekont Yükle"
             icon="cloud-upload-outline"
+            variant="gold"
             onPress={() => handleUploadReceipt(item._id)}
             style={styles.uploadButton}
           />
@@ -133,6 +142,7 @@ export default function CompletedAuctionsScreen({ navigation }) {
   if (loading) {
     return (
       <Screen>
+        <ScreenHeader variant="plain" title="Kazandığınız Mezatlar" />
         <View style={styles.loader}>
           <ActivityIndicator size="large" color={colors.brown} />
         </View>
@@ -142,7 +152,7 @@ export default function CompletedAuctionsScreen({ navigation }) {
 
   return (
     <Screen>
-      <Text style={styles.header}>Kazandığınız Mezatlar</Text>
+      <ScreenHeader variant="plain" title="Kazandığınız Mezatlar" />
       <FlatList
         data={auctions}
         renderItem={renderItem}
@@ -162,13 +172,6 @@ export default function CompletedAuctionsScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  header: {
-    ...typography.h2,
-    color: colors.brownDark,
-    marginBottom: spacing.md,
-    marginTop: spacing.md,
-    paddingHorizontal: spacing.lg,
-  },
   loader: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   listContent: {
     paddingHorizontal: spacing.lg,
@@ -179,10 +182,18 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
   },
   title: { ...typography.h3, color: colors.brownDark },
-  price: { ...typography.body, color: colors.brown, marginVertical: spacing.xs },
+  wonRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    marginVertical: spacing.xs,
+  },
+  price: { ...typography.bodyStrong, color: colors.brown },
   infoBox: {
     backgroundColor: colors.surface,
     borderRadius: radii.md,
+    borderWidth: 1,
+    borderColor: colors.line,
     padding: spacing.md,
     marginVertical: spacing.sm,
   },
@@ -192,7 +203,7 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xs,
   },
   infoLabel: {
-    fontWeight: 'bold',
+    ...typography.bodyStrong,
     color: colors.brownDark,
     marginLeft: spacing.xs,
   },
@@ -206,10 +217,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 2,
   },
-  countdown: {
+  countdownRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
     marginTop: spacing.sm,
+  },
+  countdown: {
+    ...typography.bodyStrong,
     color: colors.danger,
-    fontWeight: 'bold',
   },
   statusRow: {
     marginTop: spacing.sm,
@@ -221,23 +237,26 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    gap: spacing.xs,
     marginTop: spacing.md,
   },
   uploadedLabel: {
+    ...typography.bodyStrong,
     color: colors.priceGreen,
-    fontWeight: 'bold',
-    marginLeft: spacing.xs,
   },
   copyButton: {
     marginLeft: spacing.sm,
-    paddingHorizontal: spacing.sm,
+    paddingHorizontal: spacing.md,
     paddingVertical: spacing.xs,
-    backgroundColor: '#e0c9a6',
-    borderRadius: radii.sm,
+    backgroundColor: 'rgba(201,162,75,0.18)',
+    borderWidth: 1,
+    borderColor: colors.gold,
+    borderRadius: radii.pill,
   },
   copyButtonText: {
-    color: colors.brownDark,
-    fontWeight: 'bold',
-    fontSize: 12,
+    ...typography.label,
+    color: colors.gold,
+    fontSize: 11,
+    letterSpacing: 0.4,
   },
 });
