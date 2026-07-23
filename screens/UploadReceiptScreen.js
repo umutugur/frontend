@@ -1,18 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  Image,
-  Alert,
-  ActivityIndicator,
-} from 'react-native';
+import { View, Text, StyleSheet, Image } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import axios from 'axios';
+import { useAlert } from '../context/AlertContext';
+import { Screen, GradientButton, PressableScale } from '../components/ui';
+import { colors, gradients, spacing, radii, typography, shadows } from '../theme/tokens';
 
 export default function UploadReceiptScreen({ route, navigation }) {
   const { auctionId } = route.params;
+  const { showAlert } = useAlert();
   const [receiptImage, setReceiptImage] = useState(null);
   const [loading, setLoading] = useState(false);
   const [alreadyUploaded, setAlreadyUploaded] = useState(false);
@@ -26,12 +24,16 @@ export default function UploadReceiptScreen({ route, navigation }) {
       const res = await axios.get(`https://imame-backend.onrender.com/api/auctions/${auctionId}`);
       if (res.data.receiptUploaded) {
         setAlreadyUploaded(true);
-        Alert.alert('Uyarı', 'Bu mezat için zaten bir dekont yüklediniz.', [
-          {
-            text: 'Tamam',
-            onPress: () => navigation.goBack(),
-          },
-        ]);
+        showAlert({
+          title: 'Uyarı',
+          message: 'Bu mezat için zaten bir dekont yüklediniz.',
+          buttons: [
+            {
+              text: 'Tamam',
+              onPress: () => navigation.goBack(),
+            },
+          ],
+        });
       }
     } catch (err) {
       console.error('Dekont kontrol hatası:', err);
@@ -41,7 +43,10 @@ export default function UploadReceiptScreen({ route, navigation }) {
   const pickImage = async () => {
     const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permissionResult.granted) {
-      Alert.alert('İzin Gerekli', 'Galeriye erişim izni vermeniz gerekiyor.');
+      showAlert({
+        title: 'İzin Gerekli',
+        message: 'Galeriye erişim izni vermeniz gerekiyor.',
+      });
       return;
     }
 
@@ -58,7 +63,7 @@ export default function UploadReceiptScreen({ route, navigation }) {
 
   const handleUpload = async () => {
     if (!receiptImage) {
-      Alert.alert('Uyarı', 'Lütfen bir dekont resmi seçin.');
+      showAlert({ title: 'Uyarı', message: 'Lütfen bir dekont resmi seçin.' });
       console.log('auctionId:', auctionId);
       return;
     }
@@ -90,12 +95,12 @@ export default function UploadReceiptScreen({ route, navigation }) {
         receiptUrl,
       });
 
-      Alert.alert('Başarılı', 'Dekont başarıyla yüklendi!');
+      showAlert({ title: 'Başarılı', message: 'Dekont başarıyla yüklendi!' });
       setReceiptImage(null);
       navigation.goBack();
     } catch (err) {
       console.error('Dekont yükleme hatası:', err);
-      Alert.alert('Hata', 'Dekont yüklenirken bir hata oluştu.');
+      showAlert({ title: 'Hata', message: 'Dekont yüklenirken bir hata oluştu.' });
     } finally {
       setLoading(false);
     }
@@ -104,49 +109,76 @@ export default function UploadReceiptScreen({ route, navigation }) {
   if (alreadyUploaded) return null;
 
   return (
-    <View style={styles.container}>
+    <Screen contentContainerStyle={styles.container}>
       <Text style={styles.title}>Dekont Yükleme</Text>
 
-      <TouchableOpacity onPress={pickImage} style={styles.imagePicker}>
+      <PressableScale onPress={pickImage} style={styles.pickerWrap}>
         {receiptImage ? (
           <Image source={{ uri: receiptImage }} style={styles.image} />
         ) : (
-          <Text style={styles.pickText}>Dekont Seç</Text>
+          <LinearGradient
+            colors={gradients.creamSurface}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.imagePicker}
+          >
+            <MaterialCommunityIcons
+              name="cloud-upload-outline"
+              size={48}
+              color={colors.brown}
+            />
+            <Text style={styles.pickText}>Dekont Seç</Text>
+          </LinearGradient>
         )}
-      </TouchableOpacity>
+      </PressableScale>
 
-      <TouchableOpacity style={styles.uploadButton} onPress={handleUpload} disabled={loading}>
-        {loading ? (
-          <ActivityIndicator color="#fff" />
-        ) : (
-          <Text style={styles.uploadText}>Yükle</Text>
-        )}
-      </TouchableOpacity>
-    </View>
+      <GradientButton
+        title="Yükle"
+        icon="cloud-upload-outline"
+        onPress={handleUpload}
+        loading={loading}
+        disabled={loading}
+        style={styles.uploadButton}
+      />
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20, backgroundColor: '#fff8e1', alignItems: 'center' },
-  title: { fontSize: 22, fontWeight: 'bold', color: '#4e342e', marginBottom: 20 },
+  container: {
+    padding: spacing.xl,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  title: {
+    ...typography.h1,
+    color: colors.brownDark,
+    marginBottom: spacing.xl,
+  },
+  pickerWrap: {
+    width: 260,
+    height: 260,
+    borderRadius: radii.lg,
+    overflow: 'hidden',
+    marginBottom: spacing.xl,
+    ...shadows.card,
+  },
   imagePicker: {
-    width: 250,
-    height: 250,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#aaa',
-    backgroundColor: '#f0eae2',
+    flex: 1,
+    borderRadius: radii.lg,
+    borderWidth: 1.5,
+    borderColor: colors.line,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 20,
   },
-  pickText: { color: '#5d4037', fontSize: 16 },
-  image: { width: '100%', height: '100%', borderRadius: 10 },
+  pickText: {
+    color: colors.brown,
+    fontSize: 16,
+    fontWeight: '700',
+    marginTop: spacing.sm,
+  },
+  image: { width: '100%', height: '100%', borderRadius: radii.lg },
   uploadButton: {
-    backgroundColor: '#6d4c41',
-    paddingVertical: 12,
-    paddingHorizontal: 32,
-    borderRadius: 10,
+    width: 260,
   },
-  uploadText: { color: '#fff', fontWeight: 'bold', fontSize: 16 },
 });

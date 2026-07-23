@@ -1,5 +1,7 @@
 import React from 'react';
-import { View, Text, FlatList, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, FlatList, StyleSheet } from 'react-native';
+import { Screen, Card, Badge } from '../components/ui';
+import { colors, spacing, typography } from '../theme/tokens';
 
 const ongoingAuctions = [
   { id: '1', title: 'Kuka Tesbih', lastBidder: 'Siz', newBidAfterYou: true },
@@ -11,45 +13,57 @@ export default function OngoingAuctionsScreen() {
     const highlight = item.newBidAfterYou;
 
     return (
-      <TouchableOpacity
-        style={[
-          styles.auctionItem,
-          highlight && { backgroundColor: '#fff3e0', borderColor: '#ff6f00' },
-        ]}
-      >
-        <Text style={styles.title}>{item.title}</Text>
-        <Text style={styles.status}>
-          Son Teklif: {item.lastBidder}
-        </Text>
-        {highlight && <Text style={styles.warning}>Sizden sonra teklif verildi!</Text>}
-      </TouchableOpacity>
+      <Card style={[styles.auctionItem, highlight && styles.highlight]}>
+        <View style={styles.titleRow}>
+          <Text style={styles.title}>{item.title}</Text>
+          {highlight && <Badge label="Yeni Teklif" tone="rejected" />}
+        </View>
+        <Text style={styles.status}>Son Teklif: {item.lastBidder}</Text>
+        {highlight && (
+          <Text style={styles.warning}>Sizden sonra teklif verildi!</Text>
+        )}
+      </Card>
     );
   };
 
   return (
-    <View style={styles.container}>
+    <Screen>
       <Text style={styles.header}>Devam Eden Mezatlar</Text>
       <FlatList
         data={ongoingAuctions}
         renderItem={renderItem}
         keyExtractor={(item) => item.id}
+        contentContainerStyle={styles.listContent}
+        showsVerticalScrollIndicator={false}
       />
-    </View>
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fff8e1', padding: 16 },
-  header: { fontSize: 22, fontWeight: 'bold', color: '#4e342e', marginBottom: 10 },
-  auctionItem: {
-    padding: 12,
-    backgroundColor: '#ffffff',
-    borderRadius: 10,
-    marginBottom: 10,
-    borderWidth: 1,
-    borderColor: '#ddd',
+  header: {
+    ...typography.h2,
+    color: colors.brownDark,
+    marginBottom: spacing.md,
+    marginTop: spacing.md,
+    paddingHorizontal: spacing.lg,
   },
-  title: { fontSize: 16, fontWeight: 'bold', color: '#3e2723' },
-  status: { fontSize: 14, color: '#5d4037', marginTop: 4 },
-  warning: { fontSize: 13, color: '#d84315', marginTop: 6 },
+  listContent: {
+    paddingHorizontal: spacing.lg,
+    paddingBottom: spacing.xl,
+  },
+  auctionItem: {
+    marginBottom: spacing.md,
+  },
+  highlight: {
+    backgroundColor: '#fff3e0',
+  },
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  title: { ...typography.h3, color: colors.brownDark, flex: 1, marginRight: spacing.sm },
+  status: { ...typography.body, color: colors.brown, marginTop: spacing.xs },
+  warning: { fontSize: 13, color: colors.danger, marginTop: spacing.sm, fontWeight: '600' },
 });
