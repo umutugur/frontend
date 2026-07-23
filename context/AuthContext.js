@@ -9,7 +9,8 @@ import * as Google from 'expo-auth-session/providers/google';
 import { makeRedirectUri } from 'expo-auth-session';
 import * as AppleAuthentication from 'expo-apple-authentication';
 import Constants from 'expo-constants';
-import { Alert, Platform } from 'react-native';
+import { Platform } from 'react-native';
+import { alertBridge } from './AlertContext';
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -146,7 +147,7 @@ export const AuthProvider = ({ children }) => {
       await completeLogin(res.data);
     } catch (err) {
       console.error('Google login hatası:', err.message);
-      Alert.alert('Giriş Hatası', err.response?.data?.message || err.message);
+      alertBridge.showAlert({ title: 'Giriş Hatası', message: err.response?.data?.message || err.message });
     }
   };
 
@@ -155,7 +156,7 @@ export const AuthProvider = ({ children }) => {
       if (Platform.OS === 'ios') {
         const available = await AppleAuthentication.isAvailableAsync();
         if (!available) {
-          Alert.alert('Uyarı', 'Bu cihazda Apple ile Giriş desteklenmiyor.');
+          alertBridge.showAlert({ title: 'Uyarı', message: 'Bu cihazda Apple ile Giriş desteklenmiyor.' });
           return;
         }
       }
@@ -169,7 +170,7 @@ export const AuthProvider = ({ children }) => {
 
       const { identityToken, email, fullName } = credential;
       if (!identityToken) {
-        Alert.alert('Giriş Hatası', 'Apple kimlik doğrulaması başarısız. Lütfen tekrar deneyin.');
+        alertBridge.showAlert({ title: 'Giriş Hatası', message: 'Apple kimlik doğrulaması başarısız. Lütfen tekrar deneyin.' });
         return;
       }
 
@@ -183,7 +184,7 @@ export const AuthProvider = ({ children }) => {
       await completeLogin(res.data);
     } catch (err) {
       console.error('Apple login hatası:', err.message);
-      Alert.alert('Giriş Hatası', err.response?.data?.message || err.message);
+      alertBridge.showAlert({ title: 'Giriş Hatası', message: err.response?.data?.message || err.message });
     }
   };
 
@@ -193,7 +194,7 @@ export const AuthProvider = ({ children }) => {
       await completeLogin(res.data);
     } catch (err) {
       console.error('Login hatası:', err.message);
-      Alert.alert('Giriş Hatası', err.response?.data?.message || err.message);
+      alertBridge.showAlert({ title: 'Giriş Hatası', message: err.response?.data?.message || err.message });
     }
   };
 
@@ -220,11 +221,11 @@ export const AuthProvider = ({ children }) => {
       await setAuthHeaderFromStorage();
       const res = await axios.delete(`${API_BASE}/api/users/me`);
       await logout();
-      Alert.alert('Hesap Silindi', 'Hesabınız ve verileriniz silindi.');
+      alertBridge.showAlert({ title: 'Hesap Silindi', message: 'Hesabınız ve verileriniz silindi.' });
       return res.data;
     } catch (err) {
       const msg = err?.response?.data?.message || err.message;
-      Alert.alert('Silme Başarısız', msg);
+      alertBridge.showAlert({ title: 'Silme Başarısız', message: msg });
       throw err;
     }
   };
@@ -239,7 +240,7 @@ export const AuthProvider = ({ children }) => {
       return updatedUser;
     } catch (err) {
       console.error('Profil güncelleme hatası:', err.message);
-      Alert.alert('Hata', err.response?.data?.message || 'Profil güncellenemedi.');
+      alertBridge.showAlert({ title: 'Hata', message: err.response?.data?.message || 'Profil güncellenemedi.' });
       throw err;
     }
   };
