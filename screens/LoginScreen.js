@@ -1,6 +1,6 @@
 // screens/LoginScreen.js
-import React, { useState, useContext, useEffect } from 'react';
-import { View, Text, StyleSheet, Image, Platform } from 'react-native';
+import React, { useState, useContext, useEffect, useRef } from 'react';
+import { View, Text, StyleSheet, Image, Platform, Animated } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { AuthContext } from '../context/AuthContext';
@@ -19,6 +19,11 @@ const LoginScreen = ({ navigation }) => {
   const [error, setError] = useState('');
   const [banned, setBanned] = useState(false);
   const [isAppleAvailable, setIsAppleAvailable] = useState(false);
+
+  const enter = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    Animated.timing(enter, { toValue: 1, duration: 550, useNativeDriver: true }).start();
+  }, [enter]);
 
   useEffect(() => {
     if (Platform.OS === 'ios') {
@@ -53,107 +58,110 @@ const LoginScreen = ({ navigation }) => {
     }
   };
 
+  const translateY = enter.interpolate({ inputRange: [0, 1], outputRange: [18, 0] });
+
   return (
-    <Screen scroll contentContainerStyle={styles.scroll}>
-      {/* Marka */}
-      <View style={styles.brand}>
-        <View style={styles.glow} pointerEvents="none" />
-        <LinearGradient
-          colors={gradients.creamSurface}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.medallion}
-        >
-          <Image source={require('../assets/logo.png')} style={styles.logo} />
-        </LinearGradient>
-        <Text style={styles.kicker}>TESPİH MEZATI</Text>
-      </View>
-
-      <Text style={styles.title}>Giriş Yap</Text>
-      <Text style={styles.subtitle}>Hesabınıza erişmek için giriş yapın</Text>
-
-      {!!error && (
-        <View style={[styles.errorBox, banned && styles.banBox]}>
-          <Ionicons
-            name={banned ? 'alert-circle' : 'information-circle'}
-            size={18}
-            color={colors.danger}
-            style={styles.errorIcon}
-          />
-          <Text style={styles.errorText}>{error}</Text>
+    <Screen scroll edges={['left', 'right']} contentContainerStyle={styles.scroll}>
+      {/* ── Hero bandı ── */}
+      <LinearGradient
+        colors={gradients.heroDark}
+        start={{ x: 0.1, y: 0 }}
+        end={{ x: 0.9, y: 1 }}
+        style={styles.hero}
+      >
+        <LinearGradient colors={gradients.sheen} style={styles.heroSheen} pointerEvents="none" />
+        <View style={styles.plaque}>
+          <LinearGradient
+            colors={gradients.creamSurface}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.plaqueFill}
+          >
+            <Image source={require('../assets/logo.png')} style={styles.logo} />
+          </LinearGradient>
         </View>
-      )}
+        <Text style={styles.kicker}>· EL YAPIMI TESPİH MEZATI ·</Text>
+      </LinearGradient>
 
-      {/* Form */}
-      <View style={styles.card}>
-        <Input
-          placeholder="E-posta"
-          value={email}
-          onChangeText={setEmail}
-          keyboardType="email-address"
-          autoCapitalize="none"
-          leftIcon="mail-outline"
-        />
-        <Input
-          placeholder="Şifre"
-          value={password}
-          onChangeText={setPassword}
-          secureTextEntry={!showPassword}
-          leftIcon="lock-closed-outline"
-          rightElement={
-            <PressableScale onPress={() => setShowPassword((s) => !s)}>
-              <Ionicons
-                name={showPassword ? 'eye-off-outline' : 'eye-outline'}
-                size={20}
-                color={colors.muted}
-              />
-            </PressableScale>
-          }
-        />
-        <GradientButton
-          title="Giriş Yap"
-          icon="log-in-outline"
-          onPress={handleLogin}
-          style={styles.fullBtn}
-        />
-      </View>
+      {/* ── Form ── */}
+      <Animated.View style={[styles.body, { opacity: enter, transform: [{ translateY }] }]}>
+        <Text style={styles.title}>Giriş Yap</Text>
+        <Text style={styles.subtitle}>Hesabınıza erişmek için giriş yapın</Text>
 
-      {/* Ayıraç */}
-      <View style={styles.divider}>
-        <View style={styles.line} />
-        <Text style={styles.dividerText}>veya</Text>
-        <View style={styles.line} />
-      </View>
+        {!!error && (
+          <View style={[styles.errorBox, banned && styles.banBox]}>
+            <Ionicons
+              name={banned ? 'alert-circle' : 'information-circle'}
+              size={18}
+              color={colors.danger}
+              style={styles.errorIcon}
+            />
+            <Text style={styles.errorText}>{error}</Text>
+          </View>
+        )}
 
-      {/* Sosyal */}
-      <PressableScale style={styles.socialButton} onPress={() => promptGoogle()}>
-        <Image source={require('../assets/google-icon.png')} style={styles.googleIcon} />
-        <Text style={styles.socialText}>Google ile Giriş Yap</Text>
-      </PressableScale>
-
-      {Platform.OS === 'ios' && isAppleAvailable && (
-        <AppleAuthentication.AppleAuthenticationButton
-          buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN}
-          buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.BLACK}
-          cornerRadius={radii.pill}
-          style={styles.appleButton}
-          onPress={async () => {
-            try {
-              await loginWithApple();
-            } catch (err) {
-              if (err.code !== 'ERR_CANCELED') {
-                showAlert({ title: 'Apple Girişi Hatası', message: err.message || 'Bir hata oluştu.' });
-              }
+        <View style={styles.card}>
+          <Input
+            placeholder="E-posta"
+            value={email}
+            onChangeText={setEmail}
+            keyboardType="email-address"
+            autoCapitalize="none"
+            leftIcon="mail-outline"
+          />
+          <Input
+            placeholder="Şifre"
+            value={password}
+            onChangeText={setPassword}
+            secureTextEntry={!showPassword}
+            leftIcon="lock-closed-outline"
+            rightElement={
+              <PressableScale onPress={() => setShowPassword((s) => !s)}>
+                <Ionicons
+                  name={showPassword ? 'eye-off-outline' : 'eye-outline'}
+                  size={20}
+                  color={colors.muted}
+                />
+              </PressableScale>
             }
-          }}
-        />
-      )}
+          />
+          <GradientButton title="Giriş Yap" icon="log-in-outline" onPress={handleLogin} style={styles.fullBtn} />
+        </View>
 
-      {/* Misafir */}
-      <PressableScale style={styles.guest} onPress={signInGuest}>
-        <Ionicons name="arrow-forward-circle-outline" size={18} color={colors.brown} />
-        <Text style={styles.guestText}>Üye olmadan devam et</Text>
-      </PressableScale>
+        <View style={styles.divider}>
+          <View style={styles.line} />
+          <Text style={styles.dividerText}>veya</Text>
+          <View style={styles.line} />
+        </View>
+
+        <PressableScale style={styles.socialButton} onPress={() => promptGoogle()}>
+          <Image source={require('../assets/google-icon.png')} style={styles.googleIcon} />
+          <Text style={styles.socialText}>Google ile Giriş Yap</Text>
+        </PressableScale>
+
+        {Platform.OS === 'ios' && isAppleAvailable && (
+          <AppleAuthentication.AppleAuthenticationButton
+            buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN}
+            buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.BLACK}
+            cornerRadius={radii.pill}
+            style={styles.appleButton}
+            onPress={async () => {
+              try {
+                await loginWithApple();
+              } catch (err) {
+                if (err.code !== 'ERR_CANCELED') {
+                  showAlert({ title: 'Apple Girişi Hatası', message: err.message || 'Bir hata oluştu.' });
+                }
+              }
+            }}
+          />
+        )}
+
+        <PressableScale style={styles.guest} onPress={signInGuest}>
+          <Ionicons name="arrow-forward-circle-outline" size={18} color={colors.brown} />
+          <Text style={styles.guestText}>Üye olmadan devam et</Text>
+        </PressableScale>
+      </Animated.View>
     </Screen>
   );
 };
@@ -161,40 +169,40 @@ const LoginScreen = ({ navigation }) => {
 export default LoginScreen;
 
 const styles = StyleSheet.create({
-  scroll: {
-    justifyContent: 'center',
-    paddingHorizontal: spacing.xl,
-    paddingVertical: spacing.xxxl,
+  scroll: { flexGrow: 1, paddingBottom: spacing.xxxl },
+
+  hero: {
+    paddingTop: spacing.huge,
+    paddingBottom: spacing.xxl,
+    alignItems: 'center',
+    borderBottomLeftRadius: radii.xxl + 6,
+    borderBottomRightRadius: radii.xxl + 6,
+    overflow: 'hidden',
   },
-  brand: { alignItems: 'center', marginBottom: spacing.xl },
-  glow: {
-    position: 'absolute',
-    width: 220,
-    height: 220,
-    borderRadius: 110,
-    top: -30,
-    backgroundColor: 'rgba(201,162,75,0.18)',
-  },
-  medallion: {
-    width: 168,
-    height: 112,
+  heroSheen: { position: 'absolute', top: 0, left: 0, right: 0, height: '50%' },
+  plaque: {
     borderRadius: radii.xl,
+    padding: 2,
+    backgroundColor: 'rgba(201,162,75,0.55)',
+    ...shadows.raised,
+  },
+  plaqueFill: {
+    width: 172,
+    height: 112,
+    borderRadius: radii.xl - 2,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1.5,
-    borderColor: 'rgba(161,116,59,0.35)',
-    ...shadows.raised,
   },
   logo: { width: 140, height: 78, resizeMode: 'contain' },
   kicker: {
     ...typography.label,
-    color: colors.gold,
-    marginTop: spacing.md,
+    color: colors.goldLight,
+    marginTop: spacing.lg,
+    letterSpacing: 1.6,
   },
-  title: {
-    ...typography.hero,
-    textAlign: 'center',
-  },
+
+  body: { paddingHorizontal: spacing.xl, paddingTop: spacing.xl },
+  title: { ...typography.hero, textAlign: 'center' },
   subtitle: {
     ...typography.body,
     color: colors.muted,
@@ -224,17 +232,9 @@ const styles = StyleSheet.create({
     ...shadows.card,
   },
   fullBtn: { width: '100%', marginTop: spacing.xs },
-  divider: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginVertical: spacing.xl,
-  },
+  divider: { flexDirection: 'row', alignItems: 'center', marginVertical: spacing.xl },
   line: { flex: 1, height: 1, backgroundColor: colors.lineStrong },
-  dividerText: {
-    ...typography.label,
-    color: colors.muted,
-    marginHorizontal: spacing.md,
-  },
+  dividerText: { ...typography.label, color: colors.muted, marginHorizontal: spacing.md },
   socialButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -259,9 +259,5 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.md,
     gap: spacing.xs,
   },
-  guestText: {
-    ...typography.bodyStrong,
-    color: colors.brown,
-    textDecorationLine: 'underline',
-  },
+  guestText: { ...typography.bodyStrong, color: colors.brown, textDecorationLine: 'underline' },
 });

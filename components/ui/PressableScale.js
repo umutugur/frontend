@@ -2,12 +2,14 @@
 import React, { useRef } from 'react';
 import { Animated, Pressable } from 'react-native';
 
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
+
 /**
  * PressableScale — basınca hafifçe küçülen (0.97) dokunmatik sarmalayıcı.
  * Props: { onPress, children, style, disabled }
- * Layout stili (width/margin/shadow) DIŞTAKİ Pressable'a uygulanır; iç Animated.View
- * yalnızca scale transform taşır ve ebeveynini doldurur (stretch). Böylece
- * width:'100%' gibi stiller doğru propagate olur.
+ * Stil + transform + çocuklar TEK elemanda (AnimatedPressable) olduğundan hem
+ * width:'100%' doğru propagate olur hem de flexDirection/justifyContent gibi
+ * layout stilleri çocuklara uygulanır.
  */
 export default function PressableScale({ onPress, children, style, disabled = false, ...rest }) {
   const scale = useRef(new Animated.Value(1)).current;
@@ -22,17 +24,15 @@ export default function PressableScale({ onPress, children, style, disabled = fa
   };
 
   return (
-    <Pressable
+    <AnimatedPressable
       onPress={onPress}
       disabled={disabled}
       onPressIn={() => animateTo(0.97)}
       onPressOut={() => animateTo(1)}
-      style={style}
+      style={[style, { transform: [{ scale }] }]}
       {...rest}
     >
-      <Animated.View style={{ transform: [{ scale }], width: '100%' }}>
-        {children}
-      </Animated.View>
-    </Pressable>
+      {children}
+    </AnimatedPressable>
   );
 }
