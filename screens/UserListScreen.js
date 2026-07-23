@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, FlatList, StyleSheet } from 'react-native';
 import axios from 'axios';
-import { Screen, Card, Input, Badge, GradientButton, EmptyState } from '../components/ui';
+import { Screen, ScreenHeader, Card, Input, Badge, GradientButton, EmptyState } from '../components/ui';
 import { useAlert } from '../context/AlertContext';
 import { colors, spacing, typography } from '../theme/tokens';
 
@@ -92,14 +92,15 @@ export default function UserListScreen() {
 
   return (
     <Screen>
+      <ScreenHeader title="Kullanıcı Yönetimi" subtitle="Tüm kayıtlı kullanıcılar" />
       <View style={styles.container}>
-        <Text style={styles.title}>Kullanıcı Yönetimi</Text>
         <Input
           placeholder="E-posta ile ara..."
           value={searchEmail}
           onChangeText={filterByEmail}
           autoCapitalize="none"
           keyboardType="email-address"
+          leftIcon="search-outline"
         />
         <FlatList
           data={filtered}
@@ -121,12 +122,9 @@ export default function UserListScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: spacing.xl,
-  },
-  title: {
-    ...typography.h1,
-    color: colors.brownDark,
-    marginBottom: spacing.lg,
+    paddingHorizontal: spacing.xl,
+    paddingTop: spacing.sm,
+    paddingBottom: spacing.xl,
   },
   listContent: {
     paddingBottom: spacing.xl,
