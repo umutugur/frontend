@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, FlatList, StyleSheet, Image, TouchableOpacity } from 'react-native';
+import { View, FlatList, StyleSheet } from 'react-native';
 import { useNavigation, useIsFocused } from '@react-navigation/native';
 import axios from 'axios';
 
 // ✅ AdMob bileşenleri eklendi
 import { BannerAd, BannerAdSize, TestIds } from 'react-native-google-mobile-ads';
+
+import { Screen, AuctionCard, CountdownHero, EmptyState } from '../components/ui';
+import { colors, spacing } from '../theme/tokens';
 
 export default function HomeScreen() {
   const navigation = useNavigation();
@@ -27,27 +30,12 @@ export default function HomeScreen() {
   }, [isFocused]);
 
   const renderItem = ({ item }) => (
-    <TouchableOpacity
-      style={styles.card}
-      onPress={() => navigation.navigate('AuctionDetail', { auctionId: item._id })}
-    >
-      <View style={styles.imageWrapper}>
-        <Image
-          source={{ uri: item.images?.[0] || 'https://via.placeholder.com/200' }}
-          style={styles.image}
-        />
-        {item.isSigned && (
-          <View style={styles.ribbon}>
-            <Text style={styles.ribbonText}>✒️ Usta İmzalı</Text>
-          </View>
-        )}
-      </View>
-      <View style={styles.info}>
-        <Text style={styles.title}>{item.title}</Text>
-        <Text style={styles.price}>{item.currentPrice || item.startingPrice}₺</Text>
-        <Text style={styles.seller}>{item.seller?.companyName || 'Firma Bilinmiyor'}</Text>
-      </View>
-    </TouchableOpacity>
+    <View style={styles.cardCol}>
+      <AuctionCard
+        item={item}
+        onPress={() => navigation.navigate('AuctionDetail', { auctionId: item._id })}
+      />
+    </View>
   );
 
   // ✅ Banner reklam birimi
@@ -56,14 +44,23 @@ export default function HomeScreen() {
     : 'ca-app-pub-4306778139267554/1985701713';
 
   return (
-    <View style={styles.container}>
+    <Screen>
       <FlatList
         data={auctions}
         renderItem={renderItem}
         keyExtractor={(item) => item._id}
         numColumns={2}
-        columnWrapperStyle={{ justifyContent: 'space-between' }}
+        columnWrapperStyle={styles.column}
         contentContainerStyle={styles.list}
+        showsVerticalScrollIndicator={false}
+        ListHeaderComponent={<CountdownHero />}
+        ListEmptyComponent={
+          <EmptyState
+            icon="gavel"
+            title="Henüz mezat yok"
+            message="Şu anda aktif mezat bulunmuyor. Daha sonra tekrar göz atın."
+          />
+        }
       />
 
       {/* ✅ Reklam en alta */}
@@ -74,69 +71,28 @@ export default function HomeScreen() {
           requestOptions={{ requestNonPersonalizedAdsOnly: true }}
         />
       </View>
-    </View>
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fff8e1' },
-  list: { padding: 12, paddingBottom: 80 },
-  card: {
-    backgroundColor: '#fff',
+  list: {
+    padding: spacing.lg,
+    paddingBottom: spacing.xxxl * 2.5,
+    flexGrow: 1,
+  },
+  column: {
+    justifyContent: 'space-between',
+  },
+  cardCol: {
     width: '48%',
-    borderRadius: 10,
-    marginBottom: 16,
-    overflow: 'hidden',
-    elevation: 3,
-  },
-  imageWrapper: {
-    position: 'relative',
-    width: '100%',
-    height: 140,
-  },
-  image: {
-    width: '100%',
-    height: '100%',
-  },
-  ribbon: {
-    position: 'absolute',
-    top: 6,
-    right: 6,
-    backgroundColor: '#4e342e',
-    paddingVertical: 4,
-    paddingHorizontal: 8,
-    borderRadius: 6,
-    maxWidth: '90%',
-  },
-  ribbonText: {
-    color: '#fff',
-    fontSize: 12,
-    fontWeight: 'bold',
-  },
-  info: {
-    padding: 8,
-  },
-  title: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    color: '#4e342e',
-  },
-  price: {
-    fontSize: 13,
-    color: '#2e7d32',
-    marginTop: 4,
-    fontWeight: 'bold',
-  },
-  seller: {
-    fontSize: 12,
-    color: '#6d4c41',
-    marginTop: 2,
+    marginBottom: spacing.lg,
   },
   adContainer: {
-    width:'100%',
+    width: '100%',
     alignItems: 'center',
-    backgroundColor: '#fff',
-    paddingBottom: 8,
-    minHeight:60,
+    backgroundColor: colors.white,
+    paddingBottom: spacing.sm,
+    minHeight: 60,
   },
 });
