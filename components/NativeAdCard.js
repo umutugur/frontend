@@ -77,8 +77,6 @@ export function interleaveAds(items, ads, gap = 6) {
  * NativeAdCard — AuctionCard ile aynı görünümde native reklam kartı.
  * Props: { nativeAd } (useNativeAds'ten gelen yüklü reklam)
  */
-const MEDIA_H = 158;
-
 export default function NativeAdCard({ nativeAd }) {
   // Kabın gerçek genişliğini ölçüp medyaya SAYISAL genişlik veriyoruz; '100%'
   // native medya görünümünde tam çözülmediği için sağda boşluk kalıyordu.
@@ -94,11 +92,12 @@ export default function NativeAdCard({ nativeAd }) {
           style={styles.imageWrap}
           onLayout={(e) => setMediaW(e.nativeEvent.layout.width)}
         >
-          {/* contain: kreatif KIRPILMAZ (cover, reklamın başlığını kesiyordu).
-              Artan boşluk kart yüzeyiyle aynı renk olduğu için bant gibi durmaz. */}
+          {/* Yükseklik VERİLMİYOR: NativeMediaView kreatifin kendi en-boy oranını
+              uygular → ne kırpma ne boşluk. minHeight, AdMob'un video için
+              istediği 120pt alt sınırını garanti eder. */}
           <NativeMediaView
-            resizeMode="contain"
-            style={{ width: mediaW || '100%', height: MEDIA_H }}
+            resizeMode="cover"
+            style={{ width: mediaW || '100%', minHeight: 120 }}
           />
           <View style={styles.sponsor}>
             <Text style={styles.sponsorText}>SPONSORLU</Text>
@@ -140,18 +139,15 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.gold,
   },
-  // AuctionCard ile aynı görsel yüksekliği (grid hizası). AdMob kuralları:
-  // (1) video gösteren MediaView >= 120x120 pt — hücre ~173x158, üstünde.
-  // (2) tüm asset sınırları NativeAdView içinde kalmalı → overflow:'hidden' ile kırpılır.
+  // Sabit yükseklik YOK: kap, medyanın doğal oranına göre büyür (kırpma/boşluk olmaz).
+  // AdMob: asset sınırları NativeAdView içinde kalmalı → overflow:'hidden'.
   imageWrap: {
     width: '100%',
-    height: MEDIA_H,
     position: 'relative',
     overflow: 'hidden',
-    // Kart yüzeyiyle aynı renk: contain'den artan boşluk "bant" gibi görünmesin.
     backgroundColor: colors.creamHi,
   },
-  // Not: medyanın boyutu inline veriliyor (ölçülen sayısal genişlik + MEDIA_H).
+  // Not: medyanın boyutu inline veriliyor (ölçülen sayısal genişlik + doğal oran).
   sponsor: {
     position: 'absolute',
     top: spacing.sm,

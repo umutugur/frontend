@@ -139,8 +139,6 @@ export default function FavoritesScreen() {
             </View>
           )}
           keyExtractor={(item) => item._id}
-          numColumns={2}
-          columnWrapperStyle={styles.column}
           contentContainerStyle={styles.list}
           showsVerticalScrollIndicator={false}
           ListEmptyComponent={
@@ -183,11 +181,8 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.xxxl * 2.5,
     flexGrow: 1,
   },
-  column: {
-    justifyContent: 'space-between',
-  },
   cardCol: {
-    width: '48%',
+    width: '100%',
     marginBottom: spacing.lg,
   },
   loading: {

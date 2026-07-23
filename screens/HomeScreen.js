@@ -51,8 +51,6 @@ export default function HomeScreen() {
         data={data}
         renderItem={renderItem}
         keyExtractor={(item) => item._id}
-        numColumns={2}
-        columnWrapperStyle={styles.column}
         contentContainerStyle={styles.list}
         showsVerticalScrollIndicator={false}
         ListHeaderComponent={<CountdownHero />}
@@ -74,11 +72,8 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.xxxl,
     flexGrow: 1,
   },
-  column: {
-    justifyContent: 'space-between',
-  },
   cardCol: {
-    width: '48%',
+    width: '100%',
     marginBottom: spacing.lg,
   },
 });

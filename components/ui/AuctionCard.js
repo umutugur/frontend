@@ -57,9 +57,11 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.line,
   },
+  // Sabit yükseklik yerine oran: kart hangi genişlikte olursa olsun (tek/iki
+  // sütun) düzgün ölçeklenir ve reklam kartlarıyla aynı ritmi tutar.
   imageWrapper: {
     width: '100%',
-    height: 158,
+    aspectRatio: 16 / 9,
     position: 'relative',
     backgroundColor: '#efe3cd',
   },
