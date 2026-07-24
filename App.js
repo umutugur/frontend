@@ -10,6 +10,7 @@ import Toast from 'react-native-toast-message';
 import { AuthProvider, AuthContext } from './context/AuthContext';
 import { AlertProvider } from './context/AlertContext';
 import OfflineNotice from './components/OfflineNotice';
+import { toastConfig } from './components/toastConfig';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { requestTrackingPermissionsAsync, getTrackingPermissionsAsync } from 'expo-tracking-transparency';
 import {
@@ -38,6 +39,7 @@ Notifications.setNotificationHandler({
 // Screens
 import LoginScreen from './screens/LoginScreen';
 import RegisterScreen from './screens/RegisterScreen';
+import ForgotPasswordScreen from './screens/ForgotPasswordScreen';
 import TabNavigator from './navigation/TabNavigator';
 import AuctionDetailScreen from './screens/AuctionDetailScreen';
 import SettingsScreen from './screens/SettingsScreen';
@@ -83,6 +85,7 @@ function MainNavigator() {
         <>
           <Stack.Screen name="Login" component={LoginScreen} />
           <Stack.Screen name="Register" component={RegisterScreen} />
+          <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
         </>
       ) : (
         <>
@@ -209,7 +212,7 @@ export default function App() {
             <NavigationContainer ref={navigationRef}>
               <OfflineNotice />
               <MainNavigator />
-              <Toast />
+              <Toast config={toastConfig} />
             </NavigationContainer>
           </AuthProvider>
         </AlertProvider>
