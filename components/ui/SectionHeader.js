@@ -43,8 +43,7 @@ const styles = StyleSheet.create({
     paddingLeft: spacing.sm,
   },
   actionText: {
-    ...typography.body,
-    fontWeight: '700',
+    ...typography.bodyStrong,
     color: colors.brown,
     marginRight: 2,
   },
