@@ -27,6 +27,11 @@ import {
   Manrope_700Bold,
   Manrope_800ExtraBold,
 } from '@expo-google-fonts/manrope';
+import {
+  Lora_400Regular,
+  Lora_400Regular_Italic,
+  Lora_500Medium,
+} from '@expo-google-fonts/lora';
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -139,6 +144,9 @@ export default function App() {
     Manrope_600SemiBold,
     Manrope_700Bold,
     Manrope_800ExtraBold,
+    Lora_400Regular,
+    Lora_400Regular_Italic,
+    Lora_500Medium,
   });
 
   useEffect(() => {

@@ -11,6 +11,10 @@ export const fonts = {
   displayBlack: 'Fraunces_900Black',
   displaySemi: 'Fraunces_600SemiBold',
   displayItalic: 'Fraunces_600SemiBold_Italic',
+  // Lora: katalog gövdesi (uzun eser açıklamaları — kitap gibi okunur)
+  serifBody: 'Lora_400Regular',
+  serifBodyMedium: 'Lora_500Medium',
+  serifBodyItalic: 'Lora_400Regular_Italic',
   // Manrope: temiz humanist sans (gövde + UI)
   body: 'Manrope_400Regular',
   medium: 'Manrope_500Medium',
@@ -85,6 +89,9 @@ export const typography = {
   bodyStrong: { fontFamily: fonts.semibold, fontSize: 14, lineHeight: 21, color: colors.brownDark },
   small: { fontFamily: fonts.body, fontSize: 12, lineHeight: 17, color: colors.muted },
   label: { fontFamily: fonts.bold, fontSize: 11, letterSpacing: 1.4, color: colors.gold },
+  // Katalog gövdesi — uzun eser açıklamaları (Mezat Detay)
+  catalog: { fontFamily: fonts.serifBody, fontSize: 15, lineHeight: 26, color: '#3d2e20' },
+  catalogItalic: { fontFamily: fonts.serifBodyItalic, fontSize: 14, lineHeight: 22, color: colors.muted },
   button: { fontFamily: fonts.bold, fontSize: 15, letterSpacing: 0.3, color: colors.white },
   price: { fontFamily: fonts.extrabold, fontSize: 16, color: colors.priceGreen },
 };

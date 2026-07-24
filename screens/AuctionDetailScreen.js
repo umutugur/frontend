@@ -1,4 +1,6 @@
 // screens/AuctionDetailScreen.js
+// "Katalog Sayfası" (D-v2) tasarımı: açıklama baş köşede, serif katalog gövdesi,
+// altta sabit teklif dock'u (artırım çipleri + koyu çubuk: fiyat · sayaç · CTA).
 import React, { useState, useEffect, useContext } from 'react';
 import {
   View,
@@ -12,18 +14,19 @@ import {
 } from 'react-native';
 import axios from 'axios';
 import { LinearGradient } from 'expo-linear-gradient';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { AuthContext } from '../context/AuthContext';
 import { useAlert } from '../context/AlertContext';
 import { useNavigation, useIsFocused } from '@react-navigation/native';
 import { BannerAd, BannerAdSize, TestIds } from 'react-native-google-mobile-ads';
 
-import { Screen, ScreenHeader, Card, Badge, GradientButton, OrnamentDivider, PressableScale } from '../components/ui';
-import { colors, gradients, radii, shadows, spacing, typography } from '../theme/tokens';
+import { Screen, GradientButton, OrnamentDivider, PressableScale } from '../components/ui';
+import { colors, fonts, gradients, radii, shadows, spacing, typography } from '../theme/tokens';
 
 const screenWidth = Dimensions.get('window').width;
-const GALLERY_ITEM_WIDTH = screenWidth - spacing.lg * 2;
 const POLL_INTERVAL_MS = 10000;
+const IMAGE_HEIGHT = 270;
+const DESC_COLLAPSED_LINES = 6;
 
 // Minimum teklif artış kademeleri — backend (routes/bid.js) ile birebir aynı.
 function getMinIncrement(currentPrice) {
@@ -31,6 +34,16 @@ function getMinIncrement(currentPrice) {
   if (currentPrice < 2000) return 50;
   if (currentPrice < 5000) return 100;
   return 250;
+}
+
+// endsAt'e kalan süreyi SS:DD:sn olarak verir; geçtiyse null.
+function formatRemaining(endsAt) {
+  if (!endsAt) return null;
+  const diff = new Date(endsAt).getTime() - Date.now();
+  if (diff <= 0) return null;
+  const total = Math.floor(diff / 1000);
+  const pad = (n) => String(n).padStart(2, '0');
+  return `${pad(Math.floor(total / 3600))}:${pad(Math.floor((total % 3600) / 60))}:${pad(total % 60)}`;
 }
 
 export default function AuctionDetailScreen({ route }) {
@@ -42,12 +55,14 @@ export default function AuctionDetailScreen({ route }) {
 
   const [auction, setAuction] = useState(null);
   const [currentPrice, setCurrentPrice] = useState(0);
-  const [selectedTierIndex, setSelectedTierIndex] = useState(0);
+  const [selectedChip, setSelectedChip] = useState(0);
   const [bids, setBids] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isBidding, setIsBidding] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [galleryIndex, setGalleryIndex] = useState(0);
+  const [descExpanded, setDescExpanded] = useState(false);
+  const [remaining, setRemaining] = useState(null);
   // Bir teklif yanıtı geldiğinde sunucunun bildirdiği minNextBid, bir sonraki
   // auction fetch'ine kadar client tarafı hesaplamanın önüne geçer.
   const [serverMinNextBid, setServerMinNextBid] = useState(null);
@@ -99,18 +114,27 @@ export default function AuctionDetailScreen({ route }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isFocused, auctionId]);
 
+  // Kapanış sayacı — saniyede bir.
+  useEffect(() => {
+    if (!auction?.endsAt) return undefined;
+    setRemaining(formatRemaining(auction.endsAt));
+    const t = setInterval(() => setRemaining(formatRemaining(auction.endsAt)), 1000);
+    return () => clearInterval(t);
+  }, [auction?.endsAt]);
+
   const onRefresh = async () => {
     setRefreshing(true);
     await Promise.all([fetchAuction({ silent: true }), fetchBids({ silent: true })]);
     setRefreshing(false);
   };
 
-  // Kademeye göre önerilen 3 hızlı teklif tutarı
-  const tierIncrement = getMinIncrement(currentPrice);
-  const computedMinNext = currentPrice + tierIncrement;
-  const minNextBid = serverMinNextBid ?? computedMinNext;
-  const quickBidOptions = [minNextBid, minNextBid + tierIncrement, minNextBid + tierIncrement * 2];
-  const bidAmount = quickBidOptions[selectedTierIndex] ?? minNextBid;
+  // Artırım çipleri: kademe × 1..4 (fiyata ölçekli).
+  const tier = getMinIncrement(currentPrice);
+  const chipIncrements = [tier, tier * 2, tier * 3, tier * 4];
+  const selectedIncrement = chipIncrements[selectedChip] ?? tier;
+  const minNextBid = serverMinNextBid ?? currentPrice + tier;
+  const bidAmount = Math.max(currentPrice + selectedIncrement, minNextBid);
+  const tl = (n) => `${Number(n).toLocaleString('tr-TR')}₺`;
 
   // Teklif verme
   const handleBid = async () => {
@@ -162,10 +186,10 @@ export default function AuctionDetailScreen({ route }) {
 
       const data = res.data;
       const confirmedAmount = data?.bid?.amount ?? bidAmount;
-      showAlert({ title: 'Tebrikler', message: `Yeni teklif verdiniz: ${confirmedAmount}₺` });
+      showAlert({ title: 'Tebrikler', message: `Yeni teklif verdiniz: ${tl(confirmedAmount)}` });
       setCurrentPrice(confirmedAmount);
       if (typeof data?.minNextBid === 'number') setServerMinNextBid(data.minNextBid);
-      setSelectedTierIndex(0);
+      setSelectedChip(0);
       fetchBids({ silent: true });
     } catch (err) {
       const respData = err.response?.data;
@@ -173,7 +197,7 @@ export default function AuctionDetailScreen({ route }) {
         setServerMinNextBid(respData.minNextBid);
         showAlert({
           title: 'Teklif Yetersiz',
-          message: respData.message || `Teklif en az ${respData.minNextBid}₺ olmalı`,
+          message: respData.message || `Teklif en az ${tl(respData.minNextBid)} olmalı`,
         });
         fetchAuction({ silent: true });
       } else {
@@ -209,7 +233,7 @@ export default function AuctionDetailScreen({ route }) {
   };
 
   const handleGalleryScroll = (e) => {
-    const idx = Math.round(e.nativeEvent.contentOffset.x / GALLERY_ITEM_WIDTH);
+    const idx = Math.round(e.nativeEvent.contentOffset.x / screenWidth);
     if (idx !== galleryIndex) setGalleryIndex(idx);
   };
 
@@ -224,149 +248,122 @@ export default function AuctionDetailScreen({ route }) {
     ((auction.seller && auction.seller._id === user._id) || auction.seller === user._id) &&
     auction.winner;
 
-  // ---- HEADER (ScrollView yerine ListHeaderComponent) ----
+  const canBid = user && user.role === 'buyer' && auction && !auction.isEnded;
+
+  // Katalog açıklaması — ilk harf büyük inisyal (drop-cap hissi).
+  const renderDescription = () => {
+    const text = (auction.description || '').trim();
+    if (!text) return null;
+    const initial = text.charAt(0);
+    const rest = text.slice(1);
+    const isLong = text.length > 280;
+    return (
+      <View style={styles.descWrap}>
+        <Text
+          style={styles.desc}
+          numberOfLines={descExpanded || !isLong ? undefined : DESC_COLLAPSED_LINES}
+        >
+          <Text style={styles.dropCap}>{initial}</Text>
+          {rest}
+        </Text>
+        {isLong && (
+          <PressableScale onPress={() => setDescExpanded((v) => !v)}>
+            <Text style={styles.more}>
+              {descExpanded ? 'Daha az göster ↑' : 'Devamını oku ↓'}
+            </Text>
+          </PressableScale>
+        )}
+      </View>
+    );
+  };
+
+  // ---- Liste başlığı: görsel + katalog gövdesi ----
   const renderHeader = () => {
     if (!auction) return null;
     const images = auction.images || [];
     return (
-      <View style={styles.headerWrap}>
-        {/* Görsel Galerisi - yatay FlatList + gradient scrim başlık + nokta göstergeler */}
+      <View>
+        {/* Tam genişlik galeri — alta doğru kreme karışır */}
         <View style={styles.galleryWrap}>
           <FlatList
-            data={images}
+            data={images.length ? images : [null]}
             horizontal
             pagingEnabled
             showsHorizontalScrollIndicator={false}
             keyExtractor={(item, index) => index.toString()}
             renderItem={({ item }) => (
-              <Image source={{ uri: item }} style={styles.sliderImage} />
+              <Image
+                source={item ? { uri: item } : undefined}
+                style={styles.sliderImage}
+              />
             )}
-            style={styles.sliderContainer}
             onMomentumScrollEnd={handleGalleryScroll}
           />
           <LinearGradient
-            colors={gradients.scrim}
-            style={styles.galleryScrim}
+            colors={['transparent', colors.creamDeep]}
+            style={styles.imageFade}
             pointerEvents="none"
           />
-          <View style={styles.galleryTitleWrap} pointerEvents="none">
-            <Text style={styles.galleryTitle} numberOfLines={2}>
-              {auction.title}
-            </Text>
-          </View>
-          {auction.isSigned && (
-            <View style={styles.galleryBadge}>
-              <Badge label="Usta İmzalı" tone="signed" />
-            </View>
-          )}
           {images.length > 1 && (
             <View style={styles.dotsRow} pointerEvents="none">
               {images.map((_, idx) => (
-                <View
-                  key={idx}
-                  style={[styles.dot, idx === galleryIndex && styles.dotActive]}
-                />
+                <View key={idx} style={[styles.dot, idx === galleryIndex && styles.dotActive]} />
               ))}
             </View>
           )}
         </View>
 
-        {/* Bilgi kartı */}
-        <Card style={styles.infoCard}>
+        <View style={styles.body}>
+          {/* Lot satırı */}
+          <View style={styles.lotLine}>
+            <Text style={styles.lotText}>
+              {auction.isEnded ? 'SONA ERDİ' : 'AÇIK ARTIRMA'}
+            </Text>
+            <View style={styles.lotRule} />
+            {auction.isSigned ? (
+              <Text style={styles.lotText}>✒ USTA İMZALI</Text>
+            ) : (
+              <Text style={styles.lotText}>{bids.length} TEKLİF</Text>
+            )}
+          </View>
+
+          {/* Başlık + satıcı */}
+          <Text style={styles.title}>{auction.title}</Text>
           <PressableScale onPress={handleSellerPress}>
-            <View style={styles.sellerRow}>
-              <MaterialCommunityIcons name="store-outline" size={18} color={colors.brown} />
-              <Text style={styles.sellerBtn}>
+            <Text style={styles.sellerLine}>
+              <Text style={styles.sellerName}>
                 {auction.seller?.companyName || 'Bilinmiyor'}
               </Text>
-              <MaterialCommunityIcons name="chevron-right" size={18} color={colors.muted} />
-            </View>
-          </PressableScale>
-          <View style={styles.statusRow}>
-            <Badge
-              label={auction.isEnded ? 'Sona Erdi' : 'Aktif Mezat'}
-              tone={auction.isEnded ? 'rejected' : 'approved'}
-            />
-            {auction.isSigned ? <Badge label="Usta İmzalı" tone="signed" /> : null}
-          </View>
-          <Text style={styles.description}>{auction.description}</Text>
-        </Card>
-
-        {/* Fiyat — gradient kart */}
-        <LinearGradient
-          colors={gradients.goldToBrown}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.priceBox}
-        >
-          <View style={styles.priceRow}>
-            <MaterialCommunityIcons name="gavel" size={22} color={colors.cream} />
-            <Text style={styles.priceLabel}>Güncel Fiyat</Text>
-          </View>
-          <Text style={styles.price}>{String(currentPrice)}₺</Text>
-        </LinearGradient>
-
-        {/* Minimum teklif bilgisi + hızlı teklif çipleri (sadece buyer ve açıkken) */}
-        {user && user.role === 'buyer' && !auction.isEnded && (
-          <>
-            <Text style={styles.minBidLabel}>
-              Min. sonraki teklif: {minNextBid}₺
+              {`  ·  ${bids.length} teklif  ›`}
             </Text>
-            <View style={styles.incrementContainer}>
-              {quickBidOptions.map((option, idx) => {
-                const selected = selectedTierIndex === idx;
-                return (
-                  <PressableScale
-                    key={option}
-                    style={[styles.incrementButton, selected && styles.selectedIncrement]}
-                    onPress={() => setSelectedTierIndex(idx)}
-                  >
-                    <Text style={[styles.incrementText, selected && styles.incrementTextSelected]}>
-                      {option}₺
-                    </Text>
-                  </PressableScale>
-                );
-              })}
-            </View>
-          </>
-        )}
+          </PressableScale>
 
-        {/* Teklif Ver */}
-        {user && user.role === 'buyer' && !auction.isEnded && (
-          <GradientButton
-            title={isBidding ? 'Gönderiliyor...' : `Teklif Ver — ${bidAmount}₺`}
-            icon="hammer"
-            variant="gold"
-            onPress={handleBid}
-            loading={isBidding}
-            disabled={isBidding}
-            style={styles.bidButton}
-          />
-        )}
+          {/* Katalog açıklaması */}
+          {renderDescription()}
 
-        {/* Chat */}
-        {isBuyerWinner && auction.isEnded && (
-          <GradientButton
-            title="Satıcıyla Mesajlaş"
-            icon="chatbubble-ellipses-outline"
-            variant="secondary"
-            onPress={handleStartChat}
-            style={styles.bidButton}
-          />
-        )}
-        {isSellerOfEnded && (
-          <GradientButton
-            title="Kazanan Alıcıyla Mesajlaş"
-            icon="chatbubble-ellipses-outline"
-            variant="secondary"
-            onPress={handleStartChat}
-            style={styles.bidButton}
-          />
-        )}
+          {/* Bitmiş mezat: mesajlaşma aksiyonları gövdede */}
+          {isBuyerWinner && auction.isEnded && (
+            <GradientButton
+              title="Satıcıyla Mesajlaş"
+              icon="chatbubble-ellipses-outline"
+              variant="secondary"
+              onPress={handleStartChat}
+              style={styles.chatButton}
+            />
+          )}
+          {isSellerOfEnded && (
+            <GradientButton
+              title="Kazanan Alıcıyla Mesajlaş"
+              icon="chatbubble-ellipses-outline"
+              variant="secondary"
+              onPress={handleStartChat}
+              style={styles.chatButton}
+            />
+          )}
 
-        {/* Liste başlığı */}
-        <OrnamentDivider />
-        <Text style={styles.bidsTitle}>Önceki Teklifler</Text>
+          <OrnamentDivider />
+          <Text style={styles.bidsTitle}>Önceki Teklifler</Text>
+        </View>
       </View>
     );
   };
@@ -374,7 +371,9 @@ export default function AuctionDetailScreen({ route }) {
   if (loading || !auction) {
     return (
       <Screen>
-        <ScreenHeader variant="hero" title="Mezat" />
+        <PressableScale style={styles.backBtn} onPress={() => navigation.goBack()}>
+          <Ionicons name="chevron-back" size={20} color={colors.brownDark} />
+        </PressableScale>
         <View style={styles.center}>
           <ActivityIndicator size="large" color={colors.brown} />
         </View>
@@ -384,11 +383,6 @@ export default function AuctionDetailScreen({ route }) {
 
   return (
     <Screen>
-      <ScreenHeader
-        variant="hero"
-        title={auction.title || 'Mezat'}
-        subtitle={auction.seller?.companyName || undefined}
-      />
       <FlatList
         data={bids}
         keyExtractor={(item) => item._id}
@@ -403,26 +397,22 @@ export default function AuctionDetailScreen({ route }) {
           />
         }
         renderItem={({ item }) => (
-          <View style={styles.modernBidItem}>
+          <View style={styles.bidRow}>
             <View style={styles.avatar}>
               <Text style={styles.avatarText}>
                 {item.user?.name?.[0]?.toUpperCase() || '?'}
               </Text>
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={styles.bidUserModern}>{item.user?.name || 'Anonim'}</Text>
+              <Text style={styles.bidUser}>{item.user?.name || 'Anonim'}</Text>
               <Text style={styles.bidDate}>
                 {item.createdAt ? new Date(item.createdAt).toLocaleString('tr-TR') : ''}
               </Text>
             </View>
-            <View style={styles.amountBadge}>
-              <Text style={styles.amountBadgeText}>{item.amount}₺</Text>
-            </View>
+            <Text style={styles.bidAmount}>{tl(item.amount)}</Text>
           </View>
         )}
-        ListEmptyComponent={
-          <Text style={styles.emptyBids}>Henüz teklif yok.</Text>
-        }
+        ListEmptyComponent={<Text style={styles.emptyBids}>Henüz teklif yok.</Text>}
         ListFooterComponent={
           <View style={styles.adContainer}>
             <BannerAd
@@ -434,199 +424,247 @@ export default function AuctionDetailScreen({ route }) {
         }
         contentInsetAdjustmentBehavior="never"
         automaticallyAdjustContentInsets={false}
-        contentContainerStyle={styles.listContent}
+        contentContainerStyle={[styles.listContent, canBid && styles.listContentDock]}
       />
+
+      {/* Yüzen geri butonu */}
+      <PressableScale style={styles.backBtn} onPress={() => navigation.goBack()}>
+        <Ionicons name="chevron-back" size={20} color={colors.brownDark} />
+      </PressableScale>
+
+      {/* ── Teklif dock'u: çipler + koyu çubuk ── */}
+      <View style={styles.dock} pointerEvents="box-none">
+        <LinearGradient
+          colors={['rgba(253,246,227,0)', colors.creamDeep]}
+          style={StyleSheet.absoluteFill}
+          pointerEvents="none"
+        />
+        {canBid && (
+          <View style={styles.chipRow}>
+            {chipIncrements.map((inc, idx) => {
+              const on = selectedChip === idx;
+              return (
+                <PressableScale
+                  key={inc}
+                  style={[styles.chip, on && styles.chipOn]}
+                  onPress={() => setSelectedChip(idx)}
+                >
+                  {on ? (
+                    <LinearGradient
+                      colors={gradients.gold}
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 1, y: 1 }}
+                      style={StyleSheet.absoluteFill}
+                    />
+                  ) : null}
+                  <Text style={[styles.chipText, on && styles.chipTextOn]}>+{tl(inc)}</Text>
+                </PressableScale>
+              );
+            })}
+          </View>
+        )}
+        <View style={styles.bar}>
+          <View>
+            <Text style={styles.barLabel}>GÜNCEL</Text>
+            <Text style={styles.barPrice}>{tl(currentPrice)}</Text>
+          </View>
+          <View style={styles.barCenter}>
+            <Text style={styles.barLabel}>KAPANIŞ</Text>
+            <Text style={styles.barTimer}>
+              {auction.isEnded || !remaining ? 'Sona erdi' : remaining}
+            </Text>
+          </View>
+          {canBid ? (
+            <PressableScale onPress={handleBid} disabled={isBidding} style={styles.bidBtnWrap}>
+              <LinearGradient
+                colors={gradients.gold}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.bidBtn}
+              >
+                {isBidding ? (
+                  <ActivityIndicator color={colors.espresso} size="small" />
+                ) : (
+                  <Text style={styles.bidBtnText}>Teklif Ver — {tl(bidAmount)}</Text>
+                )}
+              </LinearGradient>
+            </PressableScale>
+          ) : (
+            <MaterialCommunityIcons name="gavel" size={22} color={colors.goldLight} />
+          )}
+        </View>
+      </View>
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  listContent: { paddingBottom: spacing.sm },
-  headerWrap: { paddingHorizontal: spacing.lg, paddingTop: spacing.lg },
+  listContent: { paddingBottom: spacing.xxl },
+  listContentDock: { paddingBottom: 170 },
 
-  galleryWrap: {
-    borderRadius: radii.lg,
-    overflow: 'hidden',
-    marginBottom: spacing.md,
-    ...shadows.card,
-  },
-  sliderContainer: {},
-  sliderImage: {
-    width: screenWidth - spacing.lg * 2,
-    height: 260,
-    backgroundColor: colors.line,
-  },
-  galleryScrim: {
+  backBtn: {
     position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: 0,
-    height: '55%',
-  },
-  galleryTitleWrap: {
-    position: 'absolute',
+    top: spacing.sm,
     left: spacing.lg,
-    right: spacing.lg,
-    bottom: spacing.md,
+    width: 38,
+    height: 38,
+    borderRadius: radii.pill,
+    backgroundColor: 'rgba(255,253,247,0.9)',
+    borderWidth: 1,
+    borderColor: colors.line,
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 20,
+    ...shadows.soft,
   },
-  galleryTitle: {
-    ...typography.h1,
-    fontSize: 22,
-    color: colors.white,
-  },
-  galleryBadge: {
-    position: 'absolute',
-    top: spacing.md,
-    right: spacing.md,
-  },
+
+  galleryWrap: { height: IMAGE_HEIGHT, position: 'relative', backgroundColor: '#efe3cd' },
+  sliderImage: { width: screenWidth, height: IMAGE_HEIGHT },
+  imageFade: { position: 'absolute', left: 0, right: 0, bottom: 0, height: 70 },
   dotsRow: {
     position: 'absolute',
-    top: spacing.md,
-    left: spacing.md,
+    bottom: spacing.md,
+    left: 0,
+    right: 0,
     flexDirection: 'row',
+    justifyContent: 'center',
     alignItems: 'center',
   },
   dot: {
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: 'rgba(255,255,255,0.45)',
-    marginRight: 5,
+    backgroundColor: 'rgba(255,253,247,0.6)',
+    marginHorizontal: 3,
   },
-  dotActive: {
-    backgroundColor: colors.goldLight,
-    width: 16,
-  },
+  dotActive: { backgroundColor: colors.goldLight, width: 16 },
 
-  infoCard: {
-    marginBottom: spacing.md,
-  },
-  sellerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: spacing.sm,
-  },
-  statusRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flexWrap: 'wrap',
-    gap: spacing.sm,
-    marginBottom: spacing.sm,
-  },
-  sellerBtn: {
-    ...typography.h3,
-    color: colors.brown,
-    flex: 1,
-    marginLeft: spacing.sm,
-  },
-  description: {
-    ...typography.body,
-    fontSize: 15,
-    color: colors.brownDark,
-    lineHeight: 22,
-  },
-
-  priceBox: {
-    borderRadius: radii.lg,
-    alignItems: 'center',
-    paddingVertical: spacing.lg,
-    marginBottom: spacing.md,
-    ...shadows.card,
-  },
-  priceRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: spacing.xs,
-  },
-  priceLabel: {
-    ...typography.label,
-    color: colors.cream,
-    marginLeft: spacing.sm,
-    textTransform: 'uppercase',
-  },
-  price: { ...typography.hero, fontSize: 30, color: colors.white },
-
-  minBidLabel: {
-    ...typography.label,
+  body: { paddingHorizontal: spacing.xl },
+  lotLine: { flexDirection: 'row', alignItems: 'center', marginTop: spacing.xs },
+  lotText: {
+    fontFamily: fonts.displayItalic,
+    fontSize: 12,
+    letterSpacing: 1,
     color: colors.gold,
-    textTransform: 'none',
-    marginBottom: spacing.sm,
   },
+  lotRule: { flex: 1, height: 1, backgroundColor: 'rgba(161,116,59,0.35)', marginHorizontal: spacing.md },
+  title: { ...typography.h1, fontSize: 27, marginTop: spacing.sm },
+  sellerLine: { ...typography.small, fontSize: 12.5, marginTop: spacing.xs },
+  sellerName: { fontFamily: fonts.bold, color: colors.brownDark },
 
-  incrementContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: spacing.md,
+  descWrap: { marginTop: spacing.md },
+  desc: { ...typography.catalog },
+  dropCap: {
+    fontFamily: fonts.displayBlack,
+    fontSize: 36,
+    color: colors.gold,
   },
-  incrementButton: {
-    flex: 1,
-    marginHorizontal: spacing.xs / 2,
-    alignItems: 'center',
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.sm,
-    backgroundColor: colors.white,
-    borderRadius: radii.md,
-    borderWidth: 1.5,
-    borderColor: colors.line,
-    ...shadows.soft,
-  },
-  selectedIncrement: {
-    backgroundColor: colors.brown,
-    borderColor: colors.brown,
-  },
-  incrementText: { ...typography.bodyStrong, color: colors.brown },
-  incrementTextSelected: { color: colors.white },
-
-  bidButton: {
-    marginBottom: spacing.md,
-  },
-
-  bidsTitle: {
-    ...typography.h2,
-    color: colors.brownDark,
-    marginBottom: spacing.sm,
+  more: {
+    fontFamily: fonts.extrabold,
+    fontSize: 12,
+    letterSpacing: 0.5,
+    color: colors.gold,
     marginTop: spacing.sm,
   },
+
+  chatButton: { marginTop: spacing.lg },
+
+  bidsTitle: { ...typography.h2, marginBottom: spacing.sm },
   emptyBids: {
-    color: colors.brownDark,
-    fontStyle: 'italic',
-    paddingHorizontal: spacing.lg,
+    ...typography.catalogItalic,
+    paddingHorizontal: spacing.xl,
   },
 
-  modernBidItem: {
+  bidRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.white,
-    borderRadius: radii.md,
-    padding: spacing.md,
-    marginHorizontal: spacing.lg,
-    marginBottom: spacing.sm,
-    ...shadows.soft,
+    paddingVertical: spacing.sm + 2,
+    marginHorizontal: spacing.xl,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(161,116,59,0.16)',
   },
   avatar: {
-    width: 40, height: 40, borderRadius: 20,
+    width: 36, height: 36, borderRadius: 18,
     backgroundColor: colors.brown, alignItems: 'center', justifyContent: 'center',
     marginRight: spacing.md,
   },
-  avatarText: { ...typography.h3, color: colors.white, fontSize: 18 },
-  bidUserModern: { ...typography.bodyStrong, color: colors.brownDark, fontSize: 15 },
-  bidDate: { ...typography.label, color: colors.muted },
-  amountBadge: {
-    backgroundColor: colors.brownDark,
-    borderRadius: radii.sm,
-    paddingVertical: spacing.xs,
-    paddingHorizontal: spacing.md,
-    alignItems: 'center',
-    marginLeft: spacing.sm,
-  },
-  amountBadgeText: { ...typography.button, color: colors.white, fontSize: 15 },
+  avatarText: { ...typography.h3, color: colors.white, fontSize: 16 },
+  bidUser: { ...typography.bodyStrong, fontSize: 14 },
+  bidDate: { ...typography.small, fontSize: 11 },
+  bidAmount: { fontFamily: fonts.display, fontSize: 17, color: colors.brownDark },
 
   adContainer: {
     marginTop: spacing.lg,
     alignItems: 'center',
     width: '100%',
-    backgroundColor: colors.white,
-    paddingBottom: spacing.md,
   },
+
+  // ── Dock ──
+  dock: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.xl,
+    paddingBottom: spacing.xl,
+  },
+  chipRow: { flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.sm + 2 },
+  chip: {
+    flex: 1,
+    height: 44,
+    borderRadius: radii.md,
+    backgroundColor: colors.creamHi,
+    borderWidth: 1.5,
+    borderColor: 'rgba(161,116,59,0.35)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  chipOn: { borderColor: colors.gold, ...shadows.gold },
+  chipText: { fontFamily: fonts.extrabold, fontSize: 13.5, color: colors.brownDark },
+  chipTextOn: { color: colors.espresso },
+
+  bar: {
+    backgroundColor: '#241609',
+    borderRadius: radii.xl,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.lg,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.md,
+    ...shadows.raised,
+  },
+  barLabel: {
+    fontFamily: fonts.bold,
+    fontSize: 9,
+    letterSpacing: 2,
+    color: '#a08663',
+  },
+  barCenter: { alignItems: 'center' },
+  barPrice: {
+    fontFamily: fonts.display,
+    fontSize: 21,
+    color: '#f0dfb7',
+    marginTop: 2,
+  },
+  barTimer: {
+    fontFamily: fonts.extrabold,
+    fontSize: 14,
+    color: '#f0dfb7',
+    marginTop: 3,
+    fontVariant: ['tabular-nums'],
+  },
+  bidBtnWrap: { borderRadius: radii.md, ...shadows.gold },
+  bidBtn: {
+    borderRadius: radii.md,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.lg,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minWidth: 132,
+  },
+  bidBtnText: { fontFamily: fonts.extrabold, fontSize: 13.5, color: colors.espresso },
 });
