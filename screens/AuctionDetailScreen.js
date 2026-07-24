@@ -1,5 +1,5 @@
 // screens/AuctionDetailScreen.js
-import React, { useState, useEffect, useContext, useMemo } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import {
   View,
   Text,
@@ -8,58 +8,77 @@ import {
   FlatList,
   ActivityIndicator,
   Dimensions,
+  RefreshControl,
 } from 'react-native';
+import axios from 'axios';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { AuthContext } from '../context/AuthContext';
 import { useAlert } from '../context/AlertContext';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useIsFocused } from '@react-navigation/native';
 import { BannerAd, BannerAdSize, TestIds } from 'react-native-google-mobile-ads';
 
 import { Screen, ScreenHeader, Card, Badge, GradientButton, OrnamentDivider, PressableScale } from '../components/ui';
 import { colors, gradients, radii, shadows, spacing, typography } from '../theme/tokens';
 
 const screenWidth = Dimensions.get('window').width;
+const GALLERY_ITEM_WIDTH = screenWidth - spacing.lg * 2;
+const POLL_INTERVAL_MS = 10000;
+
+// Minimum teklif artış kademeleri — backend (routes/bid.js) ile birebir aynı.
+function getMinIncrement(currentPrice) {
+  if (currentPrice < 500) return 25;
+  if (currentPrice < 2000) return 50;
+  if (currentPrice < 5000) return 100;
+  return 250;
+}
 
 export default function AuctionDetailScreen({ route }) {
   const { auctionId } = route.params;
   const { user } = useContext(AuthContext);
   const { showAlert } = useAlert();
   const navigation = useNavigation();
+  const isFocused = useIsFocused();
 
   const [auction, setAuction] = useState(null);
   const [currentPrice, setCurrentPrice] = useState(0);
-  const [selectedIncrement, setSelectedIncrement] = useState(10);
+  const [selectedTierIndex, setSelectedTierIndex] = useState(0);
   const [bids, setBids] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isBidding, setIsBidding] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const [galleryIndex, setGalleryIndex] = useState(0);
+  // Bir teklif yanıtı geldiğinde sunucunun bildirdiği minNextBid, bir sonraki
+  // auction fetch'ine kadar client tarafı hesaplamanın önüne geçer.
+  const [serverMinNextBid, setServerMinNextBid] = useState(null);
 
   const adUnitId = __DEV__
     ? TestIds.BANNER
     : 'ca-app-pub-4306778139267554/1985701713';
 
   // Auction bilgisi yükle
-  const fetchAuction = async () => {
+  const fetchAuction = async ({ silent = false } = {}) => {
     try {
-      const res = await fetch(`https://imame-backend.onrender.com/api/auctions/${auctionId}`);
-      const data = await res.json();
+      const res = await axios.get(`https://imame-backend.onrender.com/api/auctions/${auctionId}`);
+      const data = res.data;
       setAuction(data);
       setCurrentPrice(data.currentPrice || data.startingPrice);
+      // Fiyat sunucudan taze geldi; client tarafı hesaplama tekrar geçerli olsun.
+      setServerMinNextBid(null);
     } catch (err) {
-      showAlert({ title: 'Hata', message: 'Mezat bilgisi alınamadı' });
+      if (!silent) showAlert({ title: 'Hata', message: 'Mezat bilgisi alınamadı' });
     } finally {
       setLoading(false);
     }
   };
 
   // Teklifler yükle
-  const fetchBids = async () => {
+  const fetchBids = async ({ silent = false } = {}) => {
     try {
-      const res = await fetch(`https://imame-backend.onrender.com/api/bids/${auctionId}`);
-      const data = await res.json();
-      setBids(data);
+      const res = await axios.get(`https://imame-backend.onrender.com/api/bids/${auctionId}`);
+      setBids(res.data);
     } catch (err) {
-      showAlert({ title: 'Hata', message: 'Teklifler yüklenemedi' });
+      if (!silent) showAlert({ title: 'Hata', message: 'Teklifler yüklenemedi' });
     }
   };
 
@@ -68,6 +87,30 @@ export default function AuctionDetailScreen({ route }) {
     fetchBids();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Ekran odaktayken 10sn'de bir sessizce (loading göstermeden) güncelle.
+  useEffect(() => {
+    if (!isFocused) return undefined;
+    const interval = setInterval(() => {
+      fetchAuction({ silent: true });
+      fetchBids({ silent: true });
+    }, POLL_INTERVAL_MS);
+    return () => clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isFocused, auctionId]);
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await Promise.all([fetchAuction({ silent: true }), fetchBids({ silent: true })]);
+    setRefreshing(false);
+  };
+
+  // Kademeye göre önerilen 3 hızlı teklif tutarı
+  const tierIncrement = getMinIncrement(currentPrice);
+  const computedMinNext = currentPrice + tierIncrement;
+  const minNextBid = serverMinNextBid ?? computedMinNext;
+  const quickBidOptions = [minNextBid, minNextBid + tierIncrement, minNextBid + tierIncrement * 2];
+  const bidAmount = quickBidOptions[selectedTierIndex] ?? minNextBid;
 
   // Teklif verme
   const handleBid = async () => {
@@ -112,23 +155,30 @@ export default function AuctionDetailScreen({ route }) {
 
     setIsBidding(true);
     try {
-      const newAmount = currentPrice + selectedIncrement;
-      const res = await fetch(`https://imame-backend.onrender.com/api/bids`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ auctionId, userId: user._id, amount: newAmount }),
+      const res = await axios.post('https://imame-backend.onrender.com/api/bids', {
+        auctionId,
+        amount: bidAmount,
       });
 
-      const text = await res.text();
-      let data;
-      try { data = JSON.parse(text); } catch { throw new Error(text || 'Teklif yanıtı okunamadı'); }
-      if (!res.ok) throw new Error(data.message || 'Teklif başarısız');
-
-      showAlert({ title: 'Tebrikler', message: `Yeni teklif verdiniz: ${newAmount}₺` });
-      setCurrentPrice(newAmount);
-      fetchBids();
+      const data = res.data;
+      const confirmedAmount = data?.bid?.amount ?? bidAmount;
+      showAlert({ title: 'Tebrikler', message: `Yeni teklif verdiniz: ${confirmedAmount}₺` });
+      setCurrentPrice(confirmedAmount);
+      if (typeof data?.minNextBid === 'number') setServerMinNextBid(data.minNextBid);
+      setSelectedTierIndex(0);
+      fetchBids({ silent: true });
     } catch (err) {
-      showAlert({ title: 'Hata', message: err.message });
+      const respData = err.response?.data;
+      if (respData && typeof respData.minNextBid === 'number') {
+        setServerMinNextBid(respData.minNextBid);
+        showAlert({
+          title: 'Teklif Yetersiz',
+          message: respData.message || `Teklif en az ${respData.minNextBid}₺ olmalı`,
+        });
+        fetchAuction({ silent: true });
+      } else {
+        showAlert({ title: 'Hata', message: respData?.message || err.message });
+      }
     } finally {
       setIsBidding(false);
     }
@@ -141,20 +191,13 @@ export default function AuctionDetailScreen({ route }) {
       return;
     }
     try {
-      const res = await fetch('https://imame-backend.onrender.com/api/chats/start', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ auctionId, buyerId: user._id }),
+      const res = await axios.post('https://imame-backend.onrender.com/api/chats/start', {
+        auctionId,
+        buyerId: user._id,
       });
-
-      const responseText = await res.text();
-      let data;
-      try { data = JSON.parse(responseText); } catch (e) { throw new Error('Yanıttan JSON okunamadı: ' + responseText); }
-      if (!res.ok) throw new Error(data.message);
-
-      navigation.navigate('Chat', { chatId: data.chat._id });
+      navigation.navigate('Chat', { chatId: res.data.chat._id });
     } catch (err) {
-      showAlert({ title: 'Hata', message: err.message });
+      showAlert({ title: 'Hata', message: err.response?.data?.message || err.message });
     }
   };
 
@@ -163,6 +206,11 @@ export default function AuctionDetailScreen({ route }) {
     const id = auction?.seller?._id || auction?.seller;
     if (!id) return;
     navigation.navigate('ProfileDetail', { userId: id });
+  };
+
+  const handleGalleryScroll = (e) => {
+    const idx = Math.round(e.nativeEvent.contentOffset.x / GALLERY_ITEM_WIDTH);
+    if (idx !== galleryIndex) setGalleryIndex(idx);
   };
 
   const isBuyerWinner =
@@ -176,15 +224,16 @@ export default function AuctionDetailScreen({ route }) {
     ((auction.seller && auction.seller._id === user._id) || auction.seller === user._id) &&
     auction.winner;
 
-  // ---- HEADER BİLEŞENİ (ScrollView yerine ListHeaderComponent)
-  const Header = useMemo(() => {
+  // ---- HEADER (ScrollView yerine ListHeaderComponent) ----
+  const renderHeader = () => {
     if (!auction) return null;
+    const images = auction.images || [];
     return (
       <View style={styles.headerWrap}>
-        {/* Görsel Galerisi - yatay FlatList + gradient scrim başlık */}
+        {/* Görsel Galerisi - yatay FlatList + gradient scrim başlık + nokta göstergeler */}
         <View style={styles.galleryWrap}>
           <FlatList
-            data={auction.images}
+            data={images}
             horizontal
             pagingEnabled
             showsHorizontalScrollIndicator={false}
@@ -193,6 +242,7 @@ export default function AuctionDetailScreen({ route }) {
               <Image source={{ uri: item }} style={styles.sliderImage} />
             )}
             style={styles.sliderContainer}
+            onMomentumScrollEnd={handleGalleryScroll}
           />
           <LinearGradient
             colors={gradients.scrim}
@@ -207,6 +257,16 @@ export default function AuctionDetailScreen({ route }) {
           {auction.isSigned && (
             <View style={styles.galleryBadge}>
               <Badge label="Usta İmzalı" tone="signed" />
+            </View>
+          )}
+          {images.length > 1 && (
+            <View style={styles.dotsRow} pointerEvents="none">
+              {images.map((_, idx) => (
+                <View
+                  key={idx}
+                  style={[styles.dot, idx === galleryIndex && styles.dotActive]}
+                />
+              ))}
             </View>
           )}
         </View>
@@ -246,30 +306,35 @@ export default function AuctionDetailScreen({ route }) {
           <Text style={styles.price}>{String(currentPrice)}₺</Text>
         </LinearGradient>
 
-        {/* Artış butonları (sadece buyer ve açıkken) */}
+        {/* Minimum teklif bilgisi + hızlı teklif çipleri (sadece buyer ve açıkken) */}
         {user && user.role === 'buyer' && !auction.isEnded && (
-          <View style={styles.incrementContainer}>
-            {[10, 20, 30, 40, 50].map((amount) => {
-              const selected = selectedIncrement === amount;
-              return (
-                <PressableScale
-                  key={amount}
-                  style={[styles.incrementButton, selected && styles.selectedIncrement]}
-                  onPress={() => setSelectedIncrement(amount)}
-                >
-                  <Text style={[styles.incrementText, selected && styles.incrementTextSelected]}>
-                    +{amount}₺
-                  </Text>
-                </PressableScale>
-              );
-            })}
-          </View>
+          <>
+            <Text style={styles.minBidLabel}>
+              Min. sonraki teklif: {minNextBid}₺
+            </Text>
+            <View style={styles.incrementContainer}>
+              {quickBidOptions.map((option, idx) => {
+                const selected = selectedTierIndex === idx;
+                return (
+                  <PressableScale
+                    key={option}
+                    style={[styles.incrementButton, selected && styles.selectedIncrement]}
+                    onPress={() => setSelectedTierIndex(idx)}
+                  >
+                    <Text style={[styles.incrementText, selected && styles.incrementTextSelected]}>
+                      {option}₺
+                    </Text>
+                  </PressableScale>
+                );
+              })}
+            </View>
+          </>
         )}
 
         {/* Teklif Ver */}
         {user && user.role === 'buyer' && !auction.isEnded && (
           <GradientButton
-            title={isBidding ? 'Gönderiliyor...' : 'Teklif Ver'}
+            title={isBidding ? 'Gönderiliyor...' : `Teklif Ver — ${bidAmount}₺`}
             icon="hammer"
             variant="gold"
             onPress={handleBid}
@@ -304,8 +369,7 @@ export default function AuctionDetailScreen({ route }) {
         <Text style={styles.bidsTitle}>Önceki Teklifler</Text>
       </View>
     );
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [auction, currentPrice, selectedIncrement, isBidding, user]);
+  };
 
   if (loading || !auction) {
     return (
@@ -328,8 +392,16 @@ export default function AuctionDetailScreen({ route }) {
       <FlatList
         data={bids}
         keyExtractor={(item) => item._id}
-        ListHeaderComponent={Header}
+        ListHeaderComponent={renderHeader()}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={colors.gold}
+            colors={[colors.gold]}
+          />
+        }
         renderItem={({ item }) => (
           <View style={styles.modernBidItem}>
             <View style={styles.avatar}>
@@ -408,6 +480,24 @@ const styles = StyleSheet.create({
     top: spacing.md,
     right: spacing.md,
   },
+  dotsRow: {
+    position: 'absolute',
+    top: spacing.md,
+    left: spacing.md,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  dot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: 'rgba(255,255,255,0.45)',
+    marginRight: 5,
+  },
+  dotActive: {
+    backgroundColor: colors.goldLight,
+    width: 16,
+  },
 
   infoCard: {
     marginBottom: spacing.md,
@@ -457,14 +547,24 @@ const styles = StyleSheet.create({
   },
   price: { ...typography.hero, fontSize: 30, color: colors.white },
 
+  minBidLabel: {
+    ...typography.label,
+    color: colors.gold,
+    textTransform: 'none',
+    marginBottom: spacing.sm,
+  },
+
   incrementContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginBottom: spacing.md,
   },
   incrementButton: {
+    flex: 1,
+    marginHorizontal: spacing.xs / 2,
+    alignItems: 'center',
     paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.md,
+    paddingHorizontal: spacing.sm,
     backgroundColor: colors.white,
     borderRadius: radii.md,
     borderWidth: 1.5,
