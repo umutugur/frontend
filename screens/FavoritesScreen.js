@@ -1,10 +1,8 @@
 import React, { useEffect, useState, useContext } from 'react';
 import {
   View,
-  Text,
   FlatList,
   StyleSheet,
-  ActivityIndicator,
   Platform,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
@@ -13,10 +11,24 @@ import { AuthContext } from '../context/AuthContext';
 import * as AppleAuthentication from 'expo-apple-authentication';
 import { BannerAd, BannerAdSize, TestIds } from 'react-native-google-mobile-ads';
 
-import { Screen, AuctionCard, EmptyState, GradientButton } from '../components/ui';
+import { Screen, AuctionCard, EmptyState, GradientButton, Skeleton } from '../components/ui';
 import InlineBannerAd from '../components/InlineBannerAd';
 import { buildFeed } from './HomeScreen';
-import { colors, spacing, typography } from '../theme/tokens';
+import { colors, spacing, radii, shadows } from '../theme/tokens';
+
+// Yükleniyor durumunda AuctionCard boyutlarını taklit eden iskelet kart.
+function AuctionCardSkeleton() {
+  return (
+    <View style={styles.skeletonCard}>
+      <Skeleton height={158} radius={0} style={styles.skeletonImage} />
+      <View style={styles.skeletonInfo}>
+        <Skeleton height={14} width="80%" style={styles.skeletonLine} />
+        <Skeleton height={11} width="55%" style={styles.skeletonLine} />
+        <Skeleton height={14} width="40%" />
+      </View>
+    </View>
+  );
+}
 
 export default function FavoritesScreen() {
   const navigation = useNavigation();
@@ -62,11 +74,17 @@ export default function FavoritesScreen() {
   if (loading) {
     return (
       <Screen>
-        <View style={styles.loading}>
-          <ActivityIndicator size="large" color={colors.brown} />
-          <Text style={styles.loadingText}>
-            Favori satıcıların mezatları yükleniyor...
-          </Text>
+        <View style={styles.list}>
+          {[0, 1, 2].map((row) => (
+            <View key={row} style={styles.row}>
+              <View style={styles.cardCol}>
+                <AuctionCardSkeleton />
+              </View>
+              <View style={styles.cardCol}>
+                <AuctionCardSkeleton />
+              </View>
+            </View>
+          ))}
         </View>
       </Screen>
     );
@@ -193,16 +211,21 @@ const styles = StyleSheet.create({
     width: '48%',
     marginBottom: spacing.lg,
   },
-  loading: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: spacing.xl,
+  skeletonCard: {
+    backgroundColor: colors.creamHi,
+    borderRadius: radii.lg,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: colors.line,
+    ...shadows.card,
   },
-  loadingText: {
-    ...typography.body,
-    color: colors.brown,
-    marginTop: spacing.sm,
-    textAlign: 'center',
+  skeletonImage: {
+    width: '100%',
+  },
+  skeletonInfo: {
+    padding: spacing.md,
+  },
+  skeletonLine: {
+    marginBottom: spacing.sm,
   },
 });

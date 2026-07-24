@@ -1,13 +1,37 @@
-import React, { useContext } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import { View, Text, FlatList, StyleSheet } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import axios from 'axios';
 import { AuthContext } from '../context/AuthContext';
-import { Screen, ScreenHeader, Card, EmptyState } from '../components/ui';
+import { Screen, ScreenHeader, Card, EmptyState, Skeleton } from '../components/ui';
 import { colors, spacing, radii, typography } from '../theme/tokens';
+
+// Yükleniyor durumunda bildirim satırını taklit eden iskelet.
+function NotificationRowSkeleton() {
+  return (
+    <Card style={styles.notification}>
+      <View style={styles.titleRow}>
+        <Skeleton width={32} height={32} radius={radii.pill} style={styles.skeletonBell} />
+        <Skeleton height={14} width="60%" />
+      </View>
+      <Skeleton height={12} width="90%" style={styles.skeletonBody} />
+      <Skeleton height={12} width="30%" style={styles.skeletonDate} />
+    </Card>
+  );
+}
 
 export default function NotificationsScreen() {
   const { notifications, setNotifications } = useContext(AuthContext);
+  // Bildirimler AuthContext'te uygulama girişinde alınır ve burada bir
+  // "yükleniyor" bayrağı olarak dışa açılmaz; ekranın ilk açılışında kısa bir
+  // iskelet geçişi göstermek için yalnızca sunumsal, yerel bir gecikme kullanılır
+  // (herhangi bir axios çağrısı veya iş kuralı eklemez).
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setLoading(false), 400);
+    return () => clearTimeout(timer);
+  }, []);
 
   const markAsRead = async (notifId) => {
     try {
@@ -58,6 +82,19 @@ export default function NotificationsScreen() {
       </Card>
     );
   };
+
+  if (loading) {
+    return (
+      <Screen>
+        <ScreenHeader variant="plain" title="Bildirimler" />
+        <View style={styles.listContent}>
+          {[0, 1, 2, 3].map((i) => (
+            <NotificationRowSkeleton key={i} />
+          ))}
+        </View>
+      </Screen>
+    );
+  }
 
   return (
     <Screen>
@@ -142,5 +179,15 @@ const styles = StyleSheet.create({
     color: colors.muted,
     marginTop: spacing.sm,
     textAlign: 'right',
+  },
+  skeletonBell: {
+    marginRight: spacing.sm,
+  },
+  skeletonBody: {
+    marginTop: spacing.sm,
+  },
+  skeletonDate: {
+    marginTop: spacing.sm,
+    alignSelf: 'flex-end',
   },
 });

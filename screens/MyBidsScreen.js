@@ -1,12 +1,28 @@
 import React, { useEffect, useState, useContext } from 'react';
 import {
-  View, Text, FlatList, StyleSheet, Image, ActivityIndicator
+  View, Text, FlatList, StyleSheet, Image
 } from 'react-native';
 import axios from 'axios';
 import { AuthContext } from '../context/AuthContext';
 import { useAlert } from '../context/AlertContext';
-import { Screen, ScreenHeader, Card, Badge, EmptyState } from '../components/ui';
+import { Screen, ScreenHeader, Card, Badge, EmptyState, Skeleton } from '../components/ui';
 import { colors, spacing, radii, typography } from '../theme/tokens';
+
+// Yükleniyor durumunda teklif satırını taklit eden iskelet.
+function BidRowSkeleton() {
+  return (
+    <Card style={styles.bidItem}>
+      <View style={styles.row}>
+        <Skeleton width={100} height={74} radius={radii.md} style={styles.skeletonThumb} />
+        <View style={styles.rightContainer}>
+          <Skeleton height={14} width="85%" style={styles.skeletonLine} />
+          <Skeleton height={13} width="45%" style={styles.skeletonLine} />
+          <Skeleton height={18} width="35%" radius={radii.pill} />
+        </View>
+      </View>
+    </Card>
+  );
+}
 
 export default function MyBidsScreen({ navigation }) {
   const { user } = useContext(AuthContext);
@@ -85,9 +101,10 @@ export default function MyBidsScreen({ navigation }) {
     return (
       <Screen>
         <ScreenHeader variant="plain" title="Tekliflerim" />
-        <View style={styles.loading}>
-          <ActivityIndicator size="large" color={colors.brown} />
-          <Text style={styles.loadingText}>Teklifler yükleniyor...</Text>
+        <View style={styles.listContent}>
+          {[0, 1, 2, 3].map((i) => (
+            <BidRowSkeleton key={i} />
+          ))}
         </View>
       </Screen>
     );
@@ -160,6 +177,10 @@ const styles = StyleSheet.create({
     color: colors.danger,
     marginTop: spacing.xs,
   },
-  loading: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  loadingText: { ...typography.body, color: colors.brown, marginTop: spacing.sm },
+  skeletonThumb: {
+    marginRight: spacing.md,
+  },
+  skeletonLine: {
+    marginBottom: spacing.sm,
+  },
 });
