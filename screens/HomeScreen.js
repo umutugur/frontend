@@ -1,11 +1,11 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { View, FlatList, StyleSheet } from 'react-native';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { View, FlatList, StyleSheet, RefreshControl } from 'react-native';
 import { useNavigation, useIsFocused } from '@react-navigation/native';
 import axios from 'axios';
 
 import { Screen, AuctionCard, CountdownHero, EmptyState } from '../components/ui';
 import InlineBannerAd from '../components/InlineBannerAd';
-import { spacing } from '../theme/tokens';
+import { colors, spacing } from '../theme/tokens';
 
 const COLUMNS = 2;
 const ROWS_BETWEEN_ADS = 3; // her 3 mezat satırından sonra bir banner
@@ -34,6 +34,7 @@ export default function HomeScreen() {
   const navigation = useNavigation();
   const isFocused = useIsFocused();
   const [auctions, setAuctions] = useState([]);
+  const [refreshing, setRefreshing] = useState(false);
 
   const fetchAuctions = async () => {
     try {
@@ -49,6 +50,12 @@ export default function HomeScreen() {
       fetchAuctions();
     }
   }, [isFocused]);
+
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await fetchAuctions();
+    setRefreshing(false);
+  }, []);
 
   const feed = useMemo(() => buildFeed(auctions), [auctions]);
 
@@ -79,6 +86,9 @@ export default function HomeScreen() {
         keyExtractor={(item) => item._id}
         contentContainerStyle={styles.list}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={colors.gold} colors={[colors.gold]} />
+        }
         ListHeaderComponent={<CountdownHero />}
         ListEmptyComponent={
           <EmptyState
