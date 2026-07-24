@@ -163,6 +163,10 @@ const LoginScreen = ({ navigation }) => {
           style={styles.fullBtn}
         />
 
+        <PressableScale style={styles.forgot} onPress={() => navigation.navigate('ForgotPassword')}>
+          <Text style={styles.forgotText}>Şifremi unuttum</Text>
+        </PressableScale>
+
         <View style={styles.orn}>
           <View style={styles.ornLine} />
           <View style={styles.ornDiamond} />
@@ -343,4 +347,11 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.md,
   },
   guestText: { ...typography.bodyStrong, color: colors.brown, textDecorationLine: 'underline' },
+
+  forgot: {
+    alignSelf: 'center',
+    paddingVertical: spacing.sm,
+    marginTop: spacing.xs,
+  },
+  forgotText: { ...typography.small, color: colors.muted, textDecorationLine: 'underline' },
 });
