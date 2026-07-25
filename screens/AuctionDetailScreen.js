@@ -18,7 +18,7 @@ import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { AuthContext } from '../context/AuthContext';
 import { useAlert } from '../context/AlertContext';
 import { useNavigation, useIsFocused } from '@react-navigation/native';
-import { BannerAd, BannerAdSize, TestIds } from 'react-native-google-mobile-ads';
+import InlineBannerAd from '../components/InlineBannerAd';
 
 import { Screen, GradientButton, OrnamentDivider, PressableScale } from '../components/ui';
 import { colors, fonts, gradients, radii, shadows, spacing, typography } from '../theme/tokens';
@@ -66,10 +66,6 @@ export default function AuctionDetailScreen({ route }) {
   // Bir teklif yanıtı geldiğinde sunucunun bildirdiği minNextBid, bir sonraki
   // auction fetch'ine kadar client tarafı hesaplamanın önüne geçer.
   const [serverMinNextBid, setServerMinNextBid] = useState(null);
-
-  const adUnitId = __DEV__
-    ? TestIds.BANNER
-    : 'ca-app-pub-4306778139267554/1985701713';
 
   // Auction bilgisi yükle
   const fetchAuction = async ({ silent = false } = {}) => {
@@ -334,9 +330,20 @@ export default function AuctionDetailScreen({ route }) {
               <Text style={styles.sellerName}>
                 {auction.seller?.companyName || 'Bilinmiyor'}
               </Text>
-              {`  ·  ${bids.length} teklif  ›`}
+              {'  ›'}
             </Text>
           </PressableScale>
+
+          {/* İlgi göstergeleri — görüntülenme ve teklif sayısı */}
+          <View style={styles.metaRow}>
+            <Ionicons name="eye-outline" size={14} color={colors.muted} />
+            <Text style={styles.metaText}>
+              {(auction.impressionCount || 0).toLocaleString('tr-TR')} görüntülenme
+            </Text>
+            <View style={styles.metaDot} />
+            <MaterialCommunityIcons name="gavel" size={13} color={colors.muted} />
+            <Text style={styles.metaText}>{bids.length} teklif</Text>
+          </View>
 
           {/* Katalog açıklaması */}
           {renderDescription()}
@@ -415,11 +422,7 @@ export default function AuctionDetailScreen({ route }) {
         ListEmptyComponent={<Text style={styles.emptyBids}>Henüz teklif yok.</Text>}
         ListFooterComponent={
           <View style={styles.adContainer}>
-            <BannerAd
-              unitId={adUnitId}
-              size={BannerAdSize.ANCHORED_ADAPTIVE_BANNER}
-              requestOptions={{ requestNonPersonalizedAdsOnly: true }}
-            />
+            <InlineBannerAd />
           </View>
         }
         contentInsetAdjustmentBehavior="never"
@@ -552,6 +555,20 @@ const styles = StyleSheet.create({
   title: { ...typography.h1, fontSize: 27, marginTop: spacing.sm },
   sellerLine: { ...typography.small, fontSize: 12.5, marginTop: spacing.xs },
   sellerName: { fontFamily: fonts.bold, color: colors.brownDark },
+  metaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    marginTop: spacing.sm,
+  },
+  metaText: { ...typography.small, fontSize: 12 },
+  metaDot: {
+    width: 3,
+    height: 3,
+    borderRadius: 1.5,
+    backgroundColor: colors.lineStrong,
+    marginHorizontal: 3,
+  },
 
   descWrap: { marginTop: spacing.md },
   desc: { ...typography.catalog },
@@ -596,10 +613,11 @@ const styles = StyleSheet.create({
   bidDate: { ...typography.small, fontSize: 11 },
   bidAmount: { fontFamily: fonts.display, fontSize: 17, color: colors.brownDark },
 
+  // Reklam gövdeyle aynı kenar boşluğunda; InlineBannerAd kendi krem kartını
+  // ve "REKLAM" etiketini taşır, böylece akışta yabancı bir beyaz kutu durmaz.
   adContainer: {
-    marginTop: spacing.lg,
-    alignItems: 'center',
-    width: '100%',
+    marginTop: spacing.xl,
+    paddingHorizontal: spacing.xl,
   },
 
   // ── Dock ──
