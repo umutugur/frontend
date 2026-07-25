@@ -90,7 +90,9 @@ export const typography = {
   small: { fontFamily: fonts.body, fontSize: 12, lineHeight: 17, color: colors.muted },
   label: { fontFamily: fonts.bold, fontSize: 11, letterSpacing: 1.4, color: colors.gold },
   // Katalog gövdesi — uzun eser açıklamaları (Mezat Detay)
-  catalog: { fontFamily: fonts.serifBody, fontSize: 15, lineHeight: 26, color: '#3d2e20' },
+  // lineHeight, baş harf (drop cap) yüksekliğini de barındıracak kadar geniş tutulur;
+  // RN, satır kutusuna sığmayan büyük harfleri üstten kırpar.
+  catalog: { fontFamily: fonts.serifBody, fontSize: 15, lineHeight: 30, color: '#3d2e20' },
   catalogItalic: { fontFamily: fonts.serifBodyItalic, fontSize: 14, lineHeight: 22, color: colors.muted },
   button: { fontFamily: fonts.bold, fontSize: 15, letterSpacing: 0.3, color: colors.white },
   price: { fontFamily: fonts.extrabold, fontSize: 16, color: colors.priceGreen },

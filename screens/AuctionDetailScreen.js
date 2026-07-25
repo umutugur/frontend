@@ -555,9 +555,11 @@ const styles = StyleSheet.create({
 
   descWrap: { marginTop: spacing.md },
   desc: { ...typography.catalog },
+  // RN, satır kutusundan (typography.catalog.lineHeight = 30) taşan harfi üstten
+  // kırpar; bu yüzden baş harf o kutuya sığacak boyutta tutulur.
   dropCap: {
     fontFamily: fonts.displayBlack,
-    fontSize: 36,
+    fontSize: 25,
     color: colors.gold,
   },
   more: {

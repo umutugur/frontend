@@ -4,6 +4,7 @@ import { View, Text, Image, StyleSheet } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import PressableScale from './PressableScale';
 import Badge from './Badge';
+import { sizedImageUrl } from '../../utils/imageUrl';
 import { colors, gradients, radii, shadows, spacing, typography } from '../../theme/tokens';
 
 /**
@@ -12,7 +13,8 @@ import { colors, gradients, radii, shadows, spacing, typography } from '../../th
  *   item: { _id, images[], isSigned, title, currentPrice, startingPrice, seller:{companyName} }
  */
 export default function AuctionCard({ item, onPress }) {
-  const imageUri = item?.images?.[0] || 'https://via.placeholder.com/300';
+  // Kart ~173pt genişlikte → 400px retina için yeterli, 800px gereksiz veri.
+  const imageUri = sizedImageUrl(item?.images?.[0], 400) || 'https://via.placeholder.com/300';
   const price = item?.currentPrice ?? item?.startingPrice ?? 0;
   const seller = item?.seller?.companyName || 'Firma Bilinmiyor';
 
