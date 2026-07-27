@@ -1,16 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  StyleSheet,
-  ScrollView,
-  Alert,
-  KeyboardAvoidingView,
-  Platform
-} from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
+import axios from 'axios';
+import { Screen, ScreenHeader, Input, GradientButton, OrnamentDivider } from '../components/ui';
+import { useAlert } from '../context/AlertContext';
+import { colors, radii, spacing, typography } from '../theme/tokens';
 
 // JSON veri importları
 import iller from '../assets/data/sehirler.json';
@@ -23,6 +17,8 @@ import mahalleler4 from '../assets/data/mahalleler-4.json';
 const mahalleler = [...mahalleler1, ...mahalleler2, ...mahalleler3, ...mahalleler4];
 
 export default function AddSellerScreen() {
+  const { showAlert } = useAlert();
+  const [saving, setSaving] = useState(false);
   const [seller, setSeller] = useState({
     companyName: '',
     name: '',
@@ -78,11 +74,15 @@ export default function AddSellerScreen() {
 
   const handleSubmit = async () => {
     if (!seller.companyName || !seller.email || !seller.password) {
-      return Alert.alert('Hata', 'Firma adı, e-posta ve şifre zorunludur.');
+      return showAlert({ title: 'Hata', message: 'Firma adı, e-posta ve şifre zorunludur.' });
+    }
+
+    if (seller.password.length < 6) {
+      return showAlert({ title: 'Hata', message: 'Şifre en az 6 karakter olmalıdır.' });
     }
 
     if (!selectedIlId || !selectedIlceId || !selectedMahalleId || !sokak) {
-      return Alert.alert('Hata', 'Adres bilgileri eksik.');
+      return showAlert({ title: 'Hata', message: 'Adres bilgileri eksik.' });
     }
 
     const addressObj = {
@@ -94,22 +94,17 @@ export default function AddSellerScreen() {
       daireNo
     };
 
+    setSaving(true);
     try {
-      const res = await fetch('https://imame-backend.onrender.com/api/auth/register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...seller,
-          role: 'seller',
-          address: addressObj,
-        }),
+      // Satıcı hesabı artık herkese açık /api/auth/register üzerinden açılmıyor;
+      // orası yalnızca alıcı üretiyor. Bu uç yönetici oturumu ister — axios'un
+      // global Authorization başlığı AuthContext tarafından ayarlanıyor.
+      await axios.post('https://imame-backend.onrender.com/api/admin/sellers', {
+        ...seller,
+        address: addressObj,
       });
 
-      const data = await res.json();
-
-      if (!res.ok) throw new Error(data.message || 'Satıcı kaydı başarısız');
-
-      Alert.alert('Başarılı', 'Satıcı başarıyla eklendi.');
+      showAlert({ title: 'Başarılı', message: 'Satıcı başarıyla eklendi.' });
       setSeller({
         companyName: '',
         name: '',
@@ -128,40 +123,50 @@ export default function AddSellerScreen() {
       setApartmanNo('');
       setDaireNo('');
     } catch (err) {
-      Alert.alert('Hata', err.message);
+      const status = err.response?.status;
+      const message =
+        status === 401 || status === 403
+          ? 'Bu işlem için yönetici olarak giriş yapmalısınız.'
+          : err.response?.data?.message || 'Satıcı kaydı başarısız.';
+      showAlert({ title: 'Hata', message });
+    } finally {
+      setSaving(false);
     }
   };
 
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      style={{ flex: 1 }}
-    >
-      <ScrollView contentContainerStyle={styles.container}>
-        <Text style={styles.title}>Yeni Satıcı Ekle</Text>
+    <Screen scroll contentContainerStyle={styles.container}>
+      <ScreenHeader title="Yeni Satıcı Ekle" subtitle="Satıcı hesabı oluştur" />
 
-        {[ 
-          { label: 'Firma Adı', key: 'companyName' },
-          { label: 'Yetkili Adı Soyadı', key: 'name' },
-          { label: 'E-posta', key: 'email' },
-          { label: 'Şifre', key: 'password' },
-          { label: 'Telefon Numarası', key: 'phone' },
-          { label: 'IBAN', key: 'iban' },
-          { label: 'IBAN Sahibi', key: 'ibanName' },
-          { label: 'Banka Adı', key: 'bankName' },
-        ].map(({ label, key }) => (
-          <TextInput
-            key={key}
-            placeholder={label}
-            placeholderTextColor="#4e342e"
-            value={seller[key]}
-            onChangeText={(text) => handleChange(key, text)}
-            secureTextEntry={key === 'password'}
-            style={styles.input}
-          />
-        ))}
+      <View style={styles.body}>
+      <Text style={styles.sectionLabel}>Firma Bilgileri</Text>
 
-        <Text style={styles.addressLabel}>İl</Text>
+      {[
+        { label: 'Firma Adı', key: 'companyName', icon: 'business-outline' },
+        { label: 'Yetkili Adı Soyadı', key: 'name', icon: 'person-outline' },
+        { label: 'E-posta', key: 'email', icon: 'mail-outline' },
+        { label: 'Şifre', key: 'password', icon: 'lock-closed-outline' },
+        { label: 'Telefon Numarası', key: 'phone', icon: 'call-outline' },
+        { label: 'IBAN', key: 'iban', icon: 'card-outline' },
+        { label: 'IBAN Sahibi', key: 'ibanName', icon: 'person-circle-outline' },
+        { label: 'Banka Adı', key: 'bankName', icon: 'wallet-outline' },
+      ].map(({ label, key, icon }) => (
+        <Input
+          key={key}
+          variant="underline"
+          leftIcon={icon}
+          placeholder={label}
+          value={seller[key]}
+          onChangeText={(text) => handleChange(key, text)}
+          secureTextEntry={key === 'password'}
+        />
+      ))}
+
+      <OrnamentDivider />
+      <Text style={styles.sectionLabel}>Adres Bilgileri</Text>
+
+      <Text style={styles.addressLabel}>İl</Text>
+      <View style={styles.pickerWrap}>
         <Picker
           selectedValue={selectedIlId}
           onValueChange={setSelectedIlId}
@@ -172,8 +177,10 @@ export default function AddSellerScreen() {
             <Picker.Item key={il.sehir_id} label={il.sehir_adi} value={il.sehir_id} />
           ))}
         </Picker>
+      </View>
 
-        <Text style={styles.addressLabel}>İlçe</Text>
+      <Text style={styles.addressLabel}>İlçe</Text>
+      <View style={styles.pickerWrap}>
         <Picker
           selectedValue={selectedIlceId}
           onValueChange={setSelectedIlceId}
@@ -185,8 +192,10 @@ export default function AddSellerScreen() {
             <Picker.Item key={ilce.ilce_id} label={ilce.ilce_adi} value={ilce.ilce_id} />
           ))}
         </Picker>
+      </View>
 
-        <Text style={styles.addressLabel}>Mahalle</Text>
+      <Text style={styles.addressLabel}>Mahalle</Text>
+      <View style={styles.pickerWrap}>
         <Picker
           selectedValue={selectedMahalleId}
           onValueChange={setSelectedMahalleId}
@@ -198,78 +207,57 @@ export default function AddSellerScreen() {
             <Picker.Item key={mahalle.mahalle_id} label={mahalle.mahalle_adi} value={mahalle.mahalle_id} />
           ))}
         </Picker>
+      </View>
 
-        <TextInput
-          placeholder="Sokak"
-          placeholderTextColor="#4e342e"
-          value={sokak}
-          onChangeText={setSokak}
-          style={styles.input}
-        />
-        <TextInput
-          placeholder="Apartman No"
-          placeholderTextColor="#4e342e"
-          value={apartmanNo}
-          onChangeText={setApartmanNo}
-          style={styles.input}
-        />
-        <TextInput
-          placeholder="Daire No"
-          placeholderTextColor="#4e342e"
-          value={daireNo}
-          onChangeText={setDaireNo}
-          style={styles.input}
-        />
+      <Input variant="underline" leftIcon="navigate-outline" placeholder="Sokak" value={sokak} onChangeText={setSokak} />
+      <Input variant="underline" leftIcon="home-outline" placeholder="Apartman No" value={apartmanNo} onChangeText={setApartmanNo} />
+      <Input variant="underline" leftIcon="keypad-outline" placeholder="Daire No" value={daireNo} onChangeText={setDaireNo} />
 
-        <TouchableOpacity style={styles.button} onPress={handleSubmit}>
-          <Text style={styles.buttonText}>Satıcıyı Kaydet</Text>
-        </TouchableOpacity>
-      </ScrollView>
-    </KeyboardAvoidingView>
+      <GradientButton
+        title="Satıcıyı Kaydet"
+        variant="gold"
+        icon="checkmark-circle-outline"
+        onPress={handleSubmit}
+        loading={saving}
+        disabled={saving}
+        style={styles.button}
+      />
+      </View>
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    padding: 20,
-    backgroundColor: '#fff8e1',
+    paddingBottom: spacing.xxxl,
   },
-  title: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    color: '#4e342e',
-    marginBottom: 20,
-    alignSelf: 'center'
+  body: {
+    paddingHorizontal: spacing.xl,
+    paddingTop: spacing.md,
   },
-  input: {
-    backgroundColor: '#fff',
-    borderColor: '#ccc',
-    borderWidth: 1,
-    borderRadius: 10,
-    padding: 12,
-    marginBottom: 15,
-    color: '#000',
+  sectionLabel: {
+    ...typography.label,
+    color: colors.gold,
+    marginBottom: spacing.lg,
   },
   addressLabel: {
-    color: '#4e342e',
-    marginBottom: 6,
-    fontWeight: 'bold',
+    ...typography.h3,
+    color: colors.brownDark,
+    marginBottom: spacing.sm,
+    marginTop: spacing.xs,
+  },
+  pickerWrap: {
+    backgroundColor: colors.white,
+    borderWidth: 1.5,
+    borderColor: colors.line,
+    borderRadius: radii.md,
+    marginBottom: spacing.md,
+    overflow: 'hidden',
   },
   picker: {
-    backgroundColor: '#fff',
-    color: '#000',
-    borderRadius: 10,
-    marginBottom: 16,
+    color: colors.brownDark,
   },
   button: {
-    backgroundColor: '#6d4c41',
-    padding: 15,
-    borderRadius: 10,
-    alignItems: 'center',
-    marginTop: 10,
-  },
-  buttonText: {
-    color: '#fff',
-    fontWeight: 'bold',
+    marginTop: spacing.md,
   },
 });

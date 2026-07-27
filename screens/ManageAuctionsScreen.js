@@ -1,8 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, Alert, Modal, TextInput, Button } from 'react-native';
+import { View, Text, FlatList, StyleSheet, Modal } from 'react-native';
 import axios from 'axios';
+import { useAlert } from '../context/AlertContext';
+import { Screen, ScreenHeader, Card, Input, GradientButton, EmptyState } from '../components/ui';
+import { colors, radii, shadows, spacing, typography } from '../theme/tokens';
 
 export default function ManageAuctionsScreen() {
+  const { showAlert } = useAlert();
   const [auctions, setAuctions] = useState([]);
   const [selectedAuction, setSelectedAuction] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
@@ -13,7 +17,7 @@ export default function ManageAuctionsScreen() {
       const res = await axios.get('https://imame-backend.onrender.com/api/auctions/all');
       setAuctions(res.data);
     } catch (err) {
-      Alert.alert('Mezatlar alınamadı', err.message);
+      showAlert({ title: 'Mezatlar alınamadı', message: err.message });
     }
   };
 
@@ -23,7 +27,7 @@ export default function ManageAuctionsScreen() {
 
   const handleDeleteAuction = async () => {
     if (!reason.trim()) {
-      Alert.alert('Sebep zorunlu', 'Lütfen bir silme sebebi girin.');
+      showAlert({ title: 'Sebep zorunlu', message: 'Lütfen bir silme sebebi girin.' });
       return;
     }
     try {
@@ -31,9 +35,9 @@ export default function ManageAuctionsScreen() {
       setAuctions((prev) => prev.filter(a => a._id !== selectedAuction._id));
       setModalVisible(false);
       setReason('');
-      Alert.alert('Başarılı', 'Mezat silindi ve satıcıya bildirildi.');
+      showAlert({ title: 'Başarılı', message: 'Mezat silindi ve satıcıya bildirildi.' });
     } catch (err) {
-      Alert.alert('Silme hatası', err.message);
+      showAlert({ title: 'Silme hatası', message: err.message });
     }
   };
 
@@ -43,57 +47,94 @@ export default function ManageAuctionsScreen() {
   };
 
   const renderItem = ({ item }) => (
-    <View style={styles.card}>
+    <Card style={styles.card}>
       <Text style={styles.title}>{item.title}</Text>
-      <Text style={styles.desc}>{item.description}</Text>
-      <TouchableOpacity
-        style={styles.deleteBtn}
+      {item.description ? <Text style={styles.desc}>{item.description}</Text> : null}
+      <GradientButton
+        title="Sil"
+        icon="trash-outline"
+        variant="danger"
         onPress={() => openDeleteModal(item)}
-      >
-        <Text style={styles.deleteText}>Sil</Text>
-      </TouchableOpacity>
-    </View>
+        style={styles.deleteBtn}
+      />
+    </Card>
   );
 
   return (
-    <View style={styles.container}>
+    <Screen>
+      <ScreenHeader variant="plain" title="Mezat Yönetimi" />
       <FlatList
         data={auctions}
         renderItem={renderItem}
         keyExtractor={(item) => item._id}
+        contentContainerStyle={styles.list}
+        showsVerticalScrollIndicator={false}
+        ListEmptyComponent={
+          <EmptyState
+            icon="gavel"
+            title="Mezat yok"
+            message="Gösterilecek mezat bulunamadı."
+          />
+        }
       />
 
       {/* Modal */}
-      <Modal visible={modalVisible} transparent animationType="slide">
+      <Modal visible={modalVisible} transparent animationType="fade" onRequestClose={() => setModalVisible(false)}>
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Silme Sebebi</Text>
-            <TextInput
+            <Text style={styles.modalSub}>Bu sebep satıcıya bildirilecek.</Text>
+            <Input
+              variant="underline"
+              leftIcon="alert-circle-outline"
               value={reason}
               onChangeText={setReason}
               placeholder="Sebep giriniz..."
-              style={styles.input}
             />
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-              <Button title="Vazgeç" onPress={() => setModalVisible(false)} />
-              <Button title="Sil" color="#d32f2f" onPress={handleDeleteAuction} />
+            <View style={styles.modalActions}>
+              <GradientButton
+                title="Vazgeç"
+                variant="secondary"
+                onPress={() => setModalVisible(false)}
+                style={styles.modalBtn}
+              />
+              <GradientButton
+                title="Sil"
+                variant="danger"
+                onPress={handleDeleteAuction}
+                style={styles.modalBtn}
+              />
             </View>
           </View>
         </View>
       </Modal>
-    </View>
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fff8e1', padding: 12 },
-  card: { backgroundColor: '#fff', padding: 12, borderRadius: 8, marginBottom: 10, elevation: 2 },
-  title: { fontWeight: 'bold', fontSize: 17, color: '#4e342e' },
-  desc: { color: '#555', marginVertical: 4 },
-  deleteBtn: { marginTop: 8, backgroundColor: '#ffcdd2', borderRadius: 6, alignSelf: 'flex-end', padding: 6 },
-  deleteText: { color: '#d32f2f', fontWeight: 'bold' },
-  modalOverlay: { flex: 1, backgroundColor: '#0008', justifyContent: 'center', alignItems: 'center' },
-  modalContent: { width: 320, backgroundColor: '#fff', borderRadius: 12, padding: 18, alignItems: 'stretch' },
-  modalTitle: { fontWeight: 'bold', fontSize: 18, marginBottom: 10 },
-  input: { borderWidth: 1, borderColor: '#ccc', borderRadius: 8, padding: 8, marginBottom: 10 }
+  list: { paddingHorizontal: spacing.md, paddingTop: spacing.xs, paddingBottom: spacing.lg, flexGrow: 1 },
+  card: { marginBottom: spacing.md },
+  title: { ...typography.h3, color: colors.brownDark },
+  desc: { ...typography.body, color: colors.muted, marginVertical: spacing.xs },
+  deleteBtn: { marginTop: spacing.sm, alignSelf: 'flex-end', minWidth: 120 },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(46,30,25,0.55)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: spacing.xl,
+  },
+  modalContent: {
+    width: '100%',
+    maxWidth: 360,
+    backgroundColor: colors.white,
+    borderRadius: radii.xl,
+    padding: spacing.xl,
+    ...shadows.raised,
+  },
+  modalTitle: { ...typography.h2, color: colors.brownDark, marginBottom: spacing.xs },
+  modalSub: { ...typography.small, color: colors.muted, marginBottom: spacing.md },
+  modalActions: { flexDirection: 'row', marginTop: spacing.md },
+  modalBtn: { flex: 1, marginHorizontal: spacing.xs },
 });

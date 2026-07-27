@@ -2,15 +2,17 @@ import React, { useState } from 'react';
 import {
   View,
   Text,
-  TextInput,
-  Button,
   Modal,
   StyleSheet,
-  Alert,
 } from 'react-native';
 import axios from 'axios';
+import Input from './ui/Input';
+import GradientButton from './ui/GradientButton';
+import { useAlert } from '../context/AlertContext';
+import { colors, radii, shadows, spacing, typography } from '../theme/tokens';
 
 export default function ReportSellerModal({ visible, onClose, sellerId, reporterId }) {
+  const { showAlert } = useAlert();
   const [message, setMessage] = useState('');
 
   const submitReport = async () => {
@@ -20,11 +22,11 @@ export default function ReportSellerModal({ visible, onClose, sellerId, reporter
         reporter: reporterId,
         message,
       });
-      Alert.alert('Teşekkürler', 'Şikayetiniz alındı');
+      showAlert({ title: 'Teşekkürler', message: 'Şikayetiniz alındı' });
       setMessage('');
       onClose();
     } catch (err) {
-      Alert.alert('Hata', err.response?.data?.message || err.message);
+      showAlert({ title: 'Hata', message: err.response?.data?.message || err.message });
     }
   };
 
@@ -33,17 +35,31 @@ export default function ReportSellerModal({ visible, onClose, sellerId, reporter
       <View style={styles.modalBackground}>
         <View style={styles.modalContent}>
           <Text style={styles.title}>Satıcıyı Şikayet Et</Text>
-          <TextInput
+          <View style={styles.orn}>
+            <View style={styles.ornLine} />
+            <View style={styles.ornDiamond} />
+            <View style={styles.ornLine} />
+          </View>
+          <Input
             value={message}
             onChangeText={setMessage}
-            style={[styles.input, { height: 80 }]}
+            style={styles.input}
             multiline
             placeholder="Şikayet sebebinizi yazabilirsiniz (isteğe bağlı)"
-            placeholderTextColor="#8e8e8e" // ✅ Görünmeyen placeholder düzeltildi
           />
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-            <Button title="İptal" onPress={onClose} color="#a1887f" />
-            <Button title="Gönder" onPress={submitReport} color="#d32f2f" />
+          <View style={styles.buttonRow}>
+            <GradientButton
+              title="İptal"
+              variant="secondary"
+              onPress={onClose}
+              style={styles.button}
+            />
+            <GradientButton
+              title="Gönder"
+              variant="danger"
+              onPress={submitReport}
+              style={styles.button}
+            />
           </View>
         </View>
       </View>
@@ -54,28 +70,51 @@ export default function ReportSellerModal({ visible, onClose, sellerId, reporter
 const styles = StyleSheet.create({
   modalBackground: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.3)',
+    backgroundColor: 'rgba(46,30,25,0.55)',
     justifyContent: 'center',
     alignItems: 'center',
+    padding: spacing.xl,
   },
   modalContent: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 24,
+    backgroundColor: colors.creamHi,
+    borderRadius: radii.xl,
+    borderWidth: 1,
+    borderColor: colors.line,
+    padding: spacing.xxl,
     width: '90%',
+    maxWidth: 400,
+    ...shadows.raised,
   },
   title: {
-    fontWeight: 'bold',
-    fontSize: 18,
-    marginBottom: 12,
-    color: '#4e342e',
+    ...typography.h2,
+    color: colors.brownDark,
     textAlign: 'center',
   },
+  orn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: spacing.sm,
+    marginBottom: spacing.lg,
+  },
+  ornLine: { width: 34, height: 1, backgroundColor: colors.lineStrong },
+  ornDiamond: {
+    width: 6,
+    height: 6,
+    backgroundColor: colors.gold,
+    transform: [{ rotate: '45deg' }],
+    marginHorizontal: spacing.sm,
+  },
   input: {
-    backgroundColor: '#f5f5f5',
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 12,
-    color: '#000', // ✍️ Giriş yapan kullanıcının yazdığı metnin rengi net görünür
+    height: 80,
+    textAlignVertical: 'top',
+  },
+  buttonRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: spacing.md,
+  },
+  button: {
+    flex: 1,
   },
 });

@@ -1,57 +1,104 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
+import { Screen, MenuTile, PressableScale } from '../components/ui';
+import { colors, gradients, radii, spacing, typography, shadows } from '../theme/tokens';
 
 export default function AdminPanelScreen({ navigation }) {
   const adminSections = [
-    { title: 'Kullanıcıları Görüntüle', route: 'UserList' },
-    { title: 'Yeni Satıcı Ekle', route: 'AddSeller' },
-    { title: 'Mezatları Yönet', route: 'ManageAuctions' },
-    { title: 'Dekont Onayla', route: 'ReceiptApproval' },
-    { title: 'Şikayetleri Görüntüle', route: 'ViewReports' },
-    { title: 'Kullanıcı Banla', route: 'BanUser' },
-    { title: 'Bildirim Gönder', route: 'SendNotification' }, 
+    { title: 'Kullanıcıları Görüntüle', subtitle: 'Tüm kayıtlı kullanıcılar', route: 'UserList', icon: 'people-outline' },
+    { title: 'Yeni Satıcı Ekle', subtitle: 'Satıcı hesabı oluştur', route: 'AddSeller', icon: 'person-add-outline' },
+    { title: 'Mezatları Yönet', subtitle: 'Aktif ve biten mezatlar', route: 'ManageAuctions', icon: 'hammer-outline' },
+    { title: 'Dekont Onayla', subtitle: 'Bekleyen ödeme dekontları', route: 'ReceiptApproval', icon: 'receipt-outline' },
+    { title: 'Şikayetleri Görüntüle', subtitle: 'Kullanıcı şikayetleri', route: 'ViewReports', icon: 'flag-outline' },
+    { title: 'Kullanıcı Banla', subtitle: 'Hesap askıya alma', route: 'BanUser', icon: 'ban-outline' },
+    { title: 'Bildirim Gönder', subtitle: 'Toplu push bildirimi', route: 'SendNotification', icon: 'notifications-outline' },
   ];
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.title}>Admin Panel</Text>
-      {adminSections.map((section, index) => (
-        <TouchableOpacity
-          key={index}
-          style={styles.button}
-          onPress={() => navigation.navigate(section.route)}
-        >
-          <Text style={styles.buttonText}>{section.title}</Text>
-        </TouchableOpacity>
-      ))}
-    </ScrollView>
+    <Screen scroll contentContainerStyle={styles.content}>
+      <LinearGradient
+        colors={gradients.heroDark}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={[styles.header, shadows.raised]}
+      >
+        <LinearGradient colors={gradients.sheen} style={styles.headerSheen} pointerEvents="none" />
+        <PressableScale style={styles.backHero} onPress={() => navigation.goBack()}>
+          <Ionicons name="chevron-back" size={22} color={colors.creamHi} />
+        </PressableScale>
+        <View style={styles.headerIcon}>
+          <Ionicons name="shield-checkmark" size={24} color={colors.goldLight} />
+        </View>
+        <Text style={styles.kicker}>YÖNETİM</Text>
+        <Text style={styles.headerTitle}>Admin Panel</Text>
+        <Text style={styles.headerSubtitle}>İmame yönetim araçları</Text>
+      </LinearGradient>
+
+      <View style={styles.list}>
+        {adminSections.map((section) => (
+          <MenuTile
+            key={section.route}
+            icon={section.icon}
+            title={section.title}
+            subtitle={section.subtitle}
+            tone={section.route === 'BanUser' ? 'danger' : 'default'}
+            onPress={() => navigation.navigate(section.route)}
+          />
+        ))}
+      </View>
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flexGrow: 1,
-    backgroundColor: '#fff8e1',
-    padding: 20,
+  content: { padding: spacing.xl, paddingBottom: spacing.xxxl },
+  header: {
+    borderRadius: radii.xl,
+    padding: spacing.xxl,
     alignItems: 'center',
+    marginBottom: spacing.xl,
+    overflow: 'hidden',
   },
-  title: {
-    fontSize: 26,
-    fontWeight: 'bold',
-    color: '#4e342e',
-    marginBottom: 30,
-  },
-  button: {
-    width: '100%',
-    backgroundColor: '#6d4c41',
-    padding: 16,
-    borderRadius: 12,
+  headerSheen: { position: 'absolute', top: 0, left: 0, right: 0, height: '55%' },
+  backHero: {
+    position: 'absolute',
+    top: spacing.lg,
+    left: spacing.lg,
+    width: 42,
+    height: 42,
+    borderRadius: radii.pill,
+    backgroundColor: 'rgba(255,251,240,0.12)',
+    borderWidth: 1,
+    borderColor: 'rgba(216,178,90,0.35)',
     alignItems: 'center',
-    marginBottom: 15,
+    justifyContent: 'center',
   },
-  buttonText: {
-    color: '#fff',
-    fontWeight: 'bold',
-    fontSize: 16,
+  headerIcon: {
+    width: 54,
+    height: 54,
+    borderRadius: 27,
+    backgroundColor: 'rgba(201,162,75,0.18)',
+    borderWidth: 1,
+    borderColor: 'rgba(201,162,75,0.35)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: spacing.md,
   },
+  kicker: {
+    ...typography.label,
+    color: colors.goldLight,
+    marginBottom: 2,
+  },
+  headerTitle: {
+    ...typography.h1,
+    color: colors.white,
+  },
+  headerSubtitle: {
+    ...typography.body,
+    color: 'rgba(255,255,255,0.75)',
+    marginTop: 2,
+  },
+  list: { marginTop: spacing.xs },
 });

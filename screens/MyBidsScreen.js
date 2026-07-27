@@ -1,12 +1,32 @@
 import React, { useEffect, useState, useContext } from 'react';
 import {
-  View, Text, FlatList, StyleSheet, TouchableOpacity, Image, ActivityIndicator, Alert
+  View, Text, FlatList, StyleSheet, Image
 } from 'react-native';
 import axios from 'axios';
 import { AuthContext } from '../context/AuthContext';
+import { useAlert } from '../context/AlertContext';
+import { Screen, ScreenHeader, Card, Badge, EmptyState, Skeleton } from '../components/ui';
+import { colors, spacing, radii, typography } from '../theme/tokens';
+
+// Yükleniyor durumunda teklif satırını taklit eden iskelet.
+function BidRowSkeleton() {
+  return (
+    <Card style={styles.bidItem}>
+      <View style={styles.row}>
+        <Skeleton width={100} height={74} radius={radii.md} style={styles.skeletonThumb} />
+        <View style={styles.rightContainer}>
+          <Skeleton height={14} width="85%" style={styles.skeletonLine} />
+          <Skeleton height={13} width="45%" style={styles.skeletonLine} />
+          <Skeleton height={18} width="35%" radius={radii.pill} />
+        </View>
+      </View>
+    </Card>
+  );
+}
 
 export default function MyBidsScreen({ navigation }) {
   const { user } = useContext(AuthContext);
+  const { showAlert } = useAlert();
   const [bids, setBids] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -22,7 +42,10 @@ export default function MyBidsScreen({ navigation }) {
       const res = await axios.get(`https://imame-backend.onrender.com/api/bids/user/${user._id}`);
       setBids(res.data || []);
     } catch (err) {
-      Alert.alert('Teklifler alınamadı:', err?.response?.data?.message || err.message);
+      showAlert({
+        title: 'Teklifler alınamadı',
+        message: err?.response?.data?.message || err.message,
+      });
     } finally {
       setLoading(false);
     }
@@ -37,111 +60,127 @@ export default function MyBidsScreen({ navigation }) {
     const showRed = item.statusText === 'Sizden sonra teklif verildi';
 
     return (
-      <TouchableOpacity
+      <Card
         style={styles.bidItem}
         onPress={() =>
           navigation.navigate('AuctionDetail', { auctionId: item.auction._id })
         }
       >
-        {auctionImage && (
-          <Image source={{ uri: auctionImage }} style={styles.auctionImage} />
-        )}
-        <View style={styles.rightContainer}>
-          <Text style={[styles.title, { marginTop: 6 }]}>
-            {item.auction.title}
-          </Text>
-          <Text style={[styles.amount, { marginTop: 6 }]}>
-            {showRed ? item.auctionCurrentPrice : item.amount} TL
-          </Text>
-          <Text
-            style={[
-              styles.status,
-              showRed
-                ? { color: '#d32f2f', fontWeight: 'bold' }
-                : { color: '#00796b' },
-            ]}
-          >
-            {item.statusText}
-          </Text>
-          {showRed && (
-            <Text style={styles.redWarning}>
-              Dikkat: Sizden sonra teklif verildi!
-            </Text>
+        <View style={styles.row}>
+          {auctionImage && (
+            <Image source={{ uri: auctionImage }} style={styles.auctionImage} />
           )}
+          <View style={styles.rightContainer}>
+            <Text style={styles.title} numberOfLines={2}>
+              {item.auction.title}
+            </Text>
+            <View style={styles.priceRow}>
+              <Text style={styles.priceLabel}>{showRed ? 'GÜNCEL' : 'TEKLİFİNİZ'}</Text>
+              <Text style={styles.amount}>
+                {Number(showRed ? item.auctionCurrentPrice : item.amount).toLocaleString('tr-TR')} TL
+              </Text>
+            </View>
+            <View style={styles.badgeRow}>
+              <Badge
+                label={item.statusText}
+                tone={showRed ? 'rejected' : 'approved'}
+              />
+            </View>
+            {showRed && (
+              <Text style={styles.redWarning}>
+                Dikkat: Sizden sonra teklif verildi!
+              </Text>
+            )}
+          </View>
         </View>
-      </TouchableOpacity>
+      </Card>
     );
   };
 
   if (loading) {
     return (
-      <View style={styles.loading}>
-        <ActivityIndicator size="large" color="#6d4c41" />
-        <Text>Teklifler yükleniyor...</Text>
-      </View>
-    );
-  }
-
-  if (bids.length === 0) {
-    return (
-      <View style={styles.emptyContainer}>
-        <Text style={styles.emptyText}>Henüz teklif vermediniz.</Text>
-      </View>
+      <Screen>
+        <ScreenHeader variant="plain" title="Tekliflerim" />
+        <View style={styles.listContent}>
+          {[0, 1, 2, 3].map((i) => (
+            <BidRowSkeleton key={i} />
+          ))}
+        </View>
+      </Screen>
     );
   }
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.header}>Tekliflerim</Text>
+    <Screen>
+      <ScreenHeader variant="plain" title="Tekliflerim" />
       <FlatList
         data={bids}
         keyExtractor={(item) => item._id}
         renderItem={renderItem}
+        contentContainerStyle={styles.listContent}
+        showsVerticalScrollIndicator={false}
+        ListEmptyComponent={
+          <EmptyState
+            icon="gavel"
+            title="Henüz teklif vermediniz"
+            message="Verdiğiniz teklifler burada görünecek."
+          />
+        }
       />
-    </View>
+    </Screen>
   );
 }
 
-// ...styles burada olacak, kısaltıyorum...
-
-
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fff8e1', padding: 16 },
-  header: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    color: '#4e342e',
-    marginBottom: 10,
-    marginTop: 30,
+  listContent: {
+    paddingHorizontal: spacing.lg,
+    paddingBottom: spacing.xl,
+    flexGrow: 1,
   },
   bidItem: {
+    marginBottom: spacing.md,
+  },
+  row: {
     flexDirection: 'row',
-    backgroundColor: '#fff',
-    padding: 12,
-    marginBottom: 10,
-    borderRadius: 10,
-    elevation: 2,
     alignItems: 'center',
   },
   auctionImage: {
     width: 100,
-    height: 70,
-    borderRadius: 8,
-    marginRight: 12,
+    height: 74,
+    borderRadius: radii.md,
+    marginRight: spacing.md,
+    backgroundColor: colors.line,
   },
   rightContainer: {
     flex: 1,
   },
-  title: { fontSize: 16, fontWeight: 'bold', color: '#3e2723' },
-  amount: { fontSize: 14, color: '#6d4c41' },
-  status: { fontSize: 14 },
-  redWarning: {
-    color: '#d32f2f',
-    fontWeight: 'bold',
-    marginTop: 4,
-    fontSize: 13,
+  title: { ...typography.title, color: colors.brownDark, marginBottom: spacing.xs },
+  priceRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    marginBottom: spacing.sm,
   },
-  loading: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  emptyContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  emptyText: { fontSize: 16, color: '#999' },
+  priceLabel: {
+    ...typography.label,
+    color: colors.muted,
+    fontSize: 9,
+    marginRight: spacing.sm,
+  },
+  amount: {
+    ...typography.price,
+  },
+  badgeRow: {
+    flexDirection: 'row',
+  },
+  redWarning: {
+    ...typography.bodyStrong,
+    color: colors.danger,
+    marginTop: spacing.xs,
+  },
+  skeletonThumb: {
+    marginRight: spacing.md,
+  },
+  skeletonLine: {
+    marginBottom: spacing.sm,
+  },
 });

@@ -1,10 +1,37 @@
-import React, { useContext } from 'react';
-import { View, Text, FlatList, StyleSheet, TouchableOpacity } from 'react-native';
+import React, { useContext, useEffect, useState } from 'react';
+import { View, Text, FlatList, StyleSheet } from 'react-native';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import axios from 'axios';
 import { AuthContext } from '../context/AuthContext';
+import { Screen, ScreenHeader, Card, EmptyState, Skeleton } from '../components/ui';
+import { colors, spacing, radii, typography } from '../theme/tokens';
+
+// Yükleniyor durumunda bildirim satırını taklit eden iskelet.
+function NotificationRowSkeleton() {
+  return (
+    <Card style={styles.notification}>
+      <View style={styles.titleRow}>
+        <Skeleton width={32} height={32} radius={radii.pill} style={styles.skeletonBell} />
+        <Skeleton height={14} width="60%" />
+      </View>
+      <Skeleton height={12} width="90%" style={styles.skeletonBody} />
+      <Skeleton height={12} width="30%" style={styles.skeletonDate} />
+    </Card>
+  );
+}
 
 export default function NotificationsScreen() {
   const { notifications, setNotifications } = useContext(AuthContext);
+  // Bildirimler AuthContext'te uygulama girişinde alınır ve burada bir
+  // "yükleniyor" bayrağı olarak dışa açılmaz; ekranın ilk açılışında kısa bir
+  // iskelet geçişi göstermek için yalnızca sunumsal, yerel bir gecikme kullanılır
+  // (herhangi bir axios çağrısı veya iş kuralı eklemez).
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setLoading(false), 400);
+    return () => clearTimeout(timer);
+  }, []);
 
   const markAsRead = async (notifId) => {
     try {
@@ -29,71 +56,138 @@ export default function NotificationsScreen() {
     });
 
     return (
-      <TouchableOpacity onPress={() => markAsRead(item._id)}>
-        <View
-          style={[
-            styles.notification,
-            !item.isRead && styles.unreadNotification,
-          ]}
-        >
-          <Text style={[styles.title, !item.isRead && styles.unreadTitle]}>
+      <Card
+        style={[styles.notification, !item.isRead && styles.unreadNotification]}
+        onPress={() => markAsRead(item._id)}
+      >
+        {!item.isRead ? <View style={styles.unreadAccent} /> : null}
+        <View style={styles.titleRow}>
+          <View style={[styles.bellCircle, !item.isRead && styles.bellCircleUnread]}>
+            <MaterialCommunityIcons
+              name={item.isRead ? 'bell-outline' : 'bell-ring-outline'}
+              size={16}
+              color={item.isRead ? colors.brown : colors.gold}
+            />
+          </View>
+          <Text
+            style={[styles.title, !item.isRead && styles.unreadTitle]}
+            numberOfLines={2}
+          >
             {item.title}
           </Text>
-          <Text style={styles.body}>{item.message}</Text>
-          <Text style={styles.date}>{formattedDate}</Text>
+          {!item.isRead ? <View style={styles.unreadDot} /> : null}
         </View>
-      </TouchableOpacity>
+        <Text style={styles.body}>{item.message}</Text>
+        <Text style={styles.date}>{formattedDate}</Text>
+      </Card>
     );
   };
 
+  if (loading) {
+    return (
+      <Screen>
+        <ScreenHeader variant="plain" title="Bildirimler" />
+        <View style={styles.listContent}>
+          {[0, 1, 2, 3].map((i) => (
+            <NotificationRowSkeleton key={i} />
+          ))}
+        </View>
+      </Screen>
+    );
+  }
+
   return (
-    <View style={styles.container}>
+    <Screen>
+      <ScreenHeader variant="plain" title="Bildirimler" />
       <FlatList
         data={notifications}
         keyExtractor={(item) => item._id}
         renderItem={renderItem}
-        contentContainerStyle={{ paddingBottom: 20 }}
+        contentContainerStyle={styles.listContent}
+        showsVerticalScrollIndicator={false}
+        ListEmptyComponent={
+          <EmptyState
+            icon="bell-off-outline"
+            title="Bildirim yok"
+            message="Yeni bildirimleriniz burada görünecek."
+          />
+        }
       />
-    </View>
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fefefe',
-    padding: 16,
+  listContent: {
+    padding: spacing.lg,
+    paddingBottom: spacing.xl,
+    flexGrow: 1,
   },
   notification: {
-    backgroundColor: '#ffffff',
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
+    marginBottom: spacing.md,
+    overflow: 'hidden',
   },
   unreadNotification: {
-    backgroundColor: '#fff3e0',
+    backgroundColor: colors.cream,
+  },
+  unreadAccent: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    bottom: 0,
+    width: 3,
+    backgroundColor: colors.gold,
+  },
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  bellCircle: {
+    width: 32,
+    height: 32,
+    borderRadius: radii.pill,
+    backgroundColor: 'rgba(78,52,46,0.06)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: spacing.sm,
+  },
+  bellCircleUnread: {
+    backgroundColor: 'rgba(201,162,75,0.16)',
+  },
+  unreadDot: {
+    width: 8,
+    height: 8,
+    borderRadius: radii.pill,
+    backgroundColor: colors.gold,
+    marginLeft: spacing.sm,
   },
   title: {
-    fontSize: 16,
-    color: '#4e342e',
+    ...typography.bodyStrong,
+    color: colors.brownDark,
+    flex: 1,
   },
   unreadTitle: {
-    fontWeight: 'bold',
+    ...typography.h3,
   },
   body: {
-    fontSize: 14,
-    color: '#5d4037',
-    marginTop: 6,
+    ...typography.body,
+    color: colors.brown,
+    marginTop: spacing.sm,
   },
   date: {
-    fontSize: 12,
-    color: '#8d6e63',
-    marginTop: 8,
+    ...typography.small,
+    color: colors.muted,
+    marginTop: spacing.sm,
     textAlign: 'right',
+  },
+  skeletonBell: {
+    marginRight: spacing.sm,
+  },
+  skeletonBody: {
+    marginTop: spacing.sm,
+  },
+  skeletonDate: {
+    marginTop: spacing.sm,
+    alignSelf: 'flex-end',
   },
 });

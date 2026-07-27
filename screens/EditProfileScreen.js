@@ -3,18 +3,18 @@ import React, { useContext, useState, useEffect } from 'react';
 import {
   View,
   Text,
-  TextInput,
-  TouchableOpacity,
   ScrollView,
   StyleSheet,
-  Alert,
-  KeyboardAvoidingView,
   Platform,
   TouchableWithoutFeedback,
   Keyboard,
 } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
+import { Ionicons } from '@expo/vector-icons';
 import { AuthContext } from '../context/AuthContext';
+import { Screen, ScreenHeader, Input, GradientButton } from '../components/ui';
+import { useAlert } from '../context/AlertContext';
+import { colors, radii, spacing, typography } from '../theme/tokens';
 
 import iller from '../assets/data/sehirler.json';
 import ilceler from '../assets/data/ilceler.json';
@@ -27,6 +27,7 @@ const mahalleler = [...mahalleler1, ...mahalleler2, ...mahalleler3, ...mahallele
 
 const EditProfileScreen = () => {
   const { user, updateUser } = useContext(AuthContext);
+  const { showAlert } = useAlert();
 
   const [fullName, setFullName] = useState('');
   const [phone, setPhone] = useState('');
@@ -82,7 +83,7 @@ const EditProfileScreen = () => {
 
   const handleSave = () => {
     if (!fullName || !phone || !selectedIlId || !selectedIlceId || !selectedMahalleId || !sokak) {
-      Alert.alert('Hata', 'Lütfen tüm zorunlu alanları doldurun.');
+      showAlert({ title: 'Hata', message: 'Lütfen tüm zorunlu alanları doldurun.' });
       return;
     }
 
@@ -101,153 +102,174 @@ const EditProfileScreen = () => {
     };
 
     updateUser(updatedUser);
-    Alert.alert('Başarılı', 'Profil bilgileriniz güncellendi.');
+    showAlert({ title: 'Başarılı', message: 'Profil bilgileriniz güncellendi.' });
   };
 
   return (
-    <KeyboardAvoidingView
-      style={{ flex: 1, backgroundColor: '#fff8e1' }}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 0}
-    >
-      <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
-        <ScrollView
-          contentContainerStyle={styles.container}
-          keyboardShouldPersistTaps="handled"
-        >
-          <Text style={styles.title}>Profili Düzenle</Text>
+    <Screen keyboardOffset={Platform.OS === 'ios' ? 64 : 0}>
+      <ScreenHeader variant="plain" title="Profili Düzenle" />
+      <ScrollView
+        contentContainerStyle={styles.container}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
+        <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+          <View>
+            <Text style={styles.sectionLabel}>Kişisel Bilgiler</Text>
 
-          <TextInput
-            style={styles.input}
-            placeholder="Ad Soyad"
-            placeholderTextColor="#888"
-            value={fullName}
-            onChangeText={setFullName}
-            returnKeyType="next"
-          />
+            <Input
+              variant="underline"
+              leftIcon="person-outline"
+              placeholder="Ad Soyad"
+              value={fullName}
+              onChangeText={setFullName}
+              returnKeyType="next"
+            />
 
-          <TextInput
-            style={styles.input}
-            placeholder="Telefon"
-            placeholderTextColor="#888"
-            value={phone}
-            onChangeText={setPhone}
-            keyboardType="phone-pad"
-            returnKeyType="next"
-          />
+            <Input
+              variant="underline"
+              leftIcon="call-outline"
+              placeholder="Telefon"
+              value={phone}
+              onChangeText={setPhone}
+              keyboardType="phone-pad"
+              returnKeyType="next"
+            />
 
-          <Text style={styles.label}>İl</Text>
-          <Picker
-            selectedValue={selectedIlId}
-            onValueChange={setSelectedIlId}
-            style={styles.picker}
-          >
-            <Picker.Item label="İl seçiniz" value={null} />
-            {iller.map((il) => (
-              <Picker.Item key={il.sehir_id} label={il.sehir_adi} value={il.sehir_id} />
-            ))}
-          </Picker>
+            <Text style={styles.sectionLabel}>Adres</Text>
 
-          <Text style={styles.label}>İlçe</Text>
-          <Picker
-            selectedValue={selectedIlceId}
-            onValueChange={setSelectedIlceId}
-            enabled={filteredIlceler.length > 0}
-            style={styles.picker}
-          >
-            <Picker.Item label="İlçe seçiniz" value={null} />
-            {filteredIlceler.map((ilce) => (
-              <Picker.Item key={ilce.ilce_id} label={ilce.ilce_adi} value={ilce.ilce_id} />
-            ))}
-          </Picker>
+            <View style={styles.pickerRow}>
+              <Ionicons name="map-outline" size={19} color={colors.muted} style={styles.pickerIcon} />
+              <Text style={styles.label}>İl</Text>
+            </View>
+            <View style={styles.pickerWrap}>
+              <Picker
+                selectedValue={selectedIlId}
+                onValueChange={setSelectedIlId}
+                style={styles.picker}
+              >
+                <Picker.Item label="İl seçiniz" value={null} />
+                {iller.map((il) => (
+                  <Picker.Item key={il.sehir_id} label={il.sehir_adi} value={il.sehir_id} />
+                ))}
+              </Picker>
+            </View>
 
-          <Text style={styles.label}>Mahalle</Text>
-          <Picker
-            selectedValue={selectedMahalleId}
-            onValueChange={setSelectedMahalleId}
-            enabled={filteredMahalleler.length > 0}
-            style={styles.picker}
-          >
-            <Picker.Item label="Mahalle seçiniz" value={null} />
-            {filteredMahalleler.map((mahalle) => (
-              <Picker.Item
-                key={mahalle.mahalle_id}
-                label={mahalle.mahalle_adi}
-                value={mahalle.mahalle_id}
-              />
-            ))}
-          </Picker>
+            <View style={styles.pickerRow}>
+              <Ionicons name="location-outline" size={19} color={colors.muted} style={styles.pickerIcon} />
+              <Text style={styles.label}>İlçe</Text>
+            </View>
+            <View style={styles.pickerWrap}>
+              <Picker
+                selectedValue={selectedIlceId}
+                onValueChange={setSelectedIlceId}
+                enabled={filteredIlceler.length > 0}
+                style={styles.picker}
+              >
+                <Picker.Item label="İlçe seçiniz" value={null} />
+                {filteredIlceler.map((ilce) => (
+                  <Picker.Item key={ilce.ilce_id} label={ilce.ilce_adi} value={ilce.ilce_id} />
+                ))}
+              </Picker>
+            </View>
 
-          <TextInput
-            style={styles.input}
-            placeholder="Sokak"
-            placeholderTextColor="#888"
-            value={sokak}
-            onChangeText={setSokak}
-            returnKeyType="next"
-          />
-          <TextInput
-            style={styles.input}
-            placeholder="Apartman No"
-            placeholderTextColor="#888"
-            value={apartmanNo}
-            onChangeText={setApartmanNo}
-            returnKeyType="next"
-          />
-          <TextInput
-            style={styles.input}
-            placeholder="Daire No"
-            placeholderTextColor="#888"
-            value={daireNo}
-            onChangeText={setDaireNo}
-            returnKeyType="done"
-          />
+            <View style={styles.pickerRow}>
+              <Ionicons name="home-outline" size={19} color={colors.muted} style={styles.pickerIcon} />
+              <Text style={styles.label}>Mahalle</Text>
+            </View>
+            <View style={styles.pickerWrap}>
+              <Picker
+                selectedValue={selectedMahalleId}
+                onValueChange={setSelectedMahalleId}
+                enabled={filteredMahalleler.length > 0}
+                style={styles.picker}
+              >
+                <Picker.Item label="Mahalle seçiniz" value={null} />
+                {filteredMahalleler.map((mahalle) => (
+                  <Picker.Item
+                    key={mahalle.mahalle_id}
+                    label={mahalle.mahalle_adi}
+                    value={mahalle.mahalle_id}
+                  />
+                ))}
+              </Picker>
+            </View>
 
-          <TouchableOpacity style={styles.button} onPress={handleSave}>
-            <Text style={styles.buttonText}>Kaydet</Text>
-          </TouchableOpacity>
+            <Input
+              variant="underline"
+              leftIcon="navigate-outline"
+              placeholder="Sokak"
+              value={sokak}
+              onChangeText={setSokak}
+              returnKeyType="next"
+            />
+            <Input
+              variant="underline"
+              leftIcon="business-outline"
+              placeholder="Apartman No"
+              value={apartmanNo}
+              onChangeText={setApartmanNo}
+              returnKeyType="next"
+            />
+            <Input
+              variant="underline"
+              leftIcon="keypad-outline"
+              placeholder="Daire No"
+              value={daireNo}
+              onChangeText={setDaireNo}
+              returnKeyType="done"
+            />
 
-          {/* Klavye açıldığında son elemanın görünmesi için ekstra alt boşluk */}
-          <View style={{ height: 24 }} />
-        </ScrollView>
-      </TouchableWithoutFeedback>
-    </KeyboardAvoidingView>
+            <GradientButton
+              title="Kaydet"
+              icon="save-outline"
+              variant="gold"
+              onPress={handleSave}
+              style={styles.button}
+            />
+
+            {/* Klavye açıldığında son elemanın görünmesi için ekstra alt boşluk */}
+            <View style={{ height: 24 }} />
+          </View>
+        </TouchableWithoutFeedback>
+      </ScrollView>
+    </Screen>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { padding: 20, backgroundColor: '#fff8e1', flexGrow: 1 },
-  title: {
-    fontSize: 24,
-    color: '#4e342e',
-    marginBottom: 20,
-    fontWeight: 'bold',
-    alignSelf: 'center',
+  container: { paddingHorizontal: spacing.xl, paddingBottom: spacing.xl, flexGrow: 1 },
+  sectionLabel: {
+    ...typography.label,
+    marginTop: spacing.md,
+    marginBottom: spacing.md,
   },
-  input: {
-    backgroundColor: '#fff',
-    color: '#000',
-    borderRadius: 10,
-    padding: 14,
-    marginBottom: 16,
+  pickerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: spacing.sm,
+  },
+  pickerIcon: {
+    marginRight: spacing.sm,
+  },
+  pickerWrap: {
+    backgroundColor: colors.creamHi,
     borderWidth: 1,
-    borderColor: '#ccc',
+    borderColor: colors.line,
+    borderRadius: radii.md,
+    marginBottom: spacing.lg,
+    overflow: 'hidden',
   },
   picker: {
-    backgroundColor: '#fff',
-    color: '#000',
-    borderRadius: 10,
-    marginBottom: 16,
+    color: colors.brownDark,
   },
-  label: { color: '#4e342e', marginBottom: 6, fontWeight: 'bold' },
+  label: {
+    ...typography.title,
+    color: colors.brownDark,
+  },
   button: {
-    backgroundColor: '#6d4c41',
-    paddingVertical: 14,
-    borderRadius: 10,
-    alignItems: 'center',
-    marginTop: 10,
+    marginTop: spacing.lg,
   },
-  buttonText: { color: '#fff', fontSize: 16, fontWeight: 'bold' },
 });
 
 export default EditProfileScreen;

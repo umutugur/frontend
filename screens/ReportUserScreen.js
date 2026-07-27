@@ -1,69 +1,90 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { Screen, ScreenHeader, Card, Input, GradientButton } from '../components/ui';
+import { useAlert } from '../context/AlertContext';
+import { colors, spacing, typography } from '../theme/tokens';
 
 export default function ReportUserScreen() {
+  const { showAlert } = useAlert();
   const [reportText, setReportText] = useState('');
 
   const handleSubmit = () => {
     if (reportText.trim() === '') {
-      Alert.alert('Uyarı', 'Lütfen bir açıklama girin.');
+      showAlert({ title: 'Uyarı', message: 'Lütfen bir açıklama girin.' });
       return;
     }
 
     // Burada backend'e gönderilecek (şimdilik alert simülasyonu)
-    Alert.alert('Teşekkürler', 'Şikayetiniz alınmıştır.');
+    showAlert({ title: 'Teşekkürler', message: 'Şikayetiniz alınmıştır.' });
     setReportText('');
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Kullanıcı Şikayet Et</Text>
-      <TextInput
-        placeholder="Şikayetinizi buraya yazın..."
-        value={reportText}
-        onChangeText={setReportText}
-        multiline
-        numberOfLines={6}
-        style={styles.input}
-      />
-      <TouchableOpacity style={styles.button} onPress={handleSubmit}>
-        <Text style={styles.buttonText}>Gönder</Text>
-      </TouchableOpacity>
-    </View>
+    <Screen scroll contentContainerStyle={styles.container}>
+      <ScreenHeader title="Kullanıcı Şikayet Et" subtitle="Bize bildirin" />
+      <View style={styles.body}>
+        <Card>
+          <View style={styles.iconWrap}>
+            <Ionicons name="flag-outline" size={30} color={colors.brown} />
+          </View>
+          <Text style={styles.title}>Şikayetinizi İletin</Text>
+          <Text style={styles.hint}>
+            Yaşadığınız sorunu ayrıntılı olarak yazın. Ekibimiz en kısa sürede inceleyecektir.
+          </Text>
+          <Input
+            placeholder="Şikayetinizi buraya yazın..."
+            value={reportText}
+            onChangeText={setReportText}
+            multiline
+            numberOfLines={6}
+            style={styles.multiline}
+          />
+          <GradientButton
+            title="Gönder"
+            variant="gold"
+            icon="send-outline"
+            onPress={handleSubmit}
+          />
+        </Card>
+      </View>
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
-    backgroundColor: '#fff8e1',
-    padding: 20,
+    flexGrow: 1,
+    paddingBottom: spacing.xxxl,
+  },
+  body: {
+    paddingHorizontal: spacing.xl,
+    paddingTop: spacing.lg,
+  },
+  iconWrap: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: 'rgba(78,52,46,0.08)',
+    alignItems: 'center',
     justifyContent: 'center',
+    alignSelf: 'center',
+    marginBottom: spacing.md,
   },
   title: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#4e342e',
-    marginBottom: 20,
+    ...typography.h2,
+    color: colors.brownDark,
+    marginBottom: spacing.sm,
+    textAlign: 'center',
   },
-  input: {
-    backgroundColor: '#fff',
-    borderColor: '#ccc',
-    borderWidth: 1,
-    borderRadius: 10,
-    padding: 15,
+  hint: {
+    ...typography.body,
+    color: colors.muted,
+    textAlign: 'center',
+    marginBottom: spacing.lg,
+  },
+  multiline: {
+    minHeight: 130,
     textAlignVertical: 'top',
-    marginBottom: 20,
-  },
-  button: {
-    backgroundColor: '#6d4c41',
-    padding: 15,
-    borderRadius: 10,
-    alignItems: 'center',
-  },
-  buttonText: {
-    color: '#fff',
-    fontWeight: 'bold',
-    fontSize: 16,
   },
 });

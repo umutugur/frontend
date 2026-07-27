@@ -1,12 +1,14 @@
 // screens/SendNotificationScreen.js
 import React, { useState } from 'react';
-import {
-  View, Text, TextInput, TouchableOpacity, StyleSheet, Alert
-} from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 import CheckBox from '@react-native-community/checkbox';
 import axios from 'axios';
+import { Screen, ScreenHeader, Input, GradientButton } from '../components/ui';
+import { useAlert } from '../context/AlertContext';
+import { colors, spacing, typography } from '../theme/tokens';
 
 export default function SendNotificationScreen() {
+  const { showAlert } = useAlert();
   const [title, setTitle] = useState('');
   const [message, setMessage] = useState('');
   const [email, setEmail] = useState('');
@@ -17,14 +19,14 @@ export default function SendNotificationScreen() {
 
   const handleSend = async () => {
     if (!title || !message) {
-      Alert.alert('Uyarı', 'Lütfen başlık ve mesaj girin.');
+      showAlert({ title: 'Uyarı', message: 'Lütfen başlık ve mesaj girin.' });
       return;
     }
 
     // Alıcı seçimi kontrolü
     const noTargetsSelected = !email.trim() && !toAllBuyers && !toAllSellers && !includeGuests;
     if (noTargetsSelected) {
-      Alert.alert('Uyarı', 'Lütfen e-posta yazın ya da alıcı grubu seçin (misafir dahil).');
+      showAlert({ title: 'Uyarı', message: 'Lütfen e-posta yazın ya da alıcı grubu seçin (misafir dahil).' });
       return;
     }
 
@@ -39,7 +41,7 @@ export default function SendNotificationScreen() {
         includeGuests, // 👈 backend’e yeni alan
       });
 
-      Alert.alert('Başarılı', 'Bildirim gönderildi!');
+      showAlert({ title: 'Başarılı', message: 'Bildirim gönderildi!' });
       setTitle('');
       setMessage('');
       setEmail('');
@@ -48,41 +50,44 @@ export default function SendNotificationScreen() {
       setIncludeGuests(false);
     } catch (err) {
       const msg = err.response?.data?.message || err.message;
-      Alert.alert('Hata', msg);
+      showAlert({ title: 'Hata', message: msg });
     } finally {
       setBusy(false);
     }
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Bildirim Gönder</Text>
+    <Screen scroll contentContainerStyle={styles.container}>
+      <ScreenHeader title="Bildirim Gönder" subtitle="Toplu push bildirimi" />
 
-      <TextInput
-        style={styles.input}
+      <View style={styles.body}>
+      <Input
+        variant="underline"
+        leftIcon="text-outline"
         placeholder="Başlık"
-        placeholderTextColor="#8d6e63"
         value={title}
         onChangeText={setTitle}
       />
 
-      <TextInput
-        style={styles.input}
+      <Input
+        variant="underline"
+        leftIcon="chatbox-ellipses-outline"
         placeholder="Mesaj"
-        placeholderTextColor="#8d6e63"
         value={message}
         onChangeText={setMessage}
       />
 
-      <TextInput
-        style={styles.input}
+      <Input
+        variant="underline"
+        leftIcon="mail-outline"
         placeholder="Tek bir kullanıcıya göndermek için e-posta"
-        placeholderTextColor="#8d6e63"
         value={email}
         onChangeText={setEmail}
         autoCapitalize="none"
         keyboardType="email-address"
       />
+
+      <Text style={styles.groupLabel}>Alıcı Grupları</Text>
 
       <View style={styles.checkboxRow}>
         <CheckBox value={toAllBuyers} onValueChange={setToAllBuyers} />
@@ -99,64 +104,47 @@ export default function SendNotificationScreen() {
         <Text style={styles.checkboxLabel}>Misafir Cihazlara da Gönder</Text>
       </View>
 
-      <TouchableOpacity
-        style={[styles.button, busy && { opacity: 0.7 }]}
+      <GradientButton
+        title="Gönder"
+        variant="gold"
+        icon="send-outline"
         onPress={handleSend}
+        loading={busy}
         disabled={busy}
-      >
-        <Text style={styles.buttonText}>{busy ? 'Gönderiliyor…' : 'Gönder'}</Text>
-      </TouchableOpacity>
-    </View>
+        style={styles.button}
+      />
+      </View>
+    </Screen>
   );
 }
 
 // stiller
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
-    backgroundColor: '#fff8e1',
-    padding: 20,
+    paddingBottom: spacing.xxxl,
   },
-  title: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    color: '#4e342e',
-    marginBottom: 20,
+  body: {
+    paddingHorizontal: spacing.xl,
+    paddingTop: spacing.md,
   },
-  input: {
-    backgroundColor: '#fff',
-    borderColor: '#b5a16b',
-    borderWidth: 1,
-    borderRadius: 10,
-    padding: 12,
-    marginBottom: 15,
-    color: '#4e342e',
+  groupLabel: {
+    ...typography.label,
+    color: colors.gold,
+    marginTop: spacing.lg,
+    marginBottom: spacing.md,
   },
   checkboxRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 10,
+    marginBottom: spacing.md,
   },
   checkboxLabel: {
-    marginLeft: 8,
+    marginLeft: spacing.sm,
+    ...typography.body,
     fontSize: 16,
-    color: '#4e342e',
+    color: colors.brownDark,
   },
   button: {
-    backgroundColor: '#6d4c41',
-    padding: 15,
-    borderRadius: 10,
-    alignItems: 'center',
-    marginTop: 8,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOpacity: 0.08,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 3,
-  },
-  buttonText: {
-    color: '#fff',
-    fontWeight: 'bold',
-    fontSize: 16,
+    marginTop: spacing.sm,
   },
 });

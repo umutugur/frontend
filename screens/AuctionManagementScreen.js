@@ -1,6 +1,9 @@
 // screens/AuctionManagementScreen.js
 import React from 'react';
-import { View, Text, FlatList, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, FlatList, StyleSheet } from 'react-native';
+import { useAlert } from '../context/AlertContext';
+import { Screen, ScreenHeader, Card, Badge, GradientButton } from '../components/ui';
+import { colors, spacing, typography } from '../theme/tokens';
 
 const dummyAuctions = [
   { id: '1', title: 'Kuka Tesbih', status: 'Devam Ediyor' },
@@ -9,92 +12,86 @@ const dummyAuctions = [
 ];
 
 const AuctionManagementScreen = ({ navigation }) => {
+  const { showAlert } = useAlert();
+
   const handleEdit = (id) => {
-    alert(`Mezat #${id} düzenleme ekranına yönlendirilecek.`);
+    showAlert({ title: 'Düzenle', message: `Mezat #${id} düzenleme ekranına yönlendirilecek.` });
   };
 
   const handleDelete = (id) => {
-    alert(`Mezat #${id} silinecek.`);
+    showAlert({ title: 'Sil', message: `Mezat #${id} silinecek.` });
   };
 
   const renderItem = ({ item }) => (
-    <View style={styles.auctionItem}>
-      <View>
+    <Card style={styles.card}>
+      <View style={styles.infoBlock}>
         <Text style={styles.title}>{item.title}</Text>
-        <Text style={styles.status}>{item.status}</Text>
+        <Badge
+          label={item.status}
+          tone={item.status === 'Bitti' ? 'rejected' : 'pending'}
+          icon={item.status === 'Bitti' ? 'flag-checkered' : 'progress-clock'}
+        />
       </View>
       <View style={styles.actions}>
-        <TouchableOpacity style={styles.button} onPress={() => handleEdit(item.id)}>
-          <Text style={styles.buttonText}>Düzenle</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={[styles.button, styles.delete]} onPress={() => handleDelete(item.id)}>
-          <Text style={styles.buttonText}>Sil</Text>
-        </TouchableOpacity>
+        <GradientButton
+          title="Düzenle"
+          icon="create-outline"
+          variant="secondary"
+          onPress={() => handleEdit(item.id)}
+          style={styles.button}
+        />
+        <GradientButton
+          title="Sil"
+          icon="trash-outline"
+          variant="danger"
+          onPress={() => handleDelete(item.id)}
+          style={styles.button}
+        />
       </View>
-    </View>
+    </Card>
   );
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.header}>Mezat Yönetimi</Text>
+    <Screen>
+      <ScreenHeader variant="plain" title="Mezat Yönetimi" />
       <FlatList
         data={dummyAuctions}
         keyExtractor={(item) => item.id}
         renderItem={renderItem}
-        contentContainerStyle={{ paddingBottom: 20 }}
+        contentContainerStyle={styles.list}
+        showsVerticalScrollIndicator={false}
       />
-    </View>
+    </Screen>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    padding: 16,
-    backgroundColor: '#fff8e1',
+  list: {
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.xs,
+    paddingBottom: spacing.xl,
   },
-  header: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    color: '#4e342e',
-    marginBottom: 16,
+  card: {
+    marginBottom: spacing.md,
   },
-  auctionItem: {
-    backgroundColor: '#ffffff',
-    padding: 16,
-    marginBottom: 12,
-    borderRadius: 10,
-    elevation: 2,
+  infoBlock: {
     flexDirection: 'row',
+    alignItems: 'center',
     justifyContent: 'space-between',
+    marginBottom: spacing.md,
   },
   title: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#3e2723',
-  },
-  status: {
-    fontSize: 14,
-    color: 'gray',
-    marginTop: 4,
+    ...typography.h3,
+    color: colors.brownDark,
+    flex: 1,
+    marginRight: spacing.sm,
   },
   actions: {
     flexDirection: 'row',
-    gap: 8,
   },
   button: {
-    backgroundColor: '#6d4c41',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 8,
-    marginLeft: 8,
-  },
-  delete: {
-    backgroundColor: '#c62828',
-  },
-  buttonText: {
-    color: '#fff',
-    fontWeight: 'bold',
+    flex: 1,
+    marginHorizontal: spacing.xs,
   },
 });
 

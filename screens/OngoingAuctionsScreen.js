@@ -1,5 +1,7 @@
 import React from 'react';
-import { View, Text, FlatList, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, FlatList, StyleSheet } from 'react-native';
+import { Screen, ScreenHeader, Card, Badge, EmptyState } from '../components/ui';
+import { colors, spacing, typography } from '../theme/tokens';
 
 const ongoingAuctions = [
   { id: '1', title: 'Kuka Tesbih', lastBidder: 'Siz', newBidAfterYou: true },
@@ -11,45 +13,68 @@ export default function OngoingAuctionsScreen() {
     const highlight = item.newBidAfterYou;
 
     return (
-      <TouchableOpacity
-        style={[
-          styles.auctionItem,
-          highlight && { backgroundColor: '#fff3e0', borderColor: '#ff6f00' },
-        ]}
-      >
-        <Text style={styles.title}>{item.title}</Text>
-        <Text style={styles.status}>
-          Son Teklif: {item.lastBidder}
-        </Text>
-        {highlight && <Text style={styles.warning}>Sizden sonra teklif verildi!</Text>}
-      </TouchableOpacity>
+      <Card style={[styles.auctionItem, highlight && styles.highlight]}>
+        {highlight ? <View style={styles.accent} /> : null}
+        <View style={styles.titleRow}>
+          <Text style={styles.title}>{item.title}</Text>
+          {highlight && <Badge label="Yeni Teklif" tone="rejected" />}
+        </View>
+        <Text style={styles.status}>Son Teklif: {item.lastBidder}</Text>
+        {highlight && (
+          <Text style={styles.warning}>Sizden sonra teklif verildi!</Text>
+        )}
+      </Card>
     );
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.header}>Devam Eden Mezatlar</Text>
+    <Screen>
+      <ScreenHeader variant="plain" title="Devam Eden Mezatlar" />
       <FlatList
         data={ongoingAuctions}
         renderItem={renderItem}
         keyExtractor={(item) => item.id}
+        contentContainerStyle={styles.listContent}
+        showsVerticalScrollIndicator={false}
+        ListEmptyComponent={
+          <EmptyState
+            icon="gavel"
+            title="Devam eden mezat yok"
+            message="Teklif verdiğiniz mezatlar burada görünecek."
+          />
+        }
       />
-    </View>
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fff8e1', padding: 16 },
-  header: { fontSize: 22, fontWeight: 'bold', color: '#4e342e', marginBottom: 10 },
-  auctionItem: {
-    padding: 12,
-    backgroundColor: '#ffffff',
-    borderRadius: 10,
-    marginBottom: 10,
-    borderWidth: 1,
-    borderColor: '#ddd',
+  listContent: {
+    paddingHorizontal: spacing.lg,
+    paddingBottom: spacing.xl,
+    flexGrow: 1,
   },
-  title: { fontSize: 16, fontWeight: 'bold', color: '#3e2723' },
-  status: { fontSize: 14, color: '#5d4037', marginTop: 4 },
-  warning: { fontSize: 13, color: '#d84315', marginTop: 6 },
+  auctionItem: {
+    marginBottom: spacing.md,
+    overflow: 'hidden',
+  },
+  highlight: {
+    backgroundColor: colors.cream,
+  },
+  accent: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    bottom: 0,
+    width: 3,
+    backgroundColor: colors.danger,
+  },
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  title: { ...typography.h3, color: colors.brownDark, flex: 1, marginRight: spacing.sm },
+  status: { ...typography.body, color: colors.brown, marginTop: spacing.xs },
+  warning: { ...typography.bodyStrong, color: colors.danger, marginTop: spacing.sm },
 });

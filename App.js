@@ -1,14 +1,37 @@
 // App.js
+import 'react-native-gesture-handler';
 import React, { useContext, useEffect, useRef } from 'react';
 import { ActivityIndicator, View, Platform } from 'react-native';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import * as Notifications from 'expo-notifications';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import Toast from 'react-native-toast-message';
 import { AuthProvider, AuthContext } from './context/AuthContext';
+import { AlertProvider } from './context/AlertContext';
 import OfflineNotice from './components/OfflineNotice';
+import { toastConfig } from './components/toastConfig';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { requestTrackingPermissionsAsync, getTrackingPermissionsAsync } from 'expo-tracking-transparency';
+import {
+  useFonts,
+  Fraunces_600SemiBold,
+  Fraunces_700Bold,
+  Fraunces_900Black,
+  Fraunces_600SemiBold_Italic,
+} from '@expo-google-fonts/fraunces';
+import {
+  Manrope_400Regular,
+  Manrope_500Medium,
+  Manrope_600SemiBold,
+  Manrope_700Bold,
+  Manrope_800ExtraBold,
+} from '@expo-google-fonts/manrope';
+import {
+  Lora_400Regular,
+  Lora_400Regular_Italic,
+  Lora_500Medium,
+} from '@expo-google-fonts/lora';
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -21,6 +44,7 @@ Notifications.setNotificationHandler({
 // Screens
 import LoginScreen from './screens/LoginScreen';
 import RegisterScreen from './screens/RegisterScreen';
+import ForgotPasswordScreen from './screens/ForgotPasswordScreen';
 import TabNavigator from './navigation/TabNavigator';
 import AuctionDetailScreen from './screens/AuctionDetailScreen';
 import SettingsScreen from './screens/SettingsScreen';
@@ -66,6 +90,7 @@ function MainNavigator() {
         <>
           <Stack.Screen name="Login" component={LoginScreen} />
           <Stack.Screen name="Register" component={RegisterScreen} />
+          <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
         </>
       ) : (
         <>
@@ -108,6 +133,21 @@ function MainNavigator() {
 
 export default function App() {
   const navigationRef = useRef();
+
+  const [fontsLoaded] = useFonts({
+    Fraunces_600SemiBold,
+    Fraunces_700Bold,
+    Fraunces_900Black,
+    Fraunces_600SemiBold_Italic,
+    Manrope_400Regular,
+    Manrope_500Medium,
+    Manrope_600SemiBold,
+    Manrope_700Bold,
+    Manrope_800ExtraBold,
+    Lora_400Regular,
+    Lora_400Regular_Italic,
+    Lora_500Medium,
+  });
 
   useEffect(() => {
     const askATT = async () => {
@@ -162,15 +202,29 @@ export default function App() {
     return () => sub.remove();
   }, []);
 
+  if (!fontsLoaded) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#FDF6E3' }}>
+        <ActivityIndicator size="large" color="#a1743b" />
+      </View>
+    );
+  }
+
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: '#F9F6F2' }}>
-      <AuthProvider>
-        <NavigationContainer ref={navigationRef}>
-          <OfflineNotice />
-          <MainNavigator />
-          <Toast />
-        </NavigationContainer>
-      </AuthProvider>
-    </SafeAreaView>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <SafeAreaView style={{ flex: 1, backgroundColor: '#F9F6F2' }}>
+        {/* AlertProvider, AuthProvider'ın DIŞINDA: singleton köprü (alertBridge)
+            AuthContext ilk render'da kullanmadan önce kurulmuş olmalı. */}
+        <AlertProvider>
+          <AuthProvider>
+            <NavigationContainer ref={navigationRef}>
+              <OfflineNotice />
+              <MainNavigator />
+              <Toast config={toastConfig} />
+            </NavigationContainer>
+          </AuthProvider>
+        </AlertProvider>
+      </SafeAreaView>
+    </GestureHandlerRootView>
   );
 }

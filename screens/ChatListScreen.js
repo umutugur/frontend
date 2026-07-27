@@ -3,7 +3,6 @@ import {
   View,
   Text,
   FlatList,
-  TouchableOpacity,
   StyleSheet,
   ActivityIndicator,
   Platform,
@@ -12,6 +11,10 @@ import { AuthContext } from '../context/AuthContext';
 import { useFocusEffect } from '@react-navigation/native';
 import { useCallback } from 'react';
 import * as AppleAuthentication from 'expo-apple-authentication';
+import { Feather } from '@expo/vector-icons';
+
+import { Screen, Card, Badge, EmptyState, GradientButton } from '../components/ui';
+import { colors, radii, spacing, typography } from '../theme/tokens';
 
 export default function ChatListScreen({ navigation }) {
   const { user, promptGoogle, loginWithApple, logout } = useContext(AuthContext);
@@ -56,132 +59,151 @@ export default function ChatListScreen({ navigation }) {
   const renderItem = ({ item }) => {
     const otherUser = item.buyer?._id === user._id ? item.seller : item.buyer;
     const unreadCount = item.unreadMessages || 0;
+    const displayName = otherUser?.companyName || otherUser?.name || 'Kullanıcı';
 
     return (
-      <TouchableOpacity
-        style={styles.chatItem}
+      <Card
+        style={styles.chatCard}
         onPress={() =>
           navigation.navigate('Chat', {
             chatId: item._id,
-            otherUserName: otherUser?.companyName || otherUser?.name || 'Kullanıcı',
+            otherUserName: displayName,
           })
         }
       >
         <View style={styles.row}>
-          <Text style={styles.chatName}>
-            {otherUser?.companyName || otherUser?.name || 'Kullanıcı'}
+          <View style={styles.avatar}>
+            <Text style={styles.avatarText}>
+              {displayName?.[0]?.toUpperCase() || '?'}
+            </Text>
+          </View>
+          <Text style={styles.chatName} numberOfLines={1}>
+            {displayName}
           </Text>
-          {unreadCount > 0 && (
-            <View style={styles.badge}>
-              <Text style={styles.badgeText}>{unreadCount}</Text>
-            </View>
+          {unreadCount > 0 ? (
+            <Badge label={String(unreadCount)} tone="rejected" icon="email" />
+          ) : (
+            <Feather name="chevron-right" size={20} color={colors.muted} />
           )}
         </View>
-      </TouchableOpacity>
+      </Card>
     );
   };
 
   if (loading) {
     return (
-      <View style={styles.center}>
-        <ActivityIndicator size="large" color="#6d4c41" />
-      </View>
+      <Screen>
+        <View style={styles.center}>
+          <ActivityIndicator size="large" color={colors.brown} />
+        </View>
+      </Screen>
     );
   }
 
   const isGuest = !user?._id || user?.role === 'guest';
 
   return (
-    <View style={styles.container}>
+    <Screen>
       {/* Misafir CTA */}
       {isGuest ? (
-        <View style={{ paddingTop: 24 }}>
-          <Text style={styles.helperText}>
-            Mesajlaşma için giriş yapmanız gerekir.
-          </Text>
+        <View style={styles.guestWrap}>
+          <EmptyState
+            icon="chat-outline"
+            title="Mesajlarım"
+            message="Mesajlaşma için giriş yapmanız gerekir."
+          />
 
-          <TouchableOpacity style={styles.primaryBtn} onPress={logout}>
-            <Text style={styles.primaryBtnText}>Giriş / Kayıt</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.outlineBtn} onPress={() => promptGoogle?.()}>
-            <Text style={styles.outlineBtnText}>Google ile Giriş Yap</Text>
-          </TouchableOpacity>
-
-          {appleAvail && (
-            <TouchableOpacity style={styles.appleBtn} onPress={() => loginWithApple?.()}>
-              <Text style={styles.appleBtnText}>Apple ile Giriş Yap</Text>
-            </TouchableOpacity>
-          )}
+          <View style={styles.ctaButtons}>
+            <GradientButton
+              title="Giriş / Kayıt"
+              icon="log-in-outline"
+              onPress={logout}
+              style={styles.ctaButton}
+            />
+            <GradientButton
+              title="Google ile Giriş Yap"
+              icon="logo-google"
+              variant="secondary"
+              onPress={() => promptGoogle?.()}
+              style={styles.ctaButton}
+            />
+            {appleAvail && (
+              <GradientButton
+                title="Apple ile Giriş Yap"
+                icon="logo-apple"
+                variant="secondary"
+                onPress={() => loginWithApple?.()}
+                style={styles.ctaButton}
+              />
+            )}
+          </View>
         </View>
       ) : (
         <FlatList
           data={chats}
           renderItem={renderItem}
           keyExtractor={(item) => item._id}
+          contentContainerStyle={styles.list}
+          showsVerticalScrollIndicator={false}
           ListEmptyComponent={
-            <Text style={{ textAlign: 'center', color: '#666' }}>
-              Sohbet bulunamadı.
-            </Text>
+            <EmptyState
+              icon="chat-remove-outline"
+              title="Sohbet bulunamadı"
+              message="Henüz bir sohbetiniz yok. Kazandığınız mezatlarda satıcıyla mesajlaşabilirsiniz."
+            />
           }
         />
       )}
-    </View>
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 16, backgroundColor: '#fff8e1' },
-  chatItem: {
-    padding: 20,
-    borderBottomWidth: 1,
-    borderColor: '#ccc',
-    backgroundColor: '#fff',
-    borderRadius: 10,
-    marginBottom: 10,
+  list: {
+    padding: spacing.lg,
+    flexGrow: 1,
   },
-  chatName: { fontSize: 18, color: '#4e342e' },
-  badge: {
-    backgroundColor: 'red',
-    borderRadius: 12,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    marginLeft: 10,
-    minWidth: 24,
+  chatCard: {
+    marginBottom: spacing.md,
+    paddingVertical: spacing.md,
+  },
+  row: {
+    flexDirection: 'row',
     alignItems: 'center',
   },
-  badgeText: { color: 'white', fontSize: 12, fontWeight: 'bold' },
-  row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-
-  // Guest CTA styles
-  helperText: { color: '#6d4c41', marginBottom: 10, textAlign: 'center' },
-  primaryBtn: {
-    height: 46,
-    borderRadius: 10,
-    backgroundColor: '#6d4c41',
+  avatar: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: colors.brown,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 10,
+    marginRight: spacing.md,
   },
-  primaryBtnText: { color: '#fff', fontWeight: '700' },
-  outlineBtn: {
-    height: 46,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#b5a16b',
-    backgroundColor: '#fff',
-    alignItems: 'center',
+  avatarText: {
+    ...typography.h3,
+    color: colors.white,
+  },
+  chatName: {
+    ...typography.h3,
+    color: colors.brownDark,
+    flex: 1,
+    marginRight: spacing.sm,
+  },
+  center: {
+    flex: 1,
     justifyContent: 'center',
-    marginBottom: 10,
-  },
-  outlineBtnText: { color: '#4e342e', fontWeight: '700' },
-  appleBtn: {
-    height: 46,
-    borderRadius: 10,
-    backgroundColor: '#000',
     alignItems: 'center',
-    justifyContent: 'center',
   },
-  appleBtnText: { color: '#fff', fontWeight: '700' },
+  guestWrap: {
+    flex: 1,
+    justifyContent: 'center',
+    paddingHorizontal: spacing.xxl,
+  },
+  ctaButtons: {
+    marginTop: spacing.lg,
+  },
+  ctaButton: {
+    marginBottom: spacing.md,
+  },
 });

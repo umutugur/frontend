@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import {
-  View, Text, FlatList, StyleSheet, TouchableOpacity,
-  Alert, TextInput
-} from 'react-native';
+import { View, Text, FlatList, StyleSheet } from 'react-native';
 import axios from 'axios';
+import { Screen, ScreenHeader, Card, Input, Badge, GradientButton, EmptyState } from '../components/ui';
+import { useAlert } from '../context/AlertContext';
+import { colors, spacing, typography } from '../theme/tokens';
 
 export default function UserListScreen() {
+  const { showAlert } = useAlert();
   const [users, setUsers] = useState([]);
   const [filtered, setFiltered] = useState([]);
   const [searchEmail, setSearchEmail] = useState('');
@@ -17,8 +18,9 @@ export default function UserListScreen() {
   const fetchUsers = async () => {
     try {
       const res = await axios.get('https://imame-backend.onrender.com/api/users/all');
-      setUsers(res.data);
-      setFiltered(res.data);
+      const items = res.data?.items || [];
+      setUsers(items);
+      setFiltered(items);
     } catch (err) {
       console.error('Kullanıcılar alınamadı:', err);
     }
@@ -27,22 +29,22 @@ export default function UserListScreen() {
   const handleBan = async (userId) => {
     try {
       await axios.patch(`https://imame-backend.onrender.com/api/users/ban/${userId}`);
-      Alert.alert('Başarılı', 'Kullanıcı banlandı.');
+      showAlert({ title: 'Başarılı', message: 'Kullanıcı banlandı.' });
       fetchUsers();
     } catch (err) {
       console.error('Ban hatası:', err);
-      Alert.alert('Hata', 'Ban işlemi başarısız.');
+      showAlert({ title: 'Hata', message: 'Ban işlemi başarısız.' });
     }
   };
 
   const handleUnban = async (userId) => {
     try {
       await axios.patch(`https://imame-backend.onrender.com/api/users/unban/${userId}`);
-      Alert.alert('Başarılı', 'Ban kaldırıldı.');
+      showAlert({ title: 'Başarılı', message: 'Ban kaldırıldı.' });
       fetchUsers();
     } catch (err) {
       console.error('Unban hatası:', err);
-      Alert.alert('Hata', 'Ban kaldırma işlemi başarısız.');
+      showAlert({ title: 'Hata', message: 'Ban kaldırma işlemi başarısız.' });
     }
   };
 
@@ -60,107 +62,95 @@ export default function UserListScreen() {
   };
 
   const renderItem = ({ item }) => (
-    <View style={styles.card}>
-      <Text style={styles.name}>{item.name}</Text>
+    <Card style={styles.card}>
+      <View style={styles.cardHeader}>
+        <Text style={styles.name}>{item.name}</Text>
+        {item.isBanned ? (
+          <Badge label="Banlı" tone="rejected" icon="account-cancel-outline" />
+        ) : (
+          <Badge label={item.role} tone="neutral" icon="account-outline" />
+        )}
+      </View>
       <Text style={styles.email}>{item.email}</Text>
-      <Text style={styles.role}>{item.role}</Text>
 
       {item.isBanned ? (
-        <TouchableOpacity style={styles.unbanButton} onPress={() => handleUnban(item._id)}>
-          <Text style={styles.buttonText}>Banı Kaldır</Text>
-        </TouchableOpacity>
+        <GradientButton
+          title="Banı Kaldır"
+          variant="secondary"
+          onPress={() => handleUnban(item._id)}
+          style={styles.actionButton}
+        />
       ) : (
-        <TouchableOpacity style={styles.banButton} onPress={() => handleBan(item._id)}>
-          <Text style={styles.buttonText}>Banla</Text>
-        </TouchableOpacity>
+        <GradientButton
+          title="Banla"
+          variant="danger"
+          onPress={() => handleBan(item._id)}
+          style={styles.actionButton}
+        />
       )}
-    </View>
+    </Card>
   );
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Kullanıcı Yönetimi</Text>
-      <TextInput
-        placeholder="E-posta ile ara..."
-        value={searchEmail}
-        onChangeText={filterByEmail}
-        style={styles.searchInput}
-        autoCapitalize="none"
-        keyboardType="email-address"
-      />
-      <FlatList
-        data={filtered}
-        keyExtractor={(item) => item._id}
-        renderItem={renderItem}
-        ListEmptyComponent={<Text style={styles.empty}>Kullanıcı bulunamadı</Text>}
-      />
-    </View>
+    <Screen>
+      <ScreenHeader title="Kullanıcı Yönetimi" subtitle="Tüm kayıtlı kullanıcılar" />
+      <View style={styles.container}>
+        <Input
+          placeholder="E-posta ile ara..."
+          value={searchEmail}
+          onChangeText={filterByEmail}
+          autoCapitalize="none"
+          keyboardType="email-address"
+          leftIcon="search-outline"
+        />
+        <FlatList
+          data={filtered}
+          keyExtractor={(item) => item._id}
+          renderItem={renderItem}
+          contentContainerStyle={styles.listContent}
+          ListEmptyComponent={
+            <EmptyState
+              icon="account-search-outline"
+              title="Kullanıcı bulunamadı"
+            />
+          }
+        />
+      </View>
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff8e1',
-    padding: 20,
+    paddingHorizontal: spacing.xl,
+    paddingTop: spacing.sm,
+    paddingBottom: spacing.xl,
   },
-  title: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    color: '#4e342e',
-    marginBottom: 15,
-  },
-  searchInput: {
-    backgroundColor: '#fff',
-    borderColor: '#ccc',
-    borderWidth: 1,
-    borderRadius: 10,
-    padding: 12,
-    marginBottom: 15,
+  listContent: {
+    paddingBottom: spacing.xl,
+    flexGrow: 1,
   },
   card: {
-    backgroundColor: '#fff',
-    borderRadius: 10,
-    padding: 15,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: '#ddd',
+    marginBottom: spacing.md,
+  },
+  cardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
   name: {
-    fontSize: 17,
-    fontWeight: '600',
-    color: '#333',
+    ...typography.h3,
+    color: colors.brownDark,
+    flexShrink: 1,
+    marginRight: spacing.sm,
   },
   email: {
-    fontSize: 14,
-    color: '#555',
-    marginVertical: 4,
+    ...typography.body,
+    color: colors.muted,
+    marginTop: spacing.xs,
   },
-  role: {
-    fontSize: 14,
-    color: '#777',
-  },
-  banButton: {
-    marginTop: 10,
-    backgroundColor: '#d84315',
-    paddingVertical: 8,
-    borderRadius: 8,
-  },
-  unbanButton: {
-    marginTop: 10,
-    backgroundColor: '#388e3c',
-    paddingVertical: 8,
-    borderRadius: 8,
-  },
-  buttonText: {
-    color: '#fff',
-    fontWeight: 'bold',
-    textAlign: 'center',
-  },
-  empty: {
-    marginTop: 30,
-    textAlign: 'center',
-    color: '#999',
-    fontSize: 16,
+  actionButton: {
+    marginTop: spacing.md,
   },
 });

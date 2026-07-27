@@ -1,70 +1,87 @@
 import React from 'react';
-import { View, Text, ScrollView, StyleSheet } from 'react-native';
+import { Text, ScrollView, StyleSheet } from 'react-native';
+import { Screen, ScreenHeader, OrnamentDivider } from '../components/ui';
+import { colors, spacing, typography } from '../theme/tokens';
 
 const TermsScreen = () => {
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.header}>Kullanım Koşulları</Text>
+    <Screen>
+      <ScreenHeader variant="plain" title="Kullanım Koşulları" />
+      <ScrollView
+        contentContainerStyle={styles.container}
+        showsVerticalScrollIndicator={false}
+      >
+        <Text style={styles.intro}>
+          İmame uygulamasını kullanarak aşağıdaki şartları kabul etmiş olursunuz.
+        </Text>
 
-      <Text style={styles.paragraph}>
-        İmame uygulamasını kullanarak aşağıdaki şartları kabul etmiş olursunuz.
-      </Text>
+        <OrnamentDivider style={styles.divider} />
 
-      <Text style={styles.subheader}>1. Genel Şartlar</Text>
-      <Text style={styles.paragraph}>
-        Uygulamaya kayıt olan her kullanıcı, bilgilerini doğru ve eksiksiz vermekle yükümlüdür.
-        Sahte teklifler, spam mesajlar ve kötüye kullanım durumunda hesap askıya alınabilir.
-      </Text>
+        <Text style={styles.subheader}>1. Genel Şartlar</Text>
+        <Text style={styles.paragraph}>
+          Uygulamaya kayıt olan her kullanıcı, bilgilerini doğru ve eksiksiz vermekle yükümlüdür.
+          Sahte teklifler, spam mesajlar ve kötüye kullanım durumunda hesap askıya alınabilir.
+        </Text>
 
-      <Text style={styles.subheader}>2. Mezat Kuralları</Text>
-      <Text style={styles.paragraph}>
-        Alıcılar yalnızca aktif mezatlara teklif verebilir. Her gece 23:00’te biten mezatları kazanan kullanıcılar, 48 saat içinde ödeme dekontunu yüklemelidir.
-        Aksi takdirde geçici ban uygulanır.
-      </Text>
+        <OrnamentDivider style={styles.divider} />
 
-      <Text style={styles.subheader}>3. Gizlilik</Text>
-      <Text style={styles.paragraph}>
-        Kullanıcı bilgileriniz, KVKK kapsamında korunur ve üçüncü şahıslarla paylaşılmaz.
-      </Text>
+        <Text style={styles.subheader}>2. Mezat Kuralları</Text>
+        <Text style={styles.paragraph}>
+          Alıcılar yalnızca aktif mezatlara teklif verebilir. Her gece 23:00’te biten mezatları kazanan kullanıcılar, 48 saat içinde ödeme dekontunu yüklemelidir.
+          Aksi takdirde geçici ban uygulanır.
+        </Text>
 
-      <Text style={styles.subheader}>4. Satıcı Sorumluluğu</Text>
-      <Text style={styles.paragraph}>
-        Mezata çıkan ürünlerin açıklamaları ve fotoğrafları satıcının sorumluluğundadır. Uygulama yalnızca aracı platform olarak görev yapar.
-      </Text>
+        <OrnamentDivider style={styles.divider} />
 
-      <Text style={styles.paragraph}>
-        Herhangi bir sorunuz varsa bizimle iletişime geçebilirsiniz: destek@imame.app
-      </Text>
-    </ScrollView>
+        <Text style={styles.subheader}>3. Gizlilik</Text>
+        <Text style={styles.paragraph}>
+          Kullanıcı bilgileriniz, KVKK kapsamında korunur ve üçüncü şahıslarla paylaşılmaz.
+        </Text>
+
+        <OrnamentDivider style={styles.divider} />
+
+        <Text style={styles.subheader}>4. Satıcı Sorumluluğu</Text>
+        <Text style={styles.paragraph}>
+          Mezata çıkan ürünlerin açıklamaları ve fotoğrafları satıcının sorumluluğundadır. Uygulama yalnızca aracı platform olarak görev yapar.
+        </Text>
+
+        <OrnamentDivider style={styles.divider} />
+
+        <Text style={styles.paragraph}>
+          Herhangi bir sorunuz varsa bizimle iletişime geçebilirsiniz: destek@imame.app
+        </Text>
+      </ScrollView>
+    </Screen>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    padding: 20,
-    backgroundColor: '#fff8e1',
-    flexGrow: 1,
+    paddingHorizontal: spacing.xl,
+    paddingBottom: spacing.xxxl,
   },
-  header: {
-      marginTop:30,
-    fontSize: 22,
-    fontWeight: 'bold',
-    color: '#4e342e',
-    marginBottom: 16,
+  intro: {
+    ...typography.body,
+    fontSize: 15,
+    color: colors.brownDark,
+    lineHeight: 22,
     textAlign: 'center',
+    marginTop: spacing.sm,
+  },
+  divider: {
+    marginVertical: spacing.lg,
   },
   subheader: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#6d4c41',
-    marginTop: 16,
-    marginBottom: 6,
+    ...typography.h2,
+    color: colors.brownDark,
+    marginBottom: spacing.md,
   },
   paragraph: {
-    fontSize: 14,
-    color: '#3e2723',
-    lineHeight: 22,
-    marginBottom: 10,
+    ...typography.body,
+    fontSize: 15,
+    color: colors.brown,
+    lineHeight: 23,
+    marginBottom: spacing.sm,
   },
 });
 

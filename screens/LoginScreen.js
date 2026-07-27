@@ -1,34 +1,56 @@
 // screens/LoginScreen.js
-import React, { useState, useContext, useEffect } from 'react';
-import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  StyleSheet,
-  Image,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  Alert,
-} from 'react-native';
+import React, { useState, useContext, useEffect, useRef, useCallback } from 'react';
+import { View, Text, StyleSheet, Image, Platform, Animated, TextInput, StatusBar } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
+import { useFocusEffect } from '@react-navigation/native';
 import { AuthContext } from '../context/AuthContext';
+import { useAlert } from '../context/AlertContext';
+import { Screen, GradientButton, PressableScale } from '../components/ui';
+import { colors, gradients, spacing, radii, typography, shadows } from '../theme/tokens';
 import * as AppleAuthentication from 'expo-apple-authentication';
 
+// Alt-çizgili input (Heritage yön için)
+function UnderlineField({ icon, right, ...props }) {
+  const [focused, setFocused] = useState(false);
+  return (
+    <View style={[styles.field, focused && styles.fieldFocused]}>
+      <Ionicons name={icon} size={19} color={focused ? colors.gold : colors.muted} />
+      <TextInput
+        placeholderTextColor={colors.muted}
+        style={styles.input}
+        onFocus={() => setFocused(true)}
+        onBlur={() => setFocused(false)}
+        {...props}
+      />
+      {right}
+    </View>
+  );
+}
+
 const LoginScreen = ({ navigation }) => {
-  const {
-    user,
-    login,
-    promptGoogle,
-    loginWithApple,
-    signInGuest, // 👈 misafir girişi
-  } = useContext(AuthContext);
+  const { user, login, promptGoogle, loginWithApple, signInGuest } = useContext(AuthContext);
+  const { showAlert } = useAlert();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [banned, setBanned] = useState(false);
   const [isAppleAvailable, setIsAppleAvailable] = useState(false);
+
+  const enter = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    Animated.timing(enter, { toValue: 1, duration: 600, useNativeDriver: true }).start();
+  }, [enter]);
+
+  // Hero koyu → açık status bar; ayrılırken geri al.
+  useFocusEffect(
+    useCallback(() => {
+      StatusBar.setBarStyle('light-content');
+      return () => StatusBar.setBarStyle('dark-content');
+    }, [])
+  );
 
   useEffect(() => {
     if (Platform.OS === 'ios') {
@@ -36,7 +58,6 @@ const LoginScreen = ({ navigation }) => {
     }
   }, []);
 
-  // Kullanıcı giriş yaptığında geri dön; mümkün değilse Main'e git.
   useEffect(() => {
     if (user) {
       if (navigation.canGoBack()) navigation.goBack();
@@ -64,162 +85,273 @@ const LoginScreen = ({ navigation }) => {
     }
   };
 
+  const translateY = enter.interpolate({ inputRange: [0, 1], outputRange: [18, 0] });
+
   return (
-  <KeyboardAvoidingView
-    style={{ flex: 1, backgroundColor: '#fff8e1' }}
-    behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-  >
-    <View style={{ flex: 1 }}>
-      <ScrollView contentContainerStyle={styles.scrollContainer}>
-        <View style={styles.container}>
-          <Image source={require('../assets/logo.png')} style={styles.logo} />
-          <Text style={styles.title}>Giriş Yap</Text>
-
-          {!!error && (
-            <View style={[styles.errorBox, banned ? styles.banBox : null]}>
-              <Text style={styles.errorText}>{error}</Text>
-            </View>
-          )}
-
-          <TextInput
-            placeholder="Email"
-            placeholderTextColor="#B5A16B"
-            value={email}
-            onChangeText={setEmail}
-            style={styles.input}
-            keyboardType="email-address"
-            autoCapitalize="none"
-          />
-          <TextInput
-            placeholder="Şifre"
-            placeholderTextColor="#B5A16B"
-            value={password}
-            onChangeText={setPassword}
-            secureTextEntry
-            style={styles.input}
-          />
-
-          <TouchableOpacity style={styles.button} onPress={handleLogin}>
-            <Text style={styles.buttonText}>Giriş Yap</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.googleButton} onPress={() => promptGoogle()}>
-            <Image source={require('../assets/google-icon.png')} style={styles.googleIcon} />
-            <Text style={styles.googleButtonText}>Google ile Giriş Yap</Text>
-          </TouchableOpacity>
-
-          {Platform.OS === 'ios' && isAppleAvailable && (
-            <AppleAuthentication.AppleAuthenticationButton
-              buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN}
-              buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.BLACK}
-              cornerRadius={5}
-              style={{ width: '100%', height: 50, marginBottom: 15 }}
-              onPress={async () => {
-                try {
-                  await loginWithApple();
-                } catch (err) {
-                  if (err.code !== 'ERR_CANCELED') {
-                    Alert.alert('Apple Girişi Hatası', err.message || 'Bir hata oluştu.');
-                  }
-                }
-              }}
-            />
-          )}
+    <Screen scroll glow={false} edges={['left', 'right']} contentContainerStyle={styles.scroll}>
+      {/* ── Hero (mihrap) ── */}
+      <LinearGradient
+        colors={['#4a2f22', '#2c1810']}
+        start={{ x: 0.5, y: 0 }}
+        end={{ x: 0.5, y: 1 }}
+        style={styles.hero}
+      >
+        {/* 8 köşeli yıldız (khatim) motifi */}
+        <View style={styles.starWrap} pointerEvents="none">
+          <View style={styles.star} />
+          <View style={[styles.star, styles.starRot]} />
         </View>
-      </ScrollView>
 
-      {/* 👇 Alt sabit buton */}
-      <View style={styles.footer}>
-        <TouchableOpacity style={styles.guestButton} onPress={signInGuest}>
-          <Text style={styles.guestButtonText}>Üye Olmadan Devam Et</Text>
-        </TouchableOpacity>
-      </View>
-    </View>
-  </KeyboardAvoidingView>
-);
+        {/* mihrap nişi + logo */}
+        <View style={styles.niche}>
+          <LinearGradient colors={gradients.creamSurface} style={styles.nicheFill}>
+            <Image source={require('../assets/logo.png')} style={styles.logo} />
+          </LinearGradient>
+        </View>
+
+        {/* süsleme ayıracı */}
+        <View style={styles.heroOrn}>
+          <View style={styles.heroLine} />
+          <View style={styles.heroDiamond} />
+          <View style={styles.heroLine} />
+        </View>
+      </LinearGradient>
+
+      {/* ── Form ── */}
+      <Animated.View style={[styles.body, { opacity: enter, transform: [{ translateY }] }]}>
+        <Text style={styles.title}>Giriş Yap</Text>
+        <Text style={styles.subtitle}>Hesabınıza erişmek için giriş yapın</Text>
+
+        {!!error && (
+          <View style={[styles.errorBox, banned && styles.banBox]}>
+            <Ionicons
+              name={banned ? 'alert-circle' : 'information-circle'}
+              size={18}
+              color={colors.danger}
+              style={{ marginRight: spacing.sm }}
+            />
+            <Text style={styles.errorText}>{error}</Text>
+          </View>
+        )}
+
+        <UnderlineField
+          icon="mail-outline"
+          value={email}
+          onChangeText={setEmail}
+          placeholder="E-posta"
+          keyboardType="email-address"
+          autoCapitalize="none"
+        />
+        <UnderlineField
+          icon="lock-closed-outline"
+          value={password}
+          onChangeText={setPassword}
+          placeholder="Şifre"
+          secureTextEntry={!showPassword}
+          right={
+            <PressableScale onPress={() => setShowPassword((s) => !s)}>
+              <Ionicons name={showPassword ? 'eye-off-outline' : 'eye-outline'} size={20} color={colors.muted} />
+            </PressableScale>
+          }
+        />
+
+        <GradientButton
+          title="Giriş Yap"
+          icon="log-in-outline"
+          variant="gold"
+          onPress={handleLogin}
+          style={styles.fullBtn}
+        />
+
+        <PressableScale style={styles.forgot} onPress={() => navigation.navigate('ForgotPassword')}>
+          <Text style={styles.forgotText}>Şifremi unuttum</Text>
+        </PressableScale>
+
+        <View style={styles.orn}>
+          <View style={styles.ornLine} />
+          <View style={styles.ornDiamond} />
+          <View style={styles.ornLine} />
+        </View>
+
+        <PressableScale style={styles.social} onPress={() => promptGoogle()}>
+          <Image source={require('../assets/google-icon.png')} style={styles.googleIcon} />
+          <Text style={styles.socialText}>Google ile Giriş Yap</Text>
+        </PressableScale>
+
+        {Platform.OS === 'ios' && isAppleAvailable && (
+          <AppleAuthentication.AppleAuthenticationButton
+            buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN}
+            buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.BLACK}
+            cornerRadius={radii.pill}
+            style={styles.appleButton}
+            onPress={async () => {
+              try {
+                await loginWithApple();
+              } catch (err) {
+                if (err.code !== 'ERR_CANCELED') {
+                  showAlert({ title: 'Apple Girişi Hatası', message: err.message || 'Bir hata oluştu.' });
+                }
+              }
+            }}
+          />
+        )}
+
+        <PressableScale style={styles.guest} onPress={signInGuest}>
+          <Ionicons name="arrow-forward-circle-outline" size={18} color={colors.brown} />
+          <Text style={styles.guestText}>Üye olmadan devam et</Text>
+        </PressableScale>
+      </Animated.View>
+    </Screen>
+  );
 };
 
 export default LoginScreen;
 
+const NICHE_W = 208;
+const NICHE_H = 194;
+
 const styles = StyleSheet.create({
-  scrollContainer: { flexGrow: 1, justifyContent: 'center' },
-  container: {
+  scroll: { flexGrow: 1, paddingBottom: spacing.xxxl },
+
+  hero: {
+    paddingTop: 78,
+    paddingBottom: spacing.xl,
+    alignItems: 'center',
+    borderBottomLeftRadius: radii.xxl + 8,
+    borderBottomRightRadius: radii.xxl + 8,
+    overflow: 'hidden',
+  },
+  starWrap: {
+    position: 'absolute',
+    top: 78,
+    left: 0,
+    right: 0,
+    height: NICHE_H,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  star: {
+    position: 'absolute',
+    width: 288,
+    height: 288,
+    borderWidth: 1.5,
+    borderColor: 'rgba(216,178,90,0.16)',
+    borderRadius: 8,
+  },
+  starRot: { transform: [{ rotate: '45deg' }] },
+
+  niche: {
+    width: NICHE_W,
+    height: NICHE_H,
+    borderTopLeftRadius: NICHE_W / 2,
+    borderTopRightRadius: NICHE_W / 2,
+    borderBottomLeftRadius: radii.md,
+    borderBottomRightRadius: radii.md,
+    padding: 2,
+    backgroundColor: 'rgba(216,178,90,0.6)',
+    ...shadows.raised,
+  },
+  nicheFill: {
     flex: 1,
-    backgroundColor: '#fff8e1',
-    justifyContent: 'center',
+    borderTopLeftRadius: NICHE_W / 2 - 2,
+    borderTopRightRadius: NICHE_W / 2 - 2,
+    borderBottomLeftRadius: radii.md - 2,
+    borderBottomRightRadius: radii.md - 2,
     alignItems: 'center',
-    padding: 20,
+    justifyContent: 'center',
+    overflow: 'hidden',
   },
-  logo: { width: 260, height: 130, marginBottom: 10, resizeMode: 'contain' },
-  title: { fontSize: 26, fontWeight: 'bold', color: '#4e342e', marginBottom: 20, letterSpacing: 0.4 },
+  logo: { width: 300, height: 220, resizeMode: 'contain', marginTop: 22 },
+
+  heroOrn: { flexDirection: 'row', alignItems: 'center', marginTop: spacing.lg, opacity: 0.9 },
+  heroLine: { width: 34, height: 1, backgroundColor: 'rgba(216,178,90,0.5)' },
+  heroDiamond: {
+    width: 7,
+    height: 7,
+    backgroundColor: colors.goldLight,
+    transform: [{ rotate: '45deg' }],
+    marginHorizontal: spacing.sm,
+  },
+
+  body: { paddingHorizontal: spacing.xl, paddingTop: spacing.xl },
+  title: { ...typography.hero, textAlign: 'center' },
+  subtitle: {
+    ...typography.body,
+    color: colors.muted,
+    textAlign: 'center',
+    marginTop: spacing.xs,
+    marginBottom: spacing.xxl,
+  },
+
   errorBox: {
-    width: '100%',
-    backgroundColor: '#fff3cd',
-    borderColor: '#b5a16b',
-    borderWidth: 1,
-    borderRadius: 10,
-    padding: 12,
-    marginBottom: 16,
-  },
-  banBox: { backgroundColor: '#f8d7da', borderColor: '#7B1421' },
-  errorText: { color: '#7B1421', fontSize: 15, textAlign: 'center', fontWeight: '600' },
-  input: {
-    width: '100%',
-    height: 50,
-    borderWidth: 1,
-    borderColor: '#b5a16b',
-    borderRadius: 10,
-    paddingHorizontal: 14,
-    marginBottom: 15,
-    backgroundColor: '#fff',
-    color: '#4e342e',
-    fontSize: 16,
-  },
-  button: {
-    width: '100%',
-    height: 50,
-    backgroundColor: '#6d4c41',
-    borderRadius: 10,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 15,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOpacity: 0.08,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 3,
-  },
-  buttonText: { color: '#fff', fontWeight: 'bold', fontSize: 16, letterSpacing: 0.3 },
-  googleButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    width: '100%',
-    height: 50,
-    backgroundColor: '#fff',
+    backgroundColor: '#fbefd0',
+    borderColor: 'rgba(138,90,18,0.3)',
     borderWidth: 1,
-    borderColor: '#b5a16b',
-    borderRadius: 10,
-    justifyContent: 'center',
-    marginBottom: 20,
+    borderRadius: radii.md,
+    padding: spacing.md,
+    marginBottom: spacing.lg,
   },
-  googleIcon: { width: 22, height: 22, marginRight: 10 },
-  googleButtonText: { color: '#4e342e', fontWeight: 'bold', fontSize: 15 },
+  banBox: { backgroundColor: colors.dangerBg, borderColor: 'rgba(192,57,43,0.35)' },
+  errorText: { ...typography.bodyStrong, color: colors.danger, flex: 1 },
 
-  // Üye olmadan devam et
-  guestButton: {
-    width: '100%',
-    height: 50,
-    borderWidth: 1,
-    borderStyle: 'dashed',
-    borderColor: '#6d4c41',
-    borderRadius: 10,
-    justifyContent: 'center',
+  field: {
+    flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 10,
+    gap: spacing.sm,
+    borderBottomWidth: 1.6,
+    borderBottomColor: colors.line,
+    paddingVertical: spacing.md,
+    marginBottom: spacing.lg,
   },
-  guestButtonText: {
-    color: '#6d4c41',
-    fontWeight: '700',
-    fontSize: 15,
+  fieldFocused: { borderBottomColor: colors.gold },
+  input: { flex: 1, ...typography.body, color: colors.brownDark, paddingVertical: 2 },
+
+  fullBtn: { width: '100%', marginTop: spacing.sm },
+
+  orn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginVertical: spacing.xl },
+  ornLine: { width: 48, height: 1, backgroundColor: colors.lineStrong },
+  ornDiamond: {
+    width: 7,
+    height: 7,
+    backgroundColor: colors.gold,
+    transform: [{ rotate: '45deg' }],
+    marginHorizontal: spacing.md,
   },
+
+  social: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+    width: '100%',
+    minHeight: 54,
+    backgroundColor: colors.white,
+    borderWidth: 1.5,
+    borderColor: colors.line,
+    borderRadius: radii.pill,
+    marginBottom: spacing.md,
+    ...shadows.soft,
+  },
+  googleIcon: { width: 20, height: 20 },
+  socialText: { ...typography.button, color: colors.brownDark },
+  appleButton: { width: '100%', height: 54, marginBottom: spacing.md },
+
+  guest: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.xs,
+    alignSelf: 'center',
+    paddingVertical: spacing.md,
+  },
+  guestText: { ...typography.bodyStrong, color: colors.brown, textDecorationLine: 'underline' },
+
+  forgot: {
+    alignSelf: 'center',
+    paddingVertical: spacing.sm,
+    marginTop: spacing.xs,
+  },
+  forgotText: { ...typography.small, color: colors.muted, textDecorationLine: 'underline' },
 });

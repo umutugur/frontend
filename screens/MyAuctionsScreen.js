@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { View, Text, FlatList, StyleSheet, TouchableOpacity, ActivityIndicator, Switch } from 'react-native';
+import { View, Text, FlatList, StyleSheet, ActivityIndicator, Switch } from 'react-native';
 import axios from 'axios';
 import { AuthContext } from '../context/AuthContext';
+import { Screen, ScreenHeader, Card, Badge, EmptyState } from '../components/ui';
+import { colors, spacing, typography } from '../theme/tokens';
 
 export default function MyAuctionsScreen({ navigation }) {
   const { user } = useContext(AuthContext);
@@ -40,51 +42,55 @@ export default function MyAuctionsScreen({ navigation }) {
     return a.isEnded ? 1 : -1;
   });
 
-  // Dekont durumu için renkli işaret
-  const renderStatusDot = (item) => {
-    if (!item.isEnded) return null;
-    // Biten mezat: dekontu onaylandıysa yeşil, aksi halde kırmızı
+  const renderStatusBadge = (item) => {
+    if (!item.isEnded) {
+      return <Badge label="Devam Ediyor" tone="pending" icon="progress-clock" />;
+    }
     const isApproved = item.receiptStatus === 'approved';
     return (
-      <View style={[
-        styles.statusDot,
-        { backgroundColor: isApproved ? '#4caf50' : '#c62828' }
-      ]} />
+      <Badge
+        label={isApproved ? 'Onaylandı' : 'Bitti'}
+        tone={isApproved ? 'approved' : 'rejected'}
+      />
     );
   };
 
   const renderItem = ({ item }) => (
-    <TouchableOpacity
-      onPress={() => navigation.navigate('AuctionDetail', { auctionId: item._id })}
+    <Card
       style={styles.card}
-      activeOpacity={0.95}
+      onPress={() => navigation.navigate('AuctionDetail', { auctionId: item._id })}
     >
       <View style={styles.headerRow}>
-        <Text style={styles.title}>{item.title}</Text>
-        {renderStatusDot(item)}
+        <Text style={styles.title} numberOfLines={1}>{item.title}</Text>
+        {renderStatusBadge(item)}
       </View>
-      <Text style={styles.price}>Başlangıç Fiyatı: {item.startingPrice} TL</Text>
-      <Text style={styles.statusText}>{item.isEnded ? "Bitti" : "Devam Ediyor"}</Text>
-    </TouchableOpacity>
+      <View style={styles.pricePill}>
+        <Text style={styles.priceText}>Başlangıç: {item.startingPrice} TL</Text>
+      </View>
+    </Card>
   );
 
   if (loading) {
     return (
-      <View style={styles.loader}>
-        <ActivityIndicator size="large" color="#6d4c41" />
-      </View>
+      <Screen>
+        <ScreenHeader variant="plain" title="Mezatlarım" />
+        <View style={styles.loader}>
+          <ActivityIndicator size="large" color={colors.brown} />
+        </View>
+      </Screen>
     );
   }
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.header}>Mezatlarım</Text>
+    <Screen>
+      <ScreenHeader variant="plain" title="Mezatlarım" />
       <View style={styles.checkboxRow}>
         <View style={styles.checkboxContainer}>
           <Switch
             value={showOngoing}
             onValueChange={setShowOngoing}
-            thumbColor={showOngoing ? '#4caf50' : '#ccc'}
+            trackColor={{ true: colors.priceGreen, false: colors.line }}
+            thumbColor={colors.white}
           />
           <Text style={styles.checkboxLabel}>Devam Edenler</Text>
         </View>
@@ -92,7 +98,8 @@ export default function MyAuctionsScreen({ navigation }) {
           <Switch
             value={showEnded}
             onValueChange={setShowEnded}
-            thumbColor={showEnded ? '#e53935' : '#ccc'}
+            trackColor={{ true: colors.danger, false: colors.line }}
+            thumbColor={colors.white}
           />
           <Text style={styles.checkboxLabel}>Bitenler</Text>
         </View>
@@ -102,46 +109,41 @@ export default function MyAuctionsScreen({ navigation }) {
         renderItem={renderItem}
         keyExtractor={(item) => item._id}
         contentContainerStyle={styles.list}
-        ListEmptyComponent={<Text style={styles.empty}>Kriterlere uygun mezat bulunamadı.</Text>}
+        showsVerticalScrollIndicator={false}
+        ListEmptyComponent={
+          <EmptyState
+            icon="gavel"
+            title="Mezat bulunamadı"
+            message="Kriterlere uygun mezat bulunamadı."
+          />
+        }
       />
-    </View>
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fff8e1', padding: 16 },
-  header: { fontSize: 22, fontWeight: 'bold', color: '#4e342e', marginBottom: 12 },
   loader: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  checkboxRow: { flexDirection: 'row', justifyContent: 'center', marginBottom: 8 },
-  checkboxContainer: { flexDirection: 'row', alignItems: 'center', marginHorizontal: 16 },
-  checkboxLabel: { marginLeft: 4, color: '#6d4c41', fontWeight: 'bold' },
-  list: { paddingBottom: 16 },
+  checkboxRow: { flexDirection: 'row', justifyContent: 'center', marginBottom: spacing.sm, marginTop: spacing.xs },
+  checkboxContainer: { flexDirection: 'row', alignItems: 'center', marginHorizontal: spacing.lg },
+  checkboxLabel: { ...typography.bodyStrong, marginLeft: spacing.xs, color: colors.brown },
+  list: { paddingHorizontal: spacing.lg, paddingBottom: spacing.lg, flexGrow: 1 },
   card: {
-    backgroundColor: '#fff',
-    borderRadius: 10,
-    padding: 12,
-    marginBottom: 12,
-    elevation: 2,
-    borderWidth: 1,
-    borderColor: '#e0c9a6',
+    marginBottom: spacing.md,
   },
-  headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  title: { fontSize: 16, fontWeight: 'bold', color: '#3e2723', flex: 1 },
-  price: { fontSize: 14, color: '#5d4037', marginVertical: 3 },
-  statusText: { fontSize: 13, color: '#8d6e63', marginTop: 2 },
-  statusDot: {
-    width: 14,
-    height: 14,
-    borderRadius: 7,
-    marginLeft: 8,
-    marginRight: 2,
-    borderWidth: 1,
-    borderColor: '#fff'
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: spacing.sm,
   },
-  empty: {
-    textAlign: 'center',
-    marginTop: 50,
-    fontSize: 16,
-    color: '#666',
+  title: { ...typography.h3, color: colors.brownDark, flex: 1, marginRight: spacing.sm },
+  pricePill: {
+    alignSelf: 'flex-start',
+    backgroundColor: 'rgba(46,125,50,0.12)',
+    paddingVertical: spacing.xs,
+    paddingHorizontal: spacing.md,
+    borderRadius: 999,
   },
+  priceText: { ...typography.price },
 });

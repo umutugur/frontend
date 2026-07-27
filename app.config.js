@@ -19,7 +19,7 @@ export default {
     },
 
     // 🔹 App Store’un marketing version değeri (CFBundleShortVersionString)
-    version: "1.0.1",
+    version: "1.1.0",
 
     android: {
       package: "com.umutugur.imame",
@@ -78,7 +78,8 @@ export default {
         }
       ],
       "expo-apple-authentication",
-      "expo-notifications"
+      "expo-notifications",
+      "expo-font"
     ]
   }
 };

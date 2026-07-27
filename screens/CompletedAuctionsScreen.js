@@ -1,9 +1,12 @@
 import React, { useEffect, useState, useContext } from 'react';
-import { View, Text, FlatList, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { View, Text, FlatList, StyleSheet, ActivityIndicator } from 'react-native';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import axios from 'axios';
 import { AuthContext } from '../context/AuthContext';
 import * as Clipboard from 'expo-clipboard';
 import Toast from 'react-native-toast-message';
+import { Screen, ScreenHeader, Card, Badge, GradientButton, PressableScale, EmptyState } from '../components/ui';
+import { colors, spacing, radii, typography } from '../theme/tokens';
 
 export default function CompletedAuctionsScreen({ navigation }) {
   const { user } = useContext(AuthContext);
@@ -51,172 +54,209 @@ export default function CompletedAuctionsScreen({ navigation }) {
 
   const renderItem = ({ item }) => {
     const rejected = item.receiptStatus === 'rejected';
+    const statusTone =
+      item.receiptStatus === 'approved'
+        ? 'approved'
+        : item.receiptStatus === 'rejected'
+        ? 'rejected'
+        : 'pending';
+    const statusLabel =
+      item.receiptStatus === 'approved'
+        ? 'Onaylandı'
+        : item.receiptStatus === 'rejected'
+        ? 'Reddedildi'
+        : 'Bekliyor';
 
     return (
-      <TouchableOpacity
-        onPress={() => navigation.navigate('AuctionDetail', { auctionId: item._id })}
+      <Card
         style={styles.auctionItem}
-        activeOpacity={0.9}
+        onPress={() => navigation.navigate('AuctionDetail', { auctionId: item._id })}
       >
         <Text style={styles.title}>{item.title}</Text>
-        <Text style={styles.price}>Kazandığınız Fiyat: {item.currentPrice} TL</Text>
+        <View style={styles.wonRow}>
+          <MaterialCommunityIcons name="trophy-outline" size={16} color={colors.gold} />
+          <Text style={styles.price}>
+            Kazandığınız Fiyat: {Number(item.currentPrice).toLocaleString('tr-TR')} TL
+          </Text>
+        </View>
 
         <View style={styles.infoBox}>
-          <Text style={styles.infoLabel}>🏦 Satıcı Ödeme Bilgileri</Text>
+          <View style={styles.infoLabelRow}>
+            <MaterialCommunityIcons name="bank-outline" size={16} color={colors.brownDark} />
+            <Text style={styles.infoLabel}>Satıcı Ödeme Bilgileri</Text>
+          </View>
           {/* IBAN ve kopyala butonu */}
-          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 2 }}>
-            <Text>IBAN: {item.seller?.iban || '-'}</Text>
+          <View style={styles.ibanRow}>
+            <Text style={styles.infoText}>IBAN: {item.seller?.iban || '-'}</Text>
             {item.seller?.iban && (
-              <TouchableOpacity
+              <PressableScale
                 onPress={() => copyIban(item.seller.iban)}
                 style={styles.copyButton}
               >
                 <Text style={styles.copyButtonText}>Kopyala</Text>
-              </TouchableOpacity>
+              </PressableScale>
             )}
           </View>
-          <Text>IBAN İsmi: {item.seller?.ibanName || '-'}</Text>
-          <Text>Banka: {item.seller?.bankName || '-'}</Text>
-          <Text style={styles.countdown}>⏳ {formatCountdown(item.paymentDeadline)}</Text>
+          <Text style={styles.infoText}>IBAN İsmi: {item.seller?.ibanName || '-'}</Text>
+          <Text style={styles.infoText}>Banka: {item.seller?.bankName || '-'}</Text>
+          <View style={styles.countdownRow}>
+            <MaterialCommunityIcons name="timer-sand" size={15} color={colors.danger} />
+            <Text style={styles.countdown}>{formatCountdown(item.paymentDeadline)}</Text>
+          </View>
         </View>
 
         {/* Dekont durumu */}
         {item.receiptUploaded && (
-          <Text
-            style={[
-              styles.statusLabel,
-              item.receiptStatus === 'approved'
-                ? styles.statusApproved
-                : item.receiptStatus === 'rejected'
-                ? styles.statusRejected
-                : styles.statusPending,
-            ]}
-          >
-            {item.receiptStatus === 'approved'
-              ? 'Onaylandı'
-              : item.receiptStatus === 'rejected'
-              ? 'Reddedildi'
-              : 'Bekliyor'}
-          </Text>
+          <View style={styles.statusRow}>
+            <Badge label={statusLabel} tone={statusTone} />
+          </View>
         )}
 
         {/* Dekont yükleme seçenekleri */}
         {rejected ? (
-          <TouchableOpacity
-            style={styles.uploadButton}
+          <GradientButton
+            title="Tekrar Dekont Yükle"
+            icon="cloud-upload-outline"
+            variant="danger"
             onPress={() => handleUploadReceipt(item._id)}
-          >
-            <Text style={styles.uploadButtonText}>Tekrar Dekont Yükle</Text>
-          </TouchableOpacity>
+            style={styles.uploadButton}
+          />
         ) : item.receiptUploaded ? (
-          <Text style={styles.uploadedLabel}>📄 Dekont yüklendi</Text>
+          <View style={styles.uploadedRow}>
+            <MaterialCommunityIcons name="file-check-outline" size={18} color={colors.priceGreen} />
+            <Text style={styles.uploadedLabel}>Dekont yüklendi</Text>
+          </View>
         ) : (
-          <TouchableOpacity
-            style={styles.uploadButton}
+          <GradientButton
+            title="Dekont Yükle"
+            icon="cloud-upload-outline"
+            variant="gold"
             onPress={() => handleUploadReceipt(item._id)}
-          >
-            <Text style={styles.uploadButtonText}>Dekont Yükle</Text>
-          </TouchableOpacity>
+            style={styles.uploadButton}
+          />
         )}
-      </TouchableOpacity>
+      </Card>
     );
   };
 
   if (loading) {
     return (
-      <View style={styles.loader}>
-        <ActivityIndicator size="large" color="#6d4c41" />
-      </View>
+      <Screen>
+        <ScreenHeader variant="plain" title="Kazandığınız Mezatlar" />
+        <View style={styles.loader}>
+          <ActivityIndicator size="large" color={colors.brown} />
+        </View>
+      </Screen>
     );
   }
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.header}>Kazandığınız Mezatlar</Text>
+    <Screen>
+      <ScreenHeader variant="plain" title="Kazandığınız Mezatlar" />
       <FlatList
         data={auctions}
         renderItem={renderItem}
         keyExtractor={(item) => item._id}
-        ListEmptyComponent={<Text style={styles.empty}>Henüz kazandığınız mezat yok.</Text>}
+        contentContainerStyle={styles.listContent}
+        showsVerticalScrollIndicator={false}
+        ListEmptyComponent={
+          <EmptyState
+            icon="trophy-outline"
+            title="Henüz kazandığınız mezat yok"
+            message="Kazandığınız mezatlar burada listelenecek."
+          />
+        }
       />
-    </View>
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fff8e1', padding: 16 },
-  header: { fontSize: 22, fontWeight: 'bold', color: '#4e342e', marginBottom: 10 },
   loader: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  auctionItem: {
-    padding: 12,
-    backgroundColor: '#ffffff',
-    borderRadius: 10,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: '#ccc',
+  listContent: {
+    paddingHorizontal: spacing.lg,
+    paddingBottom: spacing.xl,
+    flexGrow: 1,
   },
-  title: { fontSize: 16, fontWeight: 'bold', color: '#3e2723' },
-  price: { fontSize: 14, color: '#5d4037', marginVertical: 4 },
+  auctionItem: {
+    marginBottom: spacing.md,
+  },
+  title: { ...typography.h3, color: colors.brownDark },
+  wonRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    marginVertical: spacing.xs,
+  },
+  price: { ...typography.bodyStrong, color: colors.brown },
   infoBox: {
-    backgroundColor: '#fce4ec',
-    borderRadius: 8,
-    padding: 10,
-    marginVertical: 8,
+    backgroundColor: colors.surface,
+    borderRadius: radii.md,
+    borderWidth: 1,
+    borderColor: colors.line,
+    padding: spacing.md,
+    marginVertical: spacing.sm,
+  },
+  infoLabelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: spacing.xs,
   },
   infoLabel: {
-    fontWeight: 'bold',
-    color: '#880e4f',
-    marginBottom: 4,
+    ...typography.bodyStrong,
+    color: colors.brownDark,
+    marginLeft: spacing.xs,
+  },
+  infoText: {
+    ...typography.body,
+    color: colors.brown,
+    marginBottom: 2,
+  },
+  ibanRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 2,
+  },
+  countdownRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    marginTop: spacing.sm,
   },
   countdown: {
-    marginTop: 6,
-    color: '#b71c1c',
-    fontWeight: 'bold',
+    ...typography.bodyStrong,
+    color: colors.danger,
+  },
+  statusRow: {
+    marginTop: spacing.sm,
   },
   uploadButton: {
-    backgroundColor: '#6d4c41',
-    paddingVertical: 10,
-    borderRadius: 8,
-    alignItems: 'center',
-    marginTop: 10,
+    marginTop: spacing.md,
   },
-  uploadButtonText: {
-    color: '#fff',
-    fontWeight: 'bold',
+  uploadedRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.xs,
+    marginTop: spacing.md,
   },
   uploadedLabel: {
-    textAlign: 'center',
-    marginTop: 10,
-    color: '#4caf50',
-    fontWeight: 'bold',
+    ...typography.bodyStrong,
+    color: colors.priceGreen,
   },
-  statusLabel: {
-    marginTop: 6,
-    padding: 6,
-    borderRadius: 6,
-    textAlign: 'center',
-    fontWeight: 'bold',
-  },
-  statusPending: { backgroundColor: '#ffeb3b', color: '#333' },
-  statusApproved: { backgroundColor: '#c8e6c9', color: '#2e7d32' },
-  statusRejected: { backgroundColor: '#ffcdd2', color: '#c62828' },
-  empty: {
-    textAlign: 'center',
-    marginTop: 50,
-    fontSize: 16,
-    color: '#666',
-  },
-  // Eklenen stiller
   copyButton: {
-    marginLeft: 8,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    backgroundColor: '#e0c9a6',
-    borderRadius: 6,
+    marginLeft: spacing.sm,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+    backgroundColor: 'rgba(201,162,75,0.18)',
+    borderWidth: 1,
+    borderColor: colors.gold,
+    borderRadius: radii.pill,
   },
   copyButtonText: {
-    color: '#4e342e',
-    fontWeight: 'bold',
-    fontSize: 12,
+    ...typography.label,
+    color: colors.gold,
+    fontSize: 11,
+    letterSpacing: 0.4,
   },
 });
