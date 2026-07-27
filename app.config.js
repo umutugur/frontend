@@ -39,14 +39,17 @@ export default {
       // Android 16 (API 36) hedefleyen uygulamalarda edge-to-edge zorunlu;
       // opt-out yok. Açıkça açıyoruz ki davranış prebuild'de de aynı olsun.
       edgeToEdgeEnabled: true,
-      // EAS autoIncrement devrede → sadece referans değeri
-      versionCode: 31
+      // EAS autoIncrement bunu build sırasında +1 yapar ama DİNAMİK config'e
+      // geri yazamaz (bump'ı app.json'a yazar, orası da yok sayılıyor).
+      // Bu yüzden her yayından sonra buradaki değeri elle güncelliyoruz.
+      // 32 = v1.1.0 build'i.
+      versionCode: 32
     },
 
     ios: {
       supportsTablet: true,
       bundleIdentifier: "com.umutugur.imame",
-      buildNumber: "31", // EAS autoIncrement bunu her build’de +1 yapacak
+      buildNumber: "32", // EAS +1 yapar; dinamik config'e geri yazamadığı için elle takip ediyoruz
       usesAppleSignIn: true,
       infoPlist: {
         NSUserTrackingUsageDescription:
