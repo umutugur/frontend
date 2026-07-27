@@ -42,14 +42,14 @@ export default {
       // EAS autoIncrement bunu build sırasında +1 yapar ama DİNAMİK config'e
       // geri yazamaz (bump'ı app.json'a yazar, orası da yok sayılıyor).
       // Bu yüzden her yayından sonra buradaki değeri elle güncelliyoruz.
-      // 32 = v1.1.0 build'i.
-      versionCode: 32
+      // 33 = v1.1.0 build'i.
+      versionCode: 33
     },
 
     ios: {
       supportsTablet: true,
       bundleIdentifier: "com.umutugur.imame",
-      buildNumber: "32", // EAS +1 yapar; dinamik config'e geri yazamadığı için elle takip ediyoruz
+      buildNumber: "33", // EAS +1 yapar; dinamik config'e geri yazamadığı için elle takip ediyoruz
       usesAppleSignIn: true,
       infoPlist: {
         NSUserTrackingUsageDescription:
