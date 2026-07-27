@@ -18,8 +18,9 @@ export default function UserListScreen() {
   const fetchUsers = async () => {
     try {
       const res = await axios.get('https://imame-backend.onrender.com/api/users/all');
-      setUsers(res.data);
-      setFiltered(res.data);
+      const items = res.data?.items || [];
+      setUsers(items);
+      setFiltered(items);
     } catch (err) {
       console.error('Kullanıcılar alınamadı:', err);
     }
