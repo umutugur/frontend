@@ -163,7 +163,7 @@ export default function HomeScreen() {
   };
 
   return (
-    <Screen>
+    <Screen edges={['left', 'right']}>
       <FlatList
         data={feed}
         renderItem={renderItem}

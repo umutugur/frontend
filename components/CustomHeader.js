@@ -1,18 +1,23 @@
 // components/CustomHeader.js
 import React, { useContext } from 'react';
-import { View, Image, TouchableOpacity, StyleSheet, Dimensions, Platform, StatusBar, Text } from 'react-native';
+import { View, Image, TouchableOpacity, StyleSheet, Dimensions, Text } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AuthContext } from '../context/AuthContext';
 import { colors, gradients, spacing, typography } from '../theme/tokens';
 
 const screenWidth = Dimensions.get('window').width;
-const statusBarH = Platform.OS === 'android' ? StatusBar.currentHeight || 0 : 0;
 
 export default function CustomHeader() {
   const navigation = useNavigation();
   const { notifications } = useContext(AuthContext);
+  // Üst inset'i başlık taşır; altındaki Screen'ler top kenarını kapatır.
+  // Eskiden StatusBar.currentHeight kullanılıyordu — o yalnızca Android'de
+  // dolu, iOS'ta 0. Kökte SafeAreaView dolguyu verdiği sürece fark etmiyordu;
+  // artık gerçek inset okunuyor, iki platformda da doğru çalışıyor.
+  const { top: statusBarH } = useSafeAreaInsets();
 
   // Okunmamış bildirim sayısını hesapla
   const unreadCount = notifications.filter((n) => !n.isRead).length;
@@ -22,7 +27,7 @@ export default function CustomHeader() {
       colors={gradients.creamSurface}
       start={{ x: 0, y: 0 }}
       end={{ x: 1, y: 1 }}
-      style={styles.container}
+      style={[styles.container, { height: 40 + statusBarH, paddingTop: statusBarH }]}
     >
       {/* alt kenarda ince altın çizgi — heritage vurgu */}
       <View style={styles.goldRule} pointerEvents="none" />
@@ -52,8 +57,6 @@ export default function CustomHeader() {
 const styles = StyleSheet.create({
   container: {
     width: screenWidth,
-    height: 40 + statusBarH,
-    paddingTop: statusBarH,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',

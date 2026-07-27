@@ -73,7 +73,7 @@ export default function FavoritesScreen() {
 
   if (loading) {
     return (
-      <Screen>
+      <Screen edges={['left', 'right']}>
         <View style={styles.list}>
           {[0, 1, 2].map((row) => (
             <View key={row} style={styles.row}>
@@ -93,12 +93,15 @@ export default function FavoritesScreen() {
   const isGuest = !user?._id || user?.role === 'guest';
 
   return (
-    <Screen>
+    <Screen edges={['left', 'right']}>
       {/* Misafir görünümü */}
       {isGuest ? (
         <View style={styles.centeredWrapper}>
           <View style={styles.ctaContainer}>
+            {/* flex:0 — aksi halde EmptyState tüm alanı kaplayıp butonları
+                sekme çubuğunun altına itiyor. */}
             <EmptyState
+              style={{ flex: 0 }}
               icon="heart-outline"
               title="Favori mezatlar"
               message="Favori satıcıların mezatlarını görmek için giriş yapın."

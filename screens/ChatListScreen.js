@@ -92,7 +92,7 @@ export default function ChatListScreen({ navigation }) {
 
   if (loading) {
     return (
-      <Screen>
+      <Screen edges={['left', 'right']}>
         <View style={styles.center}>
           <ActivityIndicator size="large" color={colors.brown} />
         </View>
@@ -103,7 +103,7 @@ export default function ChatListScreen({ navigation }) {
   const isGuest = !user?._id || user?.role === 'guest';
 
   return (
-    <Screen>
+    <Screen edges={['left', 'right']}>
       {/* Misafir CTA */}
       {isGuest ? (
         <View style={styles.guestWrap}>

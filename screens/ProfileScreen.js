@@ -171,7 +171,7 @@ export default function ProfileScreen() {
 
   if (loading || !profile) {
     return (
-      <Screen>
+      <Screen edges={['left', 'right']}>
         <View style={styles.loadingWrap}>
           <ActivityIndicator size="large" color={colors.brown} />
           <Text style={styles.loadingText}>Profil yükleniyor…</Text>
@@ -192,7 +192,7 @@ export default function ProfileScreen() {
     (profile?.companyName || profile?.name || 'İ')?.[0]?.toUpperCase() || 'İ';
 
   return (
-    <Screen scroll contentContainerStyle={styles.scroll}>
+    <Screen scroll edges={['left', 'right']} contentContainerStyle={styles.scroll}>
       {/* Gradient profil başlığı */}
       <LinearGradient
         colors={gradients.goldToBrown}

@@ -7,7 +7,7 @@ import {
   Platform,
   StyleSheet,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { colors, gradients } from '../../theme/tokens';
 
@@ -26,10 +26,24 @@ export default function Screen({
   bgColors = gradients.page,
   glow = true,
 }) {
+  const insets = useSafeAreaInsets();
+  // Edge-to-edge'de kaydırılan içerik gezinme çubuğunun altına giriyor. Alt
+  // kenarı SafeAreaView'a vermiyoruz (arka plan gradyanının ekranın dibine
+  // kadar uzanması isteniyor); onun yerine kaydırma içeriğinin sonuna alt
+  // inset kadar dolgu ekliyoruz.
+  // Çağıranın kendi paddingBottom'ını ezmemek için üstüne ekliyoruz.
+  const inset = edges.includes('bottom') ? 0 : insets.bottom;
+  const ownPad = StyleSheet.flatten(contentContainerStyle)?.paddingBottom ?? 0;
+  const bottomPad = typeof ownPad === 'number' ? ownPad + inset : inset;
+
   const Body = scroll ? (
     <ScrollView
       style={styles.flex}
-      contentContainerStyle={[styles.scrollContent, contentContainerStyle]}
+      contentContainerStyle={[
+        styles.scrollContent,
+        contentContainerStyle,
+        { paddingBottom: bottomPad },
+      ]}
       keyboardShouldPersistTaps="handled"
       showsVerticalScrollIndicator={false}
     >

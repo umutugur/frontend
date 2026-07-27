@@ -6,12 +6,15 @@ import { colors, spacing, typography } from '../../theme/tokens';
 
 /**
  * EmptyState — boş liste/veri durumu.
- * Props: { icon, title, message }
+ * Props: { icon, title, message, style }
  *   icon: MaterialCommunityIcons adı (string). Varsayılan 'inbox-outline'.
+ *   style: kapsayıcı stil override'ı. Varsayılan `flex: 1` ile tüm alanı
+ *     doldurur; altında buton olan ekranlar `{ flex: 0 }` geçip grubun
+ *     birlikte ortalanmasını sağlayabilir.
  */
-export default function EmptyState({ icon = 'inbox-outline', title, message }) {
+export default function EmptyState({ icon = 'inbox-outline', title, message, style }) {
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, style]}>
       <View style={styles.iconCircle}>
         <MaterialCommunityIcons name={icon} size={40} color={colors.brown} />
       </View>
