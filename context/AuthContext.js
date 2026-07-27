@@ -1,5 +1,5 @@
 // context/AuthContext.js
-import React, { createContext, useState, useEffect } from 'react';
+import React, { createContext, useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Notifications from 'expo-notifications';
@@ -47,6 +47,50 @@ export const AuthProvider = ({ children }) => {
       handleGoogleAuth(authentication.accessToken, authentication.idToken);
     }
   }, [response]);
+
+  // Oturumu ağa gitmeden yerel olarak düşürür. Token zaten geçersizken
+  // sunucuya istek atmanın anlamı yok.
+  const clearSession = async () => {
+    setUser(null);
+    setNotifications([]);
+    setUnreadCount(0);
+    await AsyncStorage.multiRemove(['user', 'token']);
+    delete axios.defaults.headers.common.Authorization;
+  };
+
+  // Token sunucu tarafında geçersizleşince (süresi dolduğunda, JWT_SECRET
+  // döndürüldüğünde veya hesap silindiğinde) uygulama "giriş yapmış" görünmeye
+  // devam ediyor, ama her korumalı istek sessizce 401 dönüyordu: profil
+  // önbellekten doluyken bildirimler, teklifler ve mesajlar hiç gelmiyordu ve
+  // kullanıcı elle çıkış yapmadan bundan kurtulamıyordu. 401'i tek yerde
+  // yakalayıp oturumu düşürüyoruz; MainNavigator user null olunca giriş
+  // ekranına dönüyor.
+  const sessionExpiredRef = useRef(false);
+  useEffect(() => {
+    const id = axios.interceptors.response.use(
+      (res) => res,
+      async (error) => {
+        const status = error?.response?.status;
+        const url = error?.config?.url || '';
+        // Giriş/kayıt denemelerinin kendi 401'i oturum düşürmemeli.
+        const isAuthAttempt = /\/api\/auth\/(login|register|oauth|social-login)/.test(url);
+
+        if (status === 401 && !isAuthAttempt && !sessionExpiredRef.current) {
+          sessionExpiredRef.current = true;
+          await clearSession();
+          alertBridge.showAlert({
+            title: 'Oturum Süresi Doldu',
+            message: 'Güvenliğiniz için tekrar giriş yapmanız gerekiyor.',
+          });
+          // Aynı anda patlayan diğer istekler tekrar tetiklemesin; kısa bir
+          // pencereden sonra bayrağı serbest bırakıyoruz.
+          setTimeout(() => { sessionExpiredRef.current = false; }, 3000);
+        }
+        return Promise.reject(error);
+      }
+    );
+    return () => axios.interceptors.response.eject(id);
+  }, []);
 
   const fetchNotifications = async (userId) => {
     if (!userId) return; // guest için kullanıcıya bağlı bildirim listesi yok
