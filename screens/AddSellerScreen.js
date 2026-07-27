@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
+import axios from 'axios';
 import { Screen, ScreenHeader, Input, GradientButton, OrnamentDivider } from '../components/ui';
 import { useAlert } from '../context/AlertContext';
 import { colors, radii, spacing, typography } from '../theme/tokens';
@@ -17,6 +18,7 @@ const mahalleler = [...mahalleler1, ...mahalleler2, ...mahalleler3, ...mahallele
 
 export default function AddSellerScreen() {
   const { showAlert } = useAlert();
+  const [saving, setSaving] = useState(false);
   const [seller, setSeller] = useState({
     companyName: '',
     name: '',
@@ -75,6 +77,10 @@ export default function AddSellerScreen() {
       return showAlert({ title: 'Hata', message: 'Firma adı, e-posta ve şifre zorunludur.' });
     }
 
+    if (seller.password.length < 6) {
+      return showAlert({ title: 'Hata', message: 'Şifre en az 6 karakter olmalıdır.' });
+    }
+
     if (!selectedIlId || !selectedIlceId || !selectedMahalleId || !sokak) {
       return showAlert({ title: 'Hata', message: 'Adres bilgileri eksik.' });
     }
@@ -88,20 +94,15 @@ export default function AddSellerScreen() {
       daireNo
     };
 
+    setSaving(true);
     try {
-      const res = await fetch('https://imame-backend.onrender.com/api/auth/register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...seller,
-          role: 'seller',
-          address: addressObj,
-        }),
+      // Satıcı hesabı artık herkese açık /api/auth/register üzerinden açılmıyor;
+      // orası yalnızca alıcı üretiyor. Bu uç yönetici oturumu ister — axios'un
+      // global Authorization başlığı AuthContext tarafından ayarlanıyor.
+      await axios.post('https://imame-backend.onrender.com/api/admin/sellers', {
+        ...seller,
+        address: addressObj,
       });
-
-      const data = await res.json();
-
-      if (!res.ok) throw new Error(data.message || 'Satıcı kaydı başarısız');
 
       showAlert({ title: 'Başarılı', message: 'Satıcı başarıyla eklendi.' });
       setSeller({
@@ -122,7 +123,14 @@ export default function AddSellerScreen() {
       setApartmanNo('');
       setDaireNo('');
     } catch (err) {
-      showAlert({ title: 'Hata', message: err.message });
+      const status = err.response?.status;
+      const message =
+        status === 401 || status === 403
+          ? 'Bu işlem için yönetici olarak giriş yapmalısınız.'
+          : err.response?.data?.message || 'Satıcı kaydı başarısız.';
+      showAlert({ title: 'Hata', message });
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -210,6 +218,8 @@ export default function AddSellerScreen() {
         variant="gold"
         icon="checkmark-circle-outline"
         onPress={handleSubmit}
+        loading={saving}
+        disabled={saving}
         style={styles.button}
       />
       </View>
