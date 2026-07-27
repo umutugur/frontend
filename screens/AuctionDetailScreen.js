@@ -18,6 +18,7 @@ import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { AuthContext } from '../context/AuthContext';
 import { useAlert } from '../context/AlertContext';
 import { useNavigation, useIsFocused } from '@react-navigation/native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import InlineBannerAd from '../components/InlineBannerAd';
 
 import { Screen, GradientButton, OrnamentDivider, PressableScale } from '../components/ui';
@@ -52,6 +53,9 @@ export default function AuctionDetailScreen({ route }) {
   const { showAlert } = useAlert();
   const navigation = useNavigation();
   const isFocused = useIsFocused();
+  // Dock ekranın en altına yapışık. Android 16'da edge-to-edge zorunlu olduğu
+  // için gezinme çubuğu bu alanın üstüne biniyor; alt inset'i dolguya ekliyoruz.
+  const insets = useSafeAreaInsets();
 
   const [auction, setAuction] = useState(null);
   const [currentPrice, setCurrentPrice] = useState(0);
@@ -427,7 +431,10 @@ export default function AuctionDetailScreen({ route }) {
         }
         contentInsetAdjustmentBehavior="never"
         automaticallyAdjustContentInsets={false}
-        contentContainerStyle={[styles.listContent, canBid && styles.listContentDock]}
+        contentContainerStyle={[
+          styles.listContent,
+          canBid && { paddingBottom: 170 + insets.bottom },
+        ]}
       />
 
       {/* Yüzen geri butonu */}
@@ -436,7 +443,10 @@ export default function AuctionDetailScreen({ route }) {
       </PressableScale>
 
       {/* ── Teklif dock'u: çipler + koyu çubuk ── */}
-      <View style={styles.dock} pointerEvents="box-none">
+      <View
+        style={[styles.dock, { paddingBottom: spacing.xl + insets.bottom }]}
+        pointerEvents="box-none"
+      >
         <LinearGradient
           colors={['rgba(253,246,227,0)', colors.creamDeep]}
           style={StyleSheet.absoluteFill}
@@ -504,7 +514,6 @@ export default function AuctionDetailScreen({ route }) {
 const styles = StyleSheet.create({
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   listContent: { paddingBottom: spacing.xxl },
-  listContentDock: { paddingBottom: 170 },
 
   backBtn: {
     position: 'absolute',

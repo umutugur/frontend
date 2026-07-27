@@ -11,7 +11,7 @@ import { AuthProvider, AuthContext } from './context/AuthContext';
 import { AlertProvider } from './context/AlertContext';
 import OfflineNotice from './components/OfflineNotice';
 import { toastConfig } from './components/toastConfig';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { requestTrackingPermissionsAsync, getTrackingPermissionsAsync } from 'expo-tracking-transparency';
 import {
   useFonts,
@@ -212,7 +212,12 @@ export default function App() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <SafeAreaView style={{ flex: 1, backgroundColor: '#F9F6F2' }}>
+      {/* Kökte SafeAreaView DEĞİL SafeAreaProvider olmalı. SafeAreaView burada
+          bütün inset'leri kendisi tüketiyordu; alttaki useSafeAreaInsets()
+          çağrıları sıfır okuyor, sekme çubuğu da gerçek yüksekliğini
+          hesaplayamıyordu. Android 16'da edge-to-edge zorunlu olduğu için
+          inset'lerin aşağıya doğru akması şart. */}
+      <SafeAreaProvider style={{ flex: 1, backgroundColor: '#F9F6F2' }}>
         {/* AlertProvider, AuthProvider'ın DIŞINDA: singleton köprü (alertBridge)
             AuthContext ilk render'da kullanmadan önce kurulmuş olmalı. */}
         <AlertProvider>
@@ -224,7 +229,7 @@ export default function App() {
             </NavigationContainer>
           </AuthProvider>
         </AlertProvider>
-      </SafeAreaView>
+      </SafeAreaProvider>
     </GestureHandlerRootView>
   );
 }

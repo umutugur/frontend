@@ -36,6 +36,9 @@ export default {
         googleMobileAdsAppId:
           "ca-app-pub-4306778139267554~1925991963"
       },
+      // Android 16 (API 36) hedefleyen uygulamalarda edge-to-edge zorunlu;
+      // opt-out yok. Açıkça açıyoruz ki davranış prebuild'de de aynı olsun.
+      edgeToEdgeEnabled: true,
       // EAS autoIncrement devrede → sadece referans değeri
       versionCode: 31
     },
@@ -59,8 +62,11 @@ export default {
         "expo-build-properties",
         {
           android: {
-            compileSdkVersion: 35,
-            targetSdkVersion: 35,
+            // Google Play, 31 Ağustos 2026'dan itibaren API 36 hedefi istiyor.
+            // RN 0.79'un sürüm kataloğu AGP 8.8.2 getiriyor; bu birleşim yerel
+            // Gradle derlemesiyle doğrulandı, compileSdk uyarısı çıkmadı.
+            compileSdkVersion: 36,
+            targetSdkVersion: 36,
             minSdkVersion: 24
           },
           ios: {
