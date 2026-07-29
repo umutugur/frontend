@@ -36,17 +36,11 @@ export default {
         googleMobileAdsAppId:
           "ca-app-pub-4306778139267554~1925991963"
       },
-      // EAS autoIncrement bunu build sırasında +1 yapar ama DİNAMİK config'e
-      // geri yazamaz (bump'ı app.json'a yazar, orası da yok sayılıyor).
-      // Bu yüzden her yayından sonra buradaki değeri elle güncelliyoruz.
-      // 33 = v1.1.0 build'i.
-      versionCode: 33
     },
 
     ios: {
       supportsTablet: true,
       bundleIdentifier: "com.umutugur.imame",
-      buildNumber: "33", // EAS +1 yapar; dinamik config'e geri yazamadığı için elle takip ediyoruz
       usesAppleSignIn: true,
       infoPlist: {
         NSUserTrackingUsageDescription:
