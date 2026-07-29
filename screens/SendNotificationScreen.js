@@ -1,9 +1,8 @@
 // screens/SendNotificationScreen.js
 import React, { useState } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import CheckBox from '@react-native-community/checkbox';
 import axios from 'axios';
-import { Screen, ScreenHeader, Input, GradientButton } from '../components/ui';
+import { Screen, ScreenHeader, Input, GradientButton, Checkbox } from '../components/ui';
 import { useAlert } from '../context/AlertContext';
 import { colors, spacing, typography } from '../theme/tokens';
 
@@ -89,20 +88,11 @@ export default function SendNotificationScreen() {
 
       <Text style={styles.groupLabel}>Alıcı Grupları</Text>
 
-      <View style={styles.checkboxRow}>
-        <CheckBox value={toAllBuyers} onValueChange={setToAllBuyers} />
-        <Text style={styles.checkboxLabel}>Tüm Alıcılara Gönder</Text>
-      </View>
+      <Checkbox value={toAllBuyers} onValueChange={setToAllBuyers} label="Tüm Alıcılara Gönder" />
 
-      <View style={styles.checkboxRow}>
-        <CheckBox value={toAllSellers} onValueChange={setToAllSellers} />
-        <Text style={styles.checkboxLabel}>Tüm Satıcılara Gönder</Text>
-      </View>
+      <Checkbox value={toAllSellers} onValueChange={setToAllSellers} label="Tüm Satıcılara Gönder" />
 
-      <View style={styles.checkboxRow}>
-        <CheckBox value={includeGuests} onValueChange={setIncludeGuests} />
-        <Text style={styles.checkboxLabel}>Misafir Cihazlara da Gönder</Text>
-      </View>
+      <Checkbox value={includeGuests} onValueChange={setIncludeGuests} label="Misafir Cihazlara da Gönder" />
 
       <GradientButton
         title="Gönder"

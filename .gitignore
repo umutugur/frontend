@@ -38,3 +38,9 @@ yarn-error.*
 
 # Brainstorming visual companion
 .superpowers/
+
+# Yerel projeler prebuild ile uretiliyor (CNG). Depoda tutulunca EAS
+# app.config.js'teki android/ios/plugins alanlarini senkronlamiyor ve
+# versionCode/bundleIdentifier gibi degerler sessizce kayiyor.
+/android
+/ios
